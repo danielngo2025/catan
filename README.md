@@ -36,6 +36,9 @@ python3 -m http.server 8000
   Army, 10 VP to win.
 - **Drawn resource icons** — each hex shows a hand-drawn emblem (tree, brick,
   sheep, wheat, ore mountain, desert cactus) so tiles read at a glance.
+- **Build-cost reference** — a live panel (and on-button badges) showing what each
+  build costs, with a ✅/🔒 affordability marker and the exact resources you're
+  missing greyed out.
 - **Trading** — trade with the bank at your best rate, or propose swaps to the AI,
   who accept only good deals and refuse to feed a runaway leader.
 - **🎯 Strategy engine** — a coaching panel that re-ranks the best move at every

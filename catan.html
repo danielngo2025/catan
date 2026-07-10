@@ -35,6 +35,13 @@
   .res{display:flex;gap:6px;flex-wrap:wrap}
   .chip{display:flex;align-items:center;gap:4px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:4px 8px;font-weight:700}
   .chip small{color:var(--muted);font-weight:600}
+  .costs{margin-top:10px;display:flex;flex-direction:column;gap:4px}
+  .costrow{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;padding:4px 9px;border-radius:8px;background:var(--panel2);border:1px solid transparent;opacity:.55}
+  .costrow.can{opacity:1;border-color:var(--good)}
+  .costname{font-weight:600;white-space:nowrap}
+  .costicons{letter-spacing:2px;font-size:15px}
+  .costmiss{filter:grayscale(1);opacity:.4}
+  .bcost{font-size:11px;letter-spacing:1px;margin-left:5px}
   .hint{background:linear-gradient(180deg,#1a2c49,#16233a);border:1px solid var(--accent)}
   .hint ol{margin:6px 0 0;padding-left:20px}
   .hint li{margin:4px 0}
@@ -101,6 +108,7 @@
     <div class="card">
       <h2>You</h2>
       <div class="res" id="myres"></div>
+      <div class="costs" id="buildcosts"></div>
     </div>
     <div class="card">
       <h2>Players</h2>
@@ -1067,7 +1075,7 @@ function uiStrategies(){
 // ============================================================================
 function render(){
   if(!G||HEADLESS)return;
-  drawBoard();drawPlayers();drawMyRes();drawActions();drawHints();drawTop();drawDice();renderTrade();
+  drawBoard();drawPlayers();drawMyRes();drawCosts();drawActions();drawHints();drawTop();drawDice();renderTrade();
 }
 // small SVG-node builder
 function el(tag,attrs){const e=document.createElementNS(SVGNS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);return e;}
@@ -1261,6 +1269,24 @@ function drawPlayers(){
     box.appendChild(div);
   });
 }
+// Cost as repeated resource icons; icons the player can't cover are greyed out.
+function costHTML(cost,p){
+  return RES.filter(r=>cost[r]).map(r=>{
+    const short=p&&p.res[r]<cost[r];
+    return `<span class="${short?'costmiss':''}">${RES_ICON[r].repeat(cost[r])}</span>`;
+  }).join(" ");
+}
+function drawCosts(){
+  const box=$("buildcosts");if(!box)return;
+  const p=G.players[0];
+  const items=[["Road",COST.road],["Settlement",COST.settlement],["City",COST.city],["Dev card",COST.dev]];
+  box.innerHTML=items.map(([name,cost])=>{
+    const can=canAfford(p,cost);
+    return `<div class="costrow ${can?'can':''}">
+      <span class="costname">${can?"✅":"🔒"} ${name}</span>
+      <span class="costicons">${costHTML(cost,p)}</span></div>`;
+  }).join("");
+}
 function drawMyRes(){
   const p=G.players[0];const box=$("myres");box.innerHTML="";
   ["wood","brick","sheep","wheat","ore"].forEach(r=>{
@@ -1291,10 +1317,11 @@ function drawActions(){
   else{
     if(G.mode==="robber"){const s=document.createElement("span");s.className="banner";s.textContent="Click a hex to move the robber.";box.appendChild(s);return;}
     if(G.mode==="freeroad"){const s=document.createElement("span");s.className="banner";s.textContent=`Place ${G.pendingRoads} free road(s).`;box.appendChild(s);return;}
-    mk("🏘️ Settlement",canAfford(p,COST.settlement)?"":"ghost",()=>{G.mode="build-settlement";render();},!canAfford(p,COST.settlement));
-    mk("🏛️ City",canAfford(p,COST.city)?"":"ghost",()=>{G.mode="build-city";render();},!canAfford(p,COST.city)||!p.settlements.length);
-    mk("🛣️ Road",canAfford(p,COST.road)?"":"ghost",()=>{G.mode="build-road";render();},!canAfford(p,COST.road));
-    mk("🎴 Dev card","ghost",()=>{pay(p,COST.dev);drawDev(p.id);render();},!canAfford(p,COST.dev));
+    const mkBuild=(label,cost,cls,on,dis)=>{const b=mk(label,cls,on,dis);b.innerHTML=`${label} <span class="bcost">${costHTML(cost,p)}</span>`;return b;};
+    mkBuild("🏘️ Settlement",COST.settlement,canAfford(p,COST.settlement)?"":"ghost",()=>{G.mode="build-settlement";render();},!canAfford(p,COST.settlement));
+    mkBuild("🏛️ City",COST.city,canAfford(p,COST.city)?"":"ghost",()=>{G.mode="build-city";render();},!canAfford(p,COST.city)||!p.settlements.length);
+    mkBuild("🛣️ Road",COST.road,canAfford(p,COST.road)?"":"ghost",()=>{G.mode="build-road";render();},!canAfford(p,COST.road));
+    mkBuild("🎴 Dev card",COST.dev,"ghost",()=>{pay(p,COST.dev);drawDev(p.id);render();},!canAfford(p,COST.dev));
     mk("🤝 Trade","ghost",openTrade);
     // playable dev cards
     [...new Set(p.dev)].forEach(card=>{
