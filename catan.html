@@ -933,15 +933,23 @@ function renderTrade(){
   const col=side=>RES.map(r=>{
     const o=side==="give"?G.tradeGive:G.tradeGet;
     const rate=side==="give"?tradeRate(p,r):null;
+    const remaining=side==="give"?p.res[r]-o[r]:null;   // how many left to trade
     return `<div class="trow">
-      <span class="lbl">${RES_ICON[r]} ${r.charAt(0).toUpperCase()+r.slice(1)}${side==="give"?`<small>(${p.res[r]}·${rate}:1)</small>`:""}</span>
+      <span class="lbl">${RES_ICON[r]} ${r.charAt(0).toUpperCase()+r.slice(1)}${side==="give"?`<small>have ${remaining} · ${rate}:1</small>`:""}</span>
       <button class="step" onclick="adjustTrade('${side}','${r}',-1)">–</button>
       <span class="qty">${o[r]}</span>
       <button class="step" onclick="adjustTrade('${side}','${r}',1)">+</button>
     </div>`;
   }).join("");
+  // current holdings summary
+  const hand=RES.map(r=>`<span class="chip" style="padding:3px 7px">${RES_ICON[r]} ${p.res[r]}</span>`).join("")
+    +(p.ports.size?`<span class="chip" style="padding:3px 7px">⚓ ${[...p.ports].map(x=>x==="3:1"?"3:1":RES_ICON[x]).join(" ")}</span>`:"");
   box.innerHTML=`<div class="modal-card">
     <h2>🤝 Trade <span class="muted" style="font-weight:400;font-size:13px">— bank uses your best rate (ports help); players accept only good deals</span></h2>
+    <div style="margin-bottom:12px">
+      <div class="muted" style="font-size:11px;letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px">Your hand</div>
+      <div class="res">${hand}</div>
+    </div>
     <div class="trade-cols">
       <div><h3>You give</h3>${col("give")}</div>
       <div><h3>You get</h3>${col("get")}</div>
