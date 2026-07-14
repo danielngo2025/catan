@@ -1,0 +1,188 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Feynman Technique · Visual Learn Lab</title>
+<meta name="description" content="Learn anything by explaining it simply — a guided 4-step Feynman Technique workspace with a live clarity meter.">
+<link rel="stylesheet" href="assets/site.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🧠</text></svg>">
+<style>
+  .loop{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:4px 0 10px}
+  .loop .node{background:var(--panel2);border:1px solid var(--line);border-radius:10px;
+    padding:8px 12px;font-weight:700;font-size:13px}
+  .loop .node b{color:var(--accent)}
+  .loop .arr{color:var(--muted)}
+  .loop .repeat{color:var(--muted);font-size:12px;font-style:italic;margin-left:6px}
+  .stepcard{margin-top:14px}
+  .stepcard h3{margin:0 0 4px;font-size:16px;display:flex;align-items:center;gap:8px}
+  .stepcard .n{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;
+    background:var(--accent);color:#241a00;font-weight:800;font-size:13px}
+  .stepcard p.help{margin:0 0 10px;color:var(--muted);font-size:13px}
+  input.concept{width:100%;max-width:460px;background:var(--panel2);color:var(--ink);
+    border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:16px}
+  textarea{width:100%;min-height:120px;background:var(--panel2);color:var(--ink);
+    border:1px solid var(--line);border-radius:8px;padding:10px 12px;font:14px/1.5 inherit;resize:vertical}
+  .meter{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;align-items:center}
+  .gauge{flex:1;min-width:220px}
+  .gbar{height:10px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);overflow:hidden}
+  .gbar i{display:block;height:100%;transition:width .3s,background .3s}
+  .gstat{font-size:12px;color:var(--muted);margin-top:6px}
+  .gstat b{color:var(--ink)}
+  .verdict{font-weight:800}
+  .flags{margin-top:8px;font-size:13px}
+  .flags .w{display:inline-block;background:#3a2410;border:1px solid var(--accent);color:var(--accent);
+    border-radius:6px;padding:1px 7px;margin:2px 4px 2px 0}
+  .saved{font-size:12px;color:var(--good);opacity:0;transition:opacity .3s}
+  .saved.show{opacity:1}
+  .example{margin-top:8px}
+  details summary{cursor:pointer;color:var(--accent);font-weight:600}
+</style>
+
+<div id="site-nav"></div>
+
+<main class="page">
+  <h1>🧠 The Feynman Technique</h1>
+  <p class="lede">Richard Feynman's test for real understanding: if you can't explain it simply,
+    you don't understand it yet. Work a concept through these four steps — the clarity meter scores
+    your explanation the way a curious 12-year-old would. Your notes save automatically in this browser.</p>
+
+  <div class="loop">
+    <span class="node">1 · <b>Study</b></span><span class="arr">→</span>
+    <span class="node">2 · <b>Teach</b> it simply</span><span class="arr">→</span>
+    <span class="node">3 · <b>Find the gaps</b></span><span class="arr">→</span>
+    <span class="node">4 · <b>Simplify</b></span>
+    <span class="repeat">↺ then repeat until it's obvious</span>
+  </div>
+
+  <div class="card stepcard">
+    <h3><span class="n">1</span> Pick a concept</h3>
+    <p class="help">Name one thing you want to truly understand.</p>
+    <input class="concept" id="concept" placeholder="e.g. Why does the Moon stay in orbit?">
+  </div>
+
+  <div class="card stepcard">
+    <h3><span class="n">2</span> Explain it in plain words</h3>
+    <p class="help">Pretend you're teaching a smart 12-year-old. No jargon, short sentences, everyday words.</p>
+    <textarea id="explain" placeholder="Start explaining…"></textarea>
+    <div class="meter">
+      <div class="gauge">
+        <div class="gbar"><i id="gfill" style="width:0%"></i></div>
+        <div class="gstat" id="gstat">Write something to see your clarity score.</div>
+      </div>
+      <div class="verdict" id="verdict"></div>
+    </div>
+    <div class="flags" id="flags"></div>
+  </div>
+
+  <div class="card stepcard">
+    <h3><span class="n">3</span> Mark the gaps</h3>
+    <p class="help">Where did you stumble, hand-wave, or fall back on jargon? Those are the spots to
+      restudy from the source.</p>
+    <textarea id="gaps" placeholder="Things I couldn't explain clearly yet…"></textarea>
+  </div>
+
+  <div class="card stepcard">
+    <h3><span class="n">4</span> Simplify &amp; make an analogy</h3>
+    <p class="help">Rewrite the hard parts. A good analogy ("it's like…") is the strongest sign you
+      really get it.</p>
+    <textarea id="simplify" placeholder="In one sentence, it's like…"></textarea>
+    <span class="saved" id="saved">saved ✓</span>
+  </div>
+
+  <div class="card example">
+    <details>
+      <summary>See a worked example — explaining gravity the Feynman way</summary>
+      <p class="muted" style="margin-top:10px">
+        <b>Concept:</b> Why doesn't the Moon fall down?<br>
+        <b>Plain words:</b> The Moon <em>is</em> falling — it keeps missing the Earth. It's moving
+        sideways so fast that as it falls, the ground curves away beneath it just as much. So it
+        falls forever in a circle.<br>
+        <b>Gap:</b> Why does moving sideways make it "miss"? → restudy how a thrown ball's path
+        curves, then throw it faster.<br>
+        <b>Analogy:</b> It's like a cannonball fired so hard it goes all the way around the world
+        and comes up behind you. <a href="newton.html">Try it in the gravity simulator →</a>
+      </p>
+    </details>
+  </div>
+
+  <footer class="site-foot">
+    <span class="views" data-count-path="/feynman.html" style="visibility:hidden"></span>
+  </footer>
+</main>
+
+<script src="assets/config.js"></script>
+<script src="assets/site.js"></script>
+<script>
+(function () {
+  var fields = ["concept", "explain", "gaps", "simplify"];
+  var KEY = "feynman.notes";
+
+  // --- persistence ---
+  function load() {
+    try {
+      var d = JSON.parse(localStorage.getItem(KEY) || "{}");
+      fields.forEach(function (f) { if (d[f] != null) document.getElementById(f).value = d[f]; });
+    } catch (e) {}
+  }
+  var savedTimer = null;
+  function save() {
+    var d = {};
+    fields.forEach(function (f) { d[f] = document.getElementById(f).value; });
+    try { localStorage.setItem(KEY, JSON.stringify(d)); } catch (e) {}
+    var s = document.getElementById("saved");
+    s.classList.add("show");
+    clearTimeout(savedTimer);
+    savedTimer = setTimeout(function () { s.classList.remove("show"); }, 1200);
+  }
+
+  // --- clarity meter ---
+  function syllables(w) {                       // rough vowel-group count
+    w = w.toLowerCase().replace(/[^a-z]/g, "");
+    if (w.length <= 3) return 1;
+    var m = w.replace(/e$/, "").match(/[aeiouy]+/g);
+    return m ? m.length : 1;
+  }
+  function analyze(text) {
+    var words = (text.match(/[A-Za-z']+/g) || []);
+    var sentences = (text.match(/[.!?]+/g) || []).length || (words.length ? 1 : 0);
+    var syl = words.reduce(function (a, w) { return a + syllables(w); }, 0);
+    var wps = sentences ? words.length / sentences : 0;
+    var spw = words.length ? syl / words.length : 0;
+    // Flesch–Kincaid grade level
+    var grade = words.length ? (0.39 * wps + 11.8 * spw - 15.59) : 0;
+    var hard = words.filter(function (w) { return syllables(w) >= 4 || w.length >= 13; });
+    return { words: words.length, sentences: sentences, wps: wps, grade: grade, hard: hard };
+  }
+  function updateMeter() {
+    var a = analyze(document.getElementById("explain").value);
+    var fill = document.getElementById("gfill");
+    var stat = document.getElementById("gstat");
+    var verdict = document.getElementById("verdict");
+    var flags = document.getElementById("flags");
+    if (!a.words) {
+      fill.style.width = "0%"; stat.textContent = "Write something to see your clarity score.";
+      verdict.textContent = ""; flags.innerHTML = ""; return;
+    }
+    var g = Math.max(1, Math.round(a.grade));
+    // Map grade 4..16 → clarity 100..0
+    var clarity = Math.max(0, Math.min(100, Math.round((16 - a.grade) / 12 * 100)));
+    fill.style.width = clarity + "%";
+    fill.style.background = clarity >= 66 ? "var(--good)" : clarity >= 40 ? "var(--accent)" : "var(--bad)";
+    stat.innerHTML = "<b>" + a.words + "</b> words · <b>" + a.wps.toFixed(0) +
+      "</b> words/sentence · reading level ≈ <b>grade " + g + "</b>";
+    verdict.style.color = clarity >= 66 ? "var(--good)" : clarity >= 40 ? "var(--accent)" : "var(--bad)";
+    verdict.textContent = clarity >= 66 ? "A 12-year-old could follow this 👍"
+      : clarity >= 40 ? "Getting there — trim the long words" : "Too dense — simplify it";
+    flags.innerHTML = a.hard.length
+      ? "Long words to replace: " + a.hard.slice(0, 12).map(function (w) { return '<span class="w">' + w + "</span>"; }).join("")
+      : "";
+  }
+
+  load();
+  updateMeter();
+  fields.forEach(function (f) {
+    document.getElementById(f).addEventListener("input", function () {
+      save(); if (f === "explain") updateMeter();
+    });
+  });
+})();
+</script>

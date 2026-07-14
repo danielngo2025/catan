@@ -1,0 +1,64 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Visual Learn Lab · Learn hard ideas by playing with them</title>
+<meta name="description" content="Interactive visualizations that teach one hard idea at a time — Catan strategy, the Theory of Constraints, the Feynman Technique, and Newton's gravity.">
+<link rel="stylesheet" href="assets/site.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>◈</text></svg>">
+
+<div id="site-nav"></div>
+
+<header class="hero">
+  <h1>Visual <span>Learn Lab</span></h1>
+  <p>Learn hard ideas by playing with them.</p>
+  <div class="stats-strip">
+    <div class="stat"><b id="stat-visits">—</b><span>total visits</span></div>
+    <div class="stat"><b id="stat-top">—</b><span>most explored</span></div>
+    <div class="stat"><b id="stat-count">4</b><span>topics</span></div>
+  </div>
+</header>
+
+<main>
+  <div class="topics" id="topics"></div>
+</main>
+
+<footer class="site-foot">
+  <p>Built with plain HTML — no frameworks. Each topic is one self-contained page.
+     More topics coming soon.</p>
+</footer>
+
+<script src="assets/config.js"></script>
+<script src="assets/site.js"></script>
+<script>
+  // Build the topic grid from config.
+  (function () {
+    var grid = document.getElementById("topics");
+    grid.innerHTML = SITE.topics.map(function (t) {
+      var p = t.path === "index.html" ? "/" : "/" + t.path;
+      return '<a class="topic" href="' + t.path + '">' +
+        '<span class="views" data-count-path="' + p + '" style="visibility:hidden"></span>' +
+        '<span class="emoji">' + t.emoji + '</span>' +
+        '<h3>' + t.title + '</h3>' +
+        '<p>' + t.blurb + '</p>' +
+      '</a>';
+    }).join("");
+    document.getElementById("stat-count").textContent = SITE.topics.length;
+
+    // Engagement strip: total visits + most-explored topic (best effort; needs public counters).
+    if (window.LAB) {
+      LAB.renderCounts();
+      LAB.fetchCount("TOTAL")
+        .then(function (n) { document.getElementById("stat-visits").textContent = n; })
+        .catch(function () {});
+      Promise.all(SITE.topics.map(function (t) {
+        var p = t.path === "index.html" ? "/" : "/" + t.path;
+        return LAB.fetchCount(p)
+          .then(function (n) { return { title: t.title, n: parseInt(String(n).replace(/[^0-9]/g, ""), 10) || 0 }; })
+          .catch(function () { return { title: t.title, n: 0 }; });
+      })).then(function (rows) {
+        var best = rows.sort(function (a, b) { return b.n - a.n; })[0];
+        if (best && best.n > 0) document.getElementById("stat-top").textContent = best.title;
+      });
+    }
+  })();
+</script>

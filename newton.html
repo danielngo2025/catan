@@ -1,0 +1,211 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Newton's Gravity · Visual Learn Lab</title>
+<meta name="description" content="Feel Newton's inverse-square law and fling planets into orbit with a live gravity simulator.">
+<link rel="stylesheet" href="assets/site.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🌍</text></svg>">
+<style>
+  .formula{font-size:22px;text-align:center;margin:6px 0 14px;letter-spacing:.5px}
+  .formula sub{font-size:.6em}
+  canvas{width:100%;background:#0a1220;border:1px solid var(--line);border-radius:12px;display:block;touch-action:none}
+  .two{display:grid;gap:16px}
+  .cap{color:var(--muted);font-size:13px;margin:8px 0 0}
+  .status{font-weight:800;margin-left:8px}
+  .fval{font-variant-numeric:tabular-nums}
+</style>
+
+<div id="site-nav"></div>
+
+<main class="page">
+  <h1>🌍 Newton's Law of Gravity</h1>
+  <p class="lede">In 1687 Newton claimed the same force that drops an apple holds the Moon in its
+    orbit — and that every mass pulls every other mass with a force that weakens with the
+    <em>square</em> of the distance. Play with both ideas below.</p>
+  <div class="formula card">F = G · <b>m₁·m₂</b> / <b>r²</b></div>
+
+  <div class="two">
+    <div class="card">
+      <h2>1 · The inverse-square law</h2>
+      <p class="cap">Drag the sliders. Notice: double the distance and the force drops to a
+        <b>quarter</b> — not a half. That "square" is the whole trick.</p>
+      <canvas id="c1" width="640" height="240"></canvas>
+      <div class="controls" style="margin-top:12px">
+        <label class="field">Mass 1 <input type="range" id="m1" min="1" max="100" value="40"><b id="m1v">40</b></label>
+        <label class="field">Mass 2 <input type="range" id="m2" min="1" max="100" value="60"><b id="m2v">60</b></label>
+        <label class="field">Distance r <input type="range" id="rr" min="2" max="20" value="8"><b id="rrv">8</b></label>
+      </div>
+      <p class="cap">Force between them: <b class="fval" id="fval">—</b> (relative units).
+        <span id="rnote"></span></p>
+    </div>
+
+    <div class="card">
+      <h2>2 · Falling forever — orbits</h2>
+      <p class="cap">A planet in orbit is just <em>falling</em> while moving sideways fast enough to
+        keep missing the star. Set the launch speed and watch what happens.</p>
+      <canvas id="c2" width="640" height="380"></canvas>
+      <div class="controls" style="margin-top:12px">
+        <label class="field">Star mass <input type="range" id="star" min="400" max="3000" value="1400"><b id="starv">1400</b></label>
+        <label class="field">Launch speed <input type="range" id="spd" min="45" max="160" value="100"><b id="spdv">100%</b></label>
+        <label class="field">Planet mass <input type="range" id="pm" min="1" max="100" value="20"><b id="pmv">20</b></label>
+        <button class="primary" id="launch">↻ Launch</button>
+        <span class="status" id="ostat"></span>
+      </div>
+      <p class="cap">Speed is shown as a % of the perfect-circle speed. Under 100% → an ellipse that
+        dips inward; near 141% → fast enough to <b>escape</b> forever. And try the planet-mass
+        slider: the orbit's shape <b>doesn't change</b> — heavy and light objects fall the same way.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>The apple and the Moon</h2>
+    <p class="cap">Newton's leap: fire a cannonball harder and harder and it lands farther away —
+      until it's fast enough that the Earth curves away beneath it as fast as it falls. Now it never
+      lands. That's an orbit. The Moon is doing exactly this, and the force pulling it is the very
+      same gravity that drops the apple — just weaker, because the Moon is ~60× farther from Earth's
+      center (so the pull is ~60² ≈ 3600× weaker).</p>
+  </div>
+
+  <footer class="site-foot">
+    <span class="views" data-count-path="/newton.html" style="visibility:hidden"></span>
+  </footer>
+</main>
+
+<script src="assets/config.js"></script>
+<script src="assets/site.js"></script>
+<script>
+// ---------- Widget 1: inverse-square law ----------
+(function () {
+  var c = document.getElementById("c1"), x = c.getContext("2d");
+  var G = 1;
+  var el = { m1: id("m1"), m2: id("m2"), rr: id("rr") };
+  function id(i) { return document.getElementById(i); }
+  var baseF = null;
+
+  function draw() {
+    var m1 = +el.m1.value, m2 = +el.m2.value, r = +el.rr.value;
+    id("m1v").textContent = m1; id("m2v").textContent = m2; id("rrv").textContent = r;
+    var F = G * m1 * m2 / (r * r);
+    id("fval").textContent = F.toFixed(2);
+
+    var W = c.width, H = c.height, cy = H / 2;
+    x.clearRect(0, 0, W, H);
+    // positions: body 1 near left, body 2 offset by distance (scaled)
+    var pad = 70, span = W - pad * 2;
+    var r1 = 8 + Math.sqrt(m1) * 3.2, r2 = 8 + Math.sqrt(m2) * 3.2;
+    var x1 = pad, x2 = pad + (r / 20) * span;
+    // force arrow (thickness ~ F, capped)
+    var lw = Math.max(1.5, Math.min(26, F * 3.5));
+    x.strokeStyle = "#f4b942"; x.lineWidth = lw; x.globalAlpha = .85;
+    line(x1, cy, x2, cy); arrow(x2, cy, -1, lw); arrow(x1, cy, 1, lw);
+    x.globalAlpha = 1;
+    // bodies
+    body(x1, cy, r1, "#6db4ff", "m₁");
+    body(x2, cy, r2, "#ff8a5c", "m₂");
+    // r label
+    x.fillStyle = "#93a4bf"; x.font = "12px system-ui"; x.textAlign = "center";
+    x.fillText("r = " + r, (x1 + x2) / 2, cy - Math.max(r1, r2) - 12);
+
+    if (baseF === null && r === 8) baseF = F;
+    var note = "";
+    if (r === 16) note = "→ 2× the distance of r=8 gives ¼ the force.";
+    id("rnote").textContent = note;
+
+    function line(a, b, cc, d) { x.beginPath(); x.moveTo(a, b); x.lineTo(cc, d); x.stroke(); }
+    function arrow(px, py, dir, w) {
+      var s = 6 + w * .4; x.beginPath();
+      x.moveTo(px + dir * s, py - s); x.lineTo(px, py); x.lineTo(px + dir * s, py + s); x.stroke();
+    }
+    function body(bx, by, br, col, label) {
+      var g = x.createRadialGradient(bx - br / 3, by - br / 3, br / 6, bx, by, br);
+      g.addColorStop(0, "#fff"); g.addColorStop(.25, col); g.addColorStop(1, "#0a1220");
+      x.fillStyle = g; x.beginPath(); x.arc(bx, by, br, 0, 7); x.fill();
+      x.fillStyle = "#e8eef7"; x.font = "bold 13px system-ui"; x.textAlign = "center";
+      x.fillText(label, bx, by + br + 16);
+    }
+  }
+  Object.values(el).forEach(function (e) { e.addEventListener("input", draw); });
+  draw();
+})();
+
+// ---------- Widget 2: orbit simulator ----------
+(function () {
+  var c = document.getElementById("c2"), x = c.getContext("2d");
+  var W = c.width, H = c.height, cx = W / 2, cy = H / 2;
+  var G = 1, starR = 16, r0 = 150;
+  var el = { star: id("star"), spd: id("spd"), pm: id("pm") };
+  function id(i) { return document.getElementById(i); }
+  var p, trail = [], status = "", raf = null;
+
+  function circSpeed(M) { return Math.sqrt(G * M / r0); }
+
+  function launch() {
+    var M = +el.star.value, pct = +el.spd.value / 100;
+    var v = circSpeed(M) * pct;
+    p = { x: cx + r0, y: cy, vx: 0, vy: -v };   // start to the right, moving up
+    trail = []; status = "";
+    setStatus("");
+    if (!raf) loop();
+  }
+  function setStatus(s) {
+    var e = id("ostat");
+    e.textContent = s;
+    e.style.color = s === "escaped ↗" ? "var(--accent)" : s === "crashed 💥" ? "var(--bad)" : "var(--muted)";
+  }
+
+  function step() {
+    var M = +el.star.value, sub = 6, dt = 0.9 / sub;
+    for (var i = 0; i < sub; i++) {
+      var dx = cx - p.x, dy = cy - p.y, d2 = dx * dx + dy * dy, d = Math.sqrt(d2);
+      if (d < starR + 3) { status = "crashed 💥"; return; }
+      if (d > 2000) { status = "escaped ↗"; return; }
+      var a = G * M / d2;                 // acceleration independent of planet mass
+      p.vx += a * dx / d * dt; p.vy += a * dy / d * dt;   // semi-implicit Euler
+      p.x += p.vx * dt; p.y += p.vy * dt;
+    }
+    trail.push({ x: p.x, y: p.y });
+    if (trail.length > 600) trail.shift();
+  }
+
+  function render() {
+    var M = +el.star.value, pr = 5 + Math.sqrt(+el.pm.value) * 1.4, sr = starR + (M - 400) / 260;
+    x.clearRect(0, 0, W, H);
+    // trail
+    for (var i = 1; i < trail.length; i++) {
+      x.strokeStyle = "rgba(244,185,66," + (i / trail.length * .8) + ")";
+      x.lineWidth = 2; x.beginPath();
+      x.moveTo(trail[i - 1].x, trail[i - 1].y); x.lineTo(trail[i].x, trail[i].y); x.stroke();
+    }
+    // star
+    var g = x.createRadialGradient(cx, cy, 2, cx, cy, sr * 2.2);
+    g.addColorStop(0, "#fff5d6"); g.addColorStop(.4, "#ffcf4d"); g.addColorStop(1, "rgba(255,207,77,0)");
+    x.fillStyle = g; x.beginPath(); x.arc(cx, cy, sr * 2.2, 0, 7); x.fill();
+    x.fillStyle = "#ffcf4d"; x.beginPath(); x.arc(cx, cy, sr, 0, 7); x.fill();
+    // planet
+    if (p) {
+      var pg = x.createRadialGradient(p.x - pr / 3, p.y - pr / 3, 1, p.x, p.y, pr);
+      pg.addColorStop(0, "#cfe6ff"); pg.addColorStop(.4, "#6db4ff"); pg.addColorStop(1, "#123");
+      x.fillStyle = pg; x.beginPath(); x.arc(p.x, p.y, pr, 0, 7); x.fill();
+    }
+  }
+
+  function loop() {
+    if (!status) step();
+    render();
+    if (status) { setStatus(status); raf = null; return; }
+    raf = requestAnimationFrame(loop);
+  }
+
+  function fmt() {
+    id("starv").textContent = el.star.value;
+    id("spdv").textContent = el.spd.value + "%";
+    id("pmv").textContent = el.pm.value;
+  }
+  el.star.addEventListener("input", function () { fmt(); render(); });
+  el.spd.addEventListener("input", fmt);
+  el.pm.addEventListener("input", function () { fmt(); render(); });
+  id("launch").addEventListener("click", launch);
+
+  fmt(); launch();
+})();
+</script>

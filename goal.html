@@ -1,0 +1,198 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Goal · Visual Learn Lab</title>
+<meta name="description" content="An interactive Theory of Constraints production line — tune station capacities and watch the bottleneck govern throughput.">
+<link rel="stylesheet" href="assets/site.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🏭</text></svg>">
+<style>
+  .line{display:flex;align-items:stretch;gap:0;overflow-x:auto;padding:10px 4px 18px}
+  .buf{align-self:center;min-width:54px;text-align:center;color:var(--muted);font-size:12px}
+  .buf .bar{height:70px;width:26px;margin:6px auto 4px;background:var(--panel2);border:1px solid var(--line);
+    border-radius:5px;position:relative;overflow:hidden}
+  .buf .fill{position:absolute;bottom:0;left:0;right:0;background:var(--accent);transition:height .25s}
+  .buf .wip{font-variant-numeric:tabular-nums;color:var(--ink);font-weight:700}
+  .stn{flex:0 0 118px;display:flex;flex-direction:column;align-items:center;gap:6px;
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 8px}
+  .stn.bottleneck{border-color:var(--bad);box-shadow:0 0 0 1px var(--bad) inset}
+  .stn .no{font-weight:800}
+  .stn .cap{font-size:12px;color:var(--muted)}
+  .stn input[type=range]{width:96px;accent-color:var(--accent)}
+  .stn .tag{font-size:10px;padding:1px 6px;border-radius:10px;background:var(--bad);color:#2a0000;
+    font-weight:800;visibility:hidden}
+  .stn.bottleneck .tag{visibility:visible}
+  .metrics{display:flex;gap:14px;flex-wrap:wrap;margin:6px 0 0}
+  .metric{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 14px;min-width:120px}
+  .metric .v{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums}
+  .metric .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  ol.steps{margin:6px 0 0;padding-left:20px}
+  ol.steps li{margin:6px 0}
+  ol.steps li.on{color:var(--accent);font-weight:700}
+  .hintbox{background:linear-gradient(180deg,#1a2c49,#16233a);border:1px solid var(--accent);
+    border-radius:10px;padding:12px 14px;margin-top:12px}
+  .row-tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:6px}
+  label.chk{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:13px}
+</style>
+
+<div id="site-nav"></div>
+
+<main class="page">
+  <h1>🏭 The Goal — Theory of Constraints</h1>
+  <p class="lede">Eli Goldratt's big idea: a system is only as fast as its slowest step. Raw material
+    flows left→right through five stations. Each step, a station can process up to its capacity —
+    but only if parts are waiting. Watch where inventory piles up, and who really sets the pace.</p>
+
+  <div class="card">
+    <div class="line" id="line"></div>
+    <div class="metrics">
+      <div class="metric"><div class="v" id="m-thru">0.0</div><div class="k">Throughput /step</div></div>
+      <div class="metric"><div class="v" id="m-wip">0</div><div class="k">Inventory (WIP)</div></div>
+      <div class="metric"><div class="v" id="m-out">0</div><div class="k">Units shipped</div></div>
+      <div class="metric"><div class="v" id="m-steps">0</div><div class="k">Steps</div></div>
+    </div>
+    <div class="row-tools">
+      <button class="primary" id="run">▶ Run</button>
+      <button id="step">Step</button>
+      <button id="reset">Reset</button>
+      <label class="chk"><input type="checkbox" id="rand"> Add statistical fluctuation (dice mode)</label>
+    </div>
+    <div class="hintbox" id="hint"></div>
+  </div>
+
+  <h2>The Five Focusing Steps</h2>
+  <div class="card">
+    <ol class="steps" id="focus">
+      <li data-s="1"><b>Identify</b> the constraint — the one station that limits the whole line.</li>
+      <li data-s="2"><b>Exploit</b> it — make sure the constraint never sits idle or wastes effort.</li>
+      <li data-s="3"><b>Subordinate</b> everything else — other stations serve the constraint's pace,
+        not their own local efficiency.</li>
+      <li data-s="4"><b>Elevate</b> the constraint — add capacity to it (drag its slider up).</li>
+      <li data-s="5"><b>Repeat</b> — once it's no longer the slowest, a new constraint appears. Go again.</li>
+    </ol>
+    <p class="muted" style="margin:10px 0 0">Try it: find the red station, raise its capacity, and
+      watch throughput climb — until a <em>different</em> station turns red. That's step 5 in action.
+      Turn on dice mode to see why even a "balanced" line ships less than its average capacity: downstream
+      stations starve whenever an upstream one has a bad roll.</p>
+  </div>
+
+  <footer class="site-foot">
+    <span class="views" data-count-path="/goal.html" style="visibility:hidden"></span>
+  </footer>
+</main>
+
+<script src="assets/config.js"></script>
+<script src="assets/site.js"></script>
+<script>
+(function () {
+  var N = 5;
+  var cap = [4, 6, 3, 7, 5];        // per-station capacity (units/step)
+  var buf = new Array(N).fill(0);   // buf[i] = WIP waiting in front of station i (buf[0] = raw, infinite)
+  var shipped = 0, steps = 0, timer = null;
+  var thruAvg = 0;                  // exponential moving average of units shipped/step
+
+  var lineEl = document.getElementById("line");
+
+  function bottleneckIndex() {      // slowest station governs steady-state throughput
+    var min = Infinity, idx = 0;
+    for (var i = 0; i < N; i++) if (cap[i] < min) { min = cap[i]; idx = i; }
+    return idx;
+  }
+
+  function build() {
+    var bn = bottleneckIndex();
+    var html = "";
+    for (var i = 0; i < N; i++) {
+      // WIP buffer feeding station i (skip raw supply before station 0)
+      if (i > 0) {
+        var wip = buf[i];
+        var h = Math.min(100, wip * 8);
+        html += '<div class="buf"><div>buffer</div>' +
+          '<div class="bar"><div class="fill" style="height:' + h + '%"></div></div>' +
+          '<div class="wip" id="wip' + i + '">' + wip + "</div></div>";
+      }
+      html += '<div class="stn' + (i === bn ? " bottleneck" : "") + '" id="stn' + i + '">' +
+        '<div class="no">Station ' + (i + 1) + "</div>" +
+        '<span class="tag">CONSTRAINT</span>' +
+        '<div class="cap">capacity <b id="capv' + i + '">' + cap[i] + "</b>/step</div>" +
+        '<input type="range" min="1" max="10" value="' + cap[i] + '" data-i="' + i + '">' +
+      "</div>";
+    }
+    lineEl.innerHTML = html;
+    lineEl.querySelectorAll("input[type=range]").forEach(function (r) {
+      r.addEventListener("input", function () {
+        cap[+r.dataset.i] = +r.value;
+        document.getElementById("capv" + r.dataset.i).textContent = r.value;
+        refreshBottleneck();
+      });
+    });
+    refreshHint();
+  }
+
+  function refreshBottleneck() {
+    var bn = bottleneckIndex();
+    for (var i = 0; i < N; i++)
+      document.getElementById("stn" + i).classList.toggle("bottleneck", i === bn);
+    refreshHint();
+  }
+
+  function tick() {
+    var rand = document.getElementById("rand").checked;
+    // capacity available this step (a "die roll" 1..cap in dice mode, else full cap)
+    var eff = cap.map(function (c) { return rand ? (1 + Math.floor(Math.random() * c)) : c; });
+    // snapshot-based flow: station i pulls from buf[i], pushes downstream
+    var moved = new Array(N);
+    for (var i = 0; i < N; i++) {
+      var avail = (i === 0) ? Infinity : buf[i];   // station 0 draws from infinite raw supply
+      moved[i] = Math.min(eff[i], avail);
+    }
+    for (var j = 0; j < N; j++) {
+      if (j > 0) buf[j] -= moved[j];               // consume from own inbound buffer
+      if (j < N - 1) buf[j + 1] += moved[j];        // deliver to next station's buffer
+      else shipped += moved[j];                    // last station ships
+    }
+    steps++;
+    var out = moved[N - 1];
+    thruAvg = steps === 1 ? out : thruAvg + (out - thruAvg) * 0.1;
+    render();
+  }
+
+  function render() {
+    for (var i = 1; i < N; i++) {
+      var w = document.getElementById("wip" + i);
+      if (w) w.textContent = buf[i];
+      var fill = lineEl.querySelectorAll(".buf .fill")[i - 1];
+      if (fill) fill.style.height = Math.min(100, buf[i] * 8) + "%";
+    }
+    var wipTotal = buf.reduce(function (a, b, k) { return k === 0 ? a : a + b; }, 0);
+    document.getElementById("m-thru").textContent = thruAvg.toFixed(1);
+    document.getElementById("m-wip").textContent = wipTotal;
+    document.getElementById("m-out").textContent = shipped;
+    document.getElementById("m-steps").textContent = steps;
+  }
+
+  function refreshHint() {
+    var bn = bottleneckIndex();
+    document.getElementById("hint").innerHTML =
+      "🎯 The constraint is <b>Station " + (bn + 1) + "</b> (capacity " + cap[bn] +
+      "/step). No matter how fast the others run, the line can ship at most <b>" + cap[bn] +
+      " units/step</b>. Raise Station " + (bn + 1) + "'s slider to lift throughput — then watch the constraint move.";
+    document.querySelectorAll("#focus li").forEach(function (li) { li.classList.remove("on"); });
+    var active = document.querySelector('#focus li[data-s="1"]');
+    if (active) active.classList.add("on");
+  }
+
+  function setRunning(on) {
+    var btn = document.getElementById("run");
+    if (on && !timer) { timer = setInterval(tick, 450); btn.textContent = "⏸ Pause"; btn.classList.remove("primary"); }
+    else if (!on && timer) { clearInterval(timer); timer = null; btn.textContent = "▶ Run"; btn.classList.add("primary"); }
+  }
+
+  document.getElementById("run").onclick = function () { setRunning(!timer); };
+  document.getElementById("step").onclick = function () { setRunning(false); tick(); };
+  document.getElementById("reset").onclick = function () {
+    setRunning(false); buf = new Array(N).fill(0); shipped = 0; steps = 0; thruAvg = 0; build(); render();
+  };
+
+  build(); render();
+})();
+</script>
