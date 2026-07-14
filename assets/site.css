@@ -28,7 +28,7 @@ a:hover{text-decoration:underline}
 /* --- generic page container (topic pages that aren't full-bleed) --- */
 main.page{max-width:1080px;margin:0 auto;padding:26px 20px 60px}
 .page h1{margin:.2em 0 .1em;font-size:30px;line-height:1.15}
-.page .lede{color:var(--muted);font-size:16px;margin:0 0 22px;max-width:70ch}
+.page .lede{color:var(--muted);font-size:16px;margin:0 0 22px}
 .page h2{margin:30px 0 10px;font-size:15px;letter-spacing:.5px;text-transform:uppercase;color:var(--muted)}
 
 .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
