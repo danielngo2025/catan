@@ -17,5 +17,7 @@ window.SITE = {
       blurb: "Learn anything by explaining it simply. A guided 4-step workflow with a live clarity meter." },
     { path: "newton.html",  title: "Newton's Gravity",  emoji: "🌍",
       blurb: "Feel the inverse-square law and fling planets into orbit with a real gravity simulator." },
+    { path: "conway.html",  title: "Conway's Law",      emoji: "🔀",
+      blurb: "Why software ends up shaped like your org chart — rewire the teams and watch the architecture follow." },
   ],
 };
