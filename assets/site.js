@@ -44,7 +44,8 @@
     var code = SITE.goatcounterCode;
     if (!code) return Promise.reject("no-code");
     var key = pathOrTotal === "TOTAL" ? "TOTAL" : encodeURIComponent(pathOrTotal);
-    var url = "https://" + code + ".goatcounter.com/counter/" + key + ".json";
+    // start= a date before the site existed → all-time count (the endpoint defaults to a narrow window).
+    var url = "https://" + code + ".goatcounter.com/counter/" + key + ".json?start=2020-01-01";
     return fetch(url).then(function (r) {
       if (!r.ok) throw new Error(r.status);
       return r.json();
