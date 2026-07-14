@@ -32,9 +32,11 @@
 <script>
   // Build the topic grid from config.
   (function () {
+    // Base dir the site is served from, e.g. "/catan/" — GoatCounter records full paths.
+    var base = location.pathname.replace(/[^\/]*$/, "");
     var grid = document.getElementById("topics");
     grid.innerHTML = SITE.topics.map(function (t) {
-      var p = t.path === "index.html" ? "/" : "/" + t.path;
+      var p = base + t.path;
       return '<a class="topic" href="' + t.path + '">' +
         '<span class="views" data-count-path="' + p + '" style="visibility:hidden"></span>' +
         '<span class="emoji">' + t.emoji + '</span>' +
@@ -51,7 +53,7 @@
         .then(function (n) { document.getElementById("stat-visits").textContent = n; })
         .catch(function () {});
       Promise.all(SITE.topics.map(function (t) {
-        var p = t.path === "index.html" ? "/" : "/" + t.path;
+        var p = base + t.path;
         return LAB.fetchCount(p)
           .then(function (n) { return { title: t.title, n: parseInt(String(n).replace(/[^0-9]/g, ""), 10) || 0 }; })
           .catch(function () { return { title: t.title, n: 0 }; });

@@ -3,10 +3,11 @@
 (function () {
   var SITE = window.SITE || { topics: [], goatcounterCode: "" };
 
-  // Normalized page path, independent of whether the site is served from / or /catan/.
+  // Current filename (for nav active-state) + the real path GoatCounter records.
   var file = (location.pathname.split("/").pop() || "index.html");
   if (file === "" || file === "index.html") file = "index.html";
-  var normPath = file === "index.html" ? "/" : "/" + file;
+  var realPath = location.pathname;                 // exactly what count.js records (e.g. /catan/goal.html)
+  var basedir = realPath.replace(/[^\/]*$/, "");    // directory the site is served from (e.g. /catan/)
 
   // --- nav bar ---
   function buildNav() {
@@ -29,7 +30,7 @@
   function loadAnalytics() {
     var code = SITE.goatcounterCode;
     if (!code) return; // analytics not configured yet — no-op
-    window.goatcounter = { path: function () { return normPath; } };
+    // No path override: let count.js record location.pathname so it matches what we query below.
     var s = document.createElement("script");
     s.async = true;
     s.src = "//gc.zgo.at/count.js";
@@ -54,6 +55,7 @@
   function renderCounts() {
     document.querySelectorAll("[data-count-path]").forEach(function (el) {
       var p = el.getAttribute("data-count-path");
+      if (p === "self") p = realPath;   // this page's own recorded path
       fetchCount(p).then(function (n) {
         el.textContent = "👁 " + n;
         el.style.visibility = "visible";
@@ -61,7 +63,7 @@
     });
   }
 
-  window.LAB = { fetchCount: fetchCount, renderCounts: renderCounts, path: normPath };
+  window.LAB = { fetchCount: fetchCount, renderCounts: renderCounts, path: realPath, basedir: basedir };
 
   buildNav();
   loadAnalytics();
