@@ -19,5 +19,7 @@ window.SITE = {
       blurb: "Feel the inverse-square law and fling planets into orbit with a real gravity simulator." },
     { path: "conway.html",  title: "Conway's Law",      emoji: "🔀",
       blurb: "Why software ends up shaped like your org chart — rewire the teams and watch the architecture follow." },
+    { path: "kaizen.html",  title: "Kaizen",            emoji: "📈",
+      blurb: "The math of tiny gains — improve 1% a day and see why continuous improvement beats big one-off pushes." },
   ],
 };

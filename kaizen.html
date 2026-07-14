@@ -1,0 +1,160 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kaizen · Visual Learn Lab</title>
+<meta name="description" content="Kaizen, the math of continuous improvement — see how 1% better every day compounds, and why small steps beat big pushes.">
+<link rel="stylesheet" href="assets/site.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>📈</text></svg>">
+<style>
+  canvas{width:100%;background:#0a1220;border:1px solid var(--line);border-radius:12px;display:block}
+  .metrics{display:flex;gap:14px;flex-wrap:wrap;margin:14px 0 0}
+  .metric{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 14px;min-width:130px}
+  .metric .v{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums}
+  .metric .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .metric.up .v{color:var(--good)} .metric.down .v{color:var(--bad)}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:13px;color:var(--muted)}
+  .legend i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:6px;vertical-align:3px}
+  .loop{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:4px 0 12px}
+  .loop .node{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-weight:700;font-size:13px}
+  .loop .node b{color:var(--accent)}
+  .loop .arr{color:var(--muted)}
+  .loop .repeat{color:var(--muted);font-size:12px;font-style:italic;margin-left:6px}
+  .principles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:4px}
+  .principle{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .principle b{color:var(--ink)} .principle p{margin:4px 0 0;color:var(--muted);font-size:13px}
+  .hintbox{background:linear-gradient(180deg,#1a2c49,#16233a);border:1px solid var(--accent);border-radius:10px;padding:12px 14px;margin-top:14px}
+</style>
+
+<div id="site-nav"></div>
+
+<main class="page">
+  <h1>📈 Kaizen — the power of tiny gains</h1>
+  <p class="lede"><b>Kaizen</b> (改善, "change for the better") is the practice of continuous, incremental
+    improvement — many small steps instead of rare big leaps. It sounds modest, but the math is not:
+    a 1% improvement repeated every day makes you ~37× better in a year, while slipping 1% a day leaves
+    you at almost nothing. Drag the sliders and watch it compound.</p>
+
+  <div class="card">
+    <canvas id="chart" width="680" height="360"></canvas>
+    <div class="legend">
+      <span><i style="background:#3fce8f"></i>improving <b id="lg-up">+1%</b>/day</span>
+      <span><i style="background:#93a4bf"></i>standing still (0%)</span>
+      <span><i style="background:#ff6b6b"></i>declining <b id="lg-down">−1%</b>/day</span>
+    </div>
+    <div class="controls" style="margin-top:14px">
+      <label class="field">Daily change
+        <input type="range" id="rate" min="0.1" max="2" step="0.1" value="1"><b id="ratev">1.0%</b></label>
+      <label class="field">Time horizon
+        <input type="range" id="days" min="30" max="365" step="5" value="365"><b id="daysv">365 days</b></label>
+    </div>
+    <div class="metrics">
+      <div class="metric up"><div class="v" id="m-up">37.8×</div><div class="k">If you improve</div></div>
+      <div class="metric down"><div class="v" id="m-down">0.03×</div><div class="k">If you decline</div></div>
+      <div class="metric"><div class="v" id="m-gap">1215×</div><div class="k">Gap between them</div></div>
+    </div>
+    <div class="hintbox" id="hint"></div>
+  </div>
+
+  <h2>How kaizen actually runs: the PDCA loop</h2>
+  <div class="card">
+    <div class="loop">
+      <span class="node"><b>Plan</b> a small change</span><span class="arr">→</span>
+      <span class="node"><b>Do</b> it on a small scale</span><span class="arr">→</span>
+      <span class="node"><b>Check</b> the result</span><span class="arr">→</span>
+      <span class="node"><b>Act</b>: keep or drop it</span>
+      <span class="repeat">↺ then run the loop again</span>
+    </div>
+    <div class="principles">
+      <div class="principle"><b>Small steps</b><p>Improvements so small they're almost impossible to fail — and easy to repeat forever.</p></div>
+      <div class="principle"><b>Everyone, every day</b><p>The people doing the work suggest the fixes; improvement is part of the job, not a project.</p></div>
+      <div class="principle"><b>Eliminate waste (muda)</b><p>Hunt the small frictions: waiting, rework, extra steps. Remove one, then the next.</p></div>
+      <div class="principle"><b>Standardize the win</b><p>When a change works, make it the new normal — so you improve <em>from</em> it, not back to it.</p></div>
+    </div>
+    <p class="muted" style="margin:12px 0 0">This is why kaizen beats the big-bang rewrite: a giant push is
+      risky, hard to reverse, and happens once. A steady 1% is low-risk, self-correcting, and — as the
+      chart shows — compounds into something a single leap can't match.</p>
+  </div>
+
+  <footer class="site-foot">
+    <span class="views" data-count-path="self" style="visibility:hidden"></span>
+  </footer>
+</main>
+
+<script src="assets/config.js"></script>
+<script src="assets/site.js"></script>
+<script>
+(function () {
+  var c = document.getElementById("chart"), x = c.getContext("2d");
+  var W = c.width, H = c.height, padL = 52, padR = 16, padT = 18, padB = 34;
+
+  function fmt(v) {
+    if (v >= 100) return Math.round(v) + "×";
+    if (v >= 10) return v.toFixed(1) + "×";
+    if (v >= 1) return v.toFixed(2) + "×";
+    return v.toFixed(3) + "×";
+  }
+
+  function draw() {
+    var r = +document.getElementById("rate").value / 100;
+    var D = +document.getElementById("days").value;
+    document.getElementById("ratev").textContent = (r * 100).toFixed(1) + "%";
+    document.getElementById("daysv").textContent = D + " days";
+    document.getElementById("lg-up").textContent = "+" + (r * 100).toFixed(1) + "%";
+    document.getElementById("lg-down").textContent = "−" + (r * 100).toFixed(1) + "%";
+
+    var up = Math.pow(1 + r, D), down = Math.pow(1 - r, D);
+    var ymax = Math.max(up, 1.1);
+    var plotW = W - padL - padR, plotH = H - padT - padB;
+    var X = function (d) { return padL + d / D * plotW; };
+    var Y = function (v) { return padT + (1 - v / ymax) * plotH; };
+
+    x.clearRect(0, 0, W, H);
+
+    // gridlines + y labels
+    x.strokeStyle = "#1d2f4d"; x.fillStyle = "#93a4bf"; x.font = "11px system-ui";
+    x.textAlign = "right"; x.lineWidth = 1;
+    for (var g = 0; g <= 4; g++) {
+      var v = ymax * g / 4, yy = Y(v);
+      x.beginPath(); x.moveTo(padL, yy); x.lineTo(W - padR, yy); x.stroke();
+      x.fillText(fmt(v), padL - 8, yy + 4);
+    }
+    // x labels
+    x.textAlign = "center";
+    x.fillText("day 0", padL, H - 12);
+    x.fillText("day " + D, W - padR, H - 12);
+
+    // baseline (standing still = 1)
+    curve(function () { return 1; }, "#93a4bf", 2, false);
+    // decline
+    curve(function (d) { return Math.pow(1 - r, d); }, "#ff6b6b", 2.5, true);
+    // improve (drawn last, on top)
+    curve(function (d) { return Math.pow(1 + r, d); }, "#3fce8f", 3, true);
+
+    function curve(fn, color, lw, dot) {
+      x.strokeStyle = color; x.lineWidth = lw; x.beginPath();
+      for (var d = 0; d <= D; d++) {
+        var px = X(d), py = Y(fn(d));
+        d === 0 ? x.moveTo(px, py) : x.lineTo(px, py);
+      }
+      x.stroke();
+      if (dot) {
+        var ev = fn(D);
+        x.fillStyle = color; x.beginPath(); x.arc(X(D), Y(ev), 4, 0, 7); x.fill();
+      }
+    }
+
+    document.getElementById("m-up").textContent = fmt(up);
+    document.getElementById("m-down").textContent = fmt(down);
+    document.getElementById("m-gap").textContent = fmt(up / down);
+
+    document.getElementById("hint").innerHTML =
+      "🎯 At <b>" + (r * 100).toFixed(1) + "% a day for " + D + " days</b>, improving compounds to <b>" +
+      fmt(up) + "</b> your starting point, while declining at the same rate drops you to <b>" + fmt(down) +
+      "</b>. Same daily effort, opposite directions — that <b>" + fmt(up / down) +
+      "</b> gap is why kaizen obsesses over the direction of tiny, everyday changes.";
+  }
+
+  ["rate", "days"].forEach(function (id) { document.getElementById(id).addEventListener("input", draw); });
+  draw();
+})();
+</script>
