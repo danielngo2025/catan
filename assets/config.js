@@ -5,7 +5,7 @@ window.SITE = {
 
   // GoatCounter site code -> https://<code>.goatcounter.com
   // Leave "" to disable analytics until you've created the account.
-  goatcounterCode: "",
+  goatcounterCode: "learn-lab",
 
   // Ordered list drives both the nav bar and the homepage grid.
   topics: [
