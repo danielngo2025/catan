@@ -21,5 +21,7 @@ window.SITE = {
       blurb: "Why software ends up shaped like your org chart — rewire the teams and watch the architecture follow." },
     { path: "kaizen.html",  title: "Kaizen",            emoji: "📈",
       blurb: "The math of tiny gains — improve 1% a day and see why continuous improvement beats big one-off pushes." },
+    { path: "uncertainty.html", title: "Uncertainty Principle", emoji: "⚛️",
+      blurb: "Heisenberg's rule: pin down a particle's position and its momentum blurs. Squeeze one, watch the other spread." },
   ],
 };

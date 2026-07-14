@@ -1,0 +1,136 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Uncertainty Principle · Visual Learn Lab</title>
+<meta name="description" content="Heisenberg's Uncertainty Principle, made visual — narrow a particle's position and its momentum spreads, with the product pinned at the ℏ/2 floor.">
+<link rel="stylesheet" href="assets/site.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>⚛️</text></svg>">
+<style>
+  canvas{width:100%;background:#0a1220;border:1px solid var(--line);border-radius:12px;display:block}
+  .metrics{display:flex;gap:14px;flex-wrap:wrap;margin:14px 0 0}
+  .metric{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 14px;min-width:120px}
+  .metric .v{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums}
+  .metric .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .metric.pos .v{color:var(--accent)} .metric.mom .v{color:#6db4ff} .metric.prod .v{color:var(--good)}
+  .formula{font-size:22px;text-align:center;margin:2px 0 14px;letter-spacing:.5px}
+  .hintbox{background:linear-gradient(180deg,#1a2c49,#16233a);border:1px solid var(--accent);border-radius:10px;padding:12px 14px;margin-top:14px}
+  .quiz{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+</style>
+
+<div id="site-nav"></div>
+
+<main class="page">
+  <h1>⚛️ Heisenberg's Uncertainty Principle</h1>
+  <div class="formula card">Δx · Δp ≥ ℏ / 2</div>
+  <p class="lede">A quantum particle is a <b>wave</b>, not a tiny dot — so it can't have a single exact
+    position <em>and</em> a single exact momentum at the same time. Squeeze it into a small region
+    (know its position well) and its momentum smears out across many values, and vice-versa. This isn't
+    clumsy measuring equipment; it's built into what a particle <em>is</em>. Drag the slider to localize
+    the particle and watch the trade play out.</p>
+
+  <div class="card">
+    <canvas id="c" width="680" height="380"></canvas>
+    <div class="controls" style="margin-top:14px">
+      <label class="field">Localize the particle&nbsp; (know position better →)
+        <input type="range" id="loc" min="0" max="100" value="50"></label>
+    </div>
+    <div class="metrics">
+      <div class="metric pos"><div class="v" id="m-dx">—</div><div class="k">Δx (position spread)</div></div>
+      <div class="metric mom"><div class="v" id="m-dp">—</div><div class="k">Δp (momentum spread)</div></div>
+      <div class="metric prod"><div class="v" id="m-prod">0.50 ℏ</div><div class="k">Δx · Δp (the product)</div></div>
+    </div>
+    <div class="hintbox" id="hint"></div>
+  </div>
+
+  <h2>The part everyone gets wrong</h2>
+  <div class="card">
+    <p style="margin:0 0 10px">The common story — "measuring the position bumps the particle and changes
+      its momentum" — is real (the observer effect) but it's <b>not</b> what this principle says. Even a
+      perfect, gentle measurement hits the same wall, because the particle simply doesn't <em>possess</em>
+      a definite position and momentum simultaneously. A wave that's sharply localized in space is
+      necessarily built from many different wavelengths — and wavelength <em>is</em> momentum. Narrow in
+      space ⇒ broad in momentum. It's the same math that says a very short sound click contains a wide
+      range of frequencies.</p>
+    <p style="margin:0"><b>ℏ (h-bar)</b> is tiny (~10⁻³⁴ J·s), which is why you never notice this for a
+      baseball — but for an electron it dominates everything. The chart uses natural units where ℏ = 1,
+      so the floor Δx·Δp = ½ is the best nature ever allows; real particles sit at or above it.</p>
+  </div>
+
+  <footer class="site-foot">
+    <span class="views" data-count-path="self" style="visibility:hidden"></span>
+  </footer>
+</main>
+
+<script src="assets/config.js"></script>
+<script src="assets/site.js"></script>
+<script>
+(function () {
+  var c = document.getElementById("c"), x = c.getContext("2d");
+  var W = c.width, H = c.height, padL = 54, padR = 16;
+  var SQRT2PI = Math.sqrt(2 * Math.PI);
+
+  // Minimum-uncertainty Gaussian in natural units (hbar = 1): dx * dp = 1/2.
+  var DX_MIN = 0.45, DX_MAX = 3.2;
+  function gauss(t, s) { return Math.exp(-(t * t) / (2 * s * s)) / (s * SQRT2PI); }
+
+  // Fixed per-plot y-scales (based on the tallest peak across the slider range) so both width
+  // AND height changes are visible without clipping.
+  var posPeakMax = gauss(0, DX_MIN);              // narrowest position -> tallest position peak
+  var momPeakMax = gauss(0, 0.5 / DX_MIN);        // -> widest momentum -> that's the shortest; tallest momentum is at DX_MAX
+  momPeakMax = gauss(0, 0.5 / DX_MAX);            // narrowest momentum (widest position) -> tallest momentum peak
+
+  var X_SPAN = 6, P_SPAN = 3;                     // axis half-widths for the two plots
+
+  function draw() {
+    var loc = +document.getElementById("loc").value / 100;      // 0..1
+    var dx = DX_MAX - loc * (DX_MAX - DX_MIN);                   // more localized -> smaller dx
+    var dp = 0.5 / dx;                                          // minimum-uncertainty relation
+
+    document.getElementById("m-dx").textContent = dx.toFixed(2);
+    document.getElementById("m-dp").textContent = dp.toFixed(2);
+    document.getElementById("m-prod").textContent = (dx * dp).toFixed(2) + " ℏ";
+
+    x.clearRect(0, 0, W, H);
+    var bandH = (H - 30) / 2;
+    plot(15, bandH - 10, "Position  |ψ(x)|²", X_SPAN, dx, posPeakMax, "#f4b942", "x", ["far left", "here", "far right"]);
+    plot(15 + bandH, bandH - 10, "Momentum  |φ(p)|²", P_SPAN, dp, momPeakMax, "#6db4ff", "p", ["← slow/left", "still", "fast/right →"]);
+
+    var pct = Math.round(loc * 100);
+    document.getElementById("hint").innerHTML =
+      "🎯 You know the position to within <b>Δx = " + dx.toFixed(2) + "</b>, so the momentum is smeared over <b>Δp = " +
+      dp.toFixed(2) + "</b>. Their product stays locked at <b>" + (dx * dp).toFixed(2) +
+      " ℏ</b> — the minimum. Drag toward the right and the position spike sharpens while the momentum curve flattens and spreads; nature will not let both be narrow at once.";
+
+    function plot(top, h, title, span, sigma, peakMax, color, axisLbl, ticks) {
+      var plotW = W - padL - padR, base = top + h;
+      // frame + title
+      x.fillStyle = "#93a4bf"; x.font = "12px system-ui"; x.textAlign = "left";
+      x.fillText(title, padL, top + 12);
+      // zero axis
+      x.strokeStyle = "#1d2f4d"; x.lineWidth = 1;
+      x.beginPath(); x.moveTo(padL, base); x.lineTo(W - padR, base); x.stroke();
+      var cx = padL + plotW / 2;
+      x.beginPath(); x.moveTo(cx, top + 16); x.lineTo(cx, base); x.stroke();
+      // curve (filled)
+      var yScale = (h - 20) / peakMax;
+      x.beginPath();
+      for (var px = 0; px <= plotW; px++) {
+        var t = (px / plotW - 0.5) * 2 * span;      // map pixel -> value in [-span, span]
+        var y = base - gauss(t, sigma) * yScale;
+        px === 0 ? x.moveTo(padL + px, y) : x.lineTo(padL + px, y);
+      }
+      x.strokeStyle = color; x.lineWidth = 2.5; x.stroke();
+      x.lineTo(W - padR, base); x.lineTo(padL, base); x.closePath();
+      x.fillStyle = color + "33"; x.fill();
+      // tick labels
+      x.fillStyle = "#5f7396"; x.font = "10px system-ui";
+      x.textAlign = "left"; x.fillText(ticks[0], padL, base + 12);
+      x.textAlign = "center"; x.fillText(ticks[1], cx, base + 12);
+      x.textAlign = "right"; x.fillText(ticks[2], W - padR, base + 12);
+    }
+  }
+
+  document.getElementById("loc").addEventListener("input", draw);
+  draw();
+})();
+</script>
