@@ -10,17 +10,17 @@ window.SITE = {
   // Ordered list drives the homepage grid. `group` drives the nav dropdown menus
   // (groups appear in the order they first show up below).
   topics: [
-    { path: "catan.html",   title: "Catan Strategy",   emoji: "⬢", group: "Mental Models",
+    { path: "catan.html",   title: "Catan Strategy",   emoji: "⬢", group: "Games",
       blurb: "Play Settlers of Catan against AI with a live win-strategy coach and run bulk simulations." },
-    { path: "goal.html",    title: "The Goal",          emoji: "🏭", group: "Mental Models",
+    { path: "goal.html",    title: "The Goal",          emoji: "🏭", group: "Productivity",
       blurb: "Goldratt's Theory of Constraints — tune a production line and watch the bottleneck rule throughput." },
-    { path: "feynman.html", title: "Feynman Technique", emoji: "🧠", group: "Mental Models",
+    { path: "feynman.html", title: "Feynman Technique", emoji: "🧠", group: "Productivity",
       blurb: "Learn anything by explaining it simply. A guided 4-step workflow with a live clarity meter." },
     { path: "newton.html",  title: "Newton's Gravity",  emoji: "🌍", group: "Classical Physics",
       blurb: "Feel the inverse-square law and fling planets into orbit with a real gravity simulator." },
-    { path: "conway.html",  title: "Conway's Law",      emoji: "🔀", group: "Mental Models",
+    { path: "conway.html",  title: "Conway's Law",      emoji: "🔀", group: "Productivity",
       blurb: "Why software ends up shaped like your org chart — rewire the teams and watch the architecture follow." },
-    { path: "kaizen.html",  title: "Kaizen",            emoji: "📈", group: "Mental Models",
+    { path: "kaizen.html",  title: "Kaizen",            emoji: "📈", group: "Productivity",
       blurb: "The math of tiny gains — improve 1% a day and see why continuous improvement beats big one-off pushes." },
     { path: "uncertainty.html", title: "Uncertainty Principle", emoji: "⚛️", group: "Quantum",
       blurb: "Heisenberg's rule: pin down a particle's position and its momentum blurs. Squeeze one, watch the other spread." },
