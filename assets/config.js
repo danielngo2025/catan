@@ -27,5 +27,7 @@ window.SITE = {
       blurb: "Why heat flows one way and time has an arrow — release a gas, watch entropy climb, and see why it never un-mixes." },
     { path: "quantum.html", title: "Quantum Mechanics", emoji: "🌀",
       blurb: "The double-slit experiment — fire particles one at a time to build an interference pattern, then watch it collapse when you detect which slit they use." },
+    { path: "standardmodel.html", title: "Standard Model", emoji: "🧩",
+      blurb: "The 17 elementary particles that build everything — tap any tile to inspect its mass and charge, and light up which ones feel each fundamental force." },
   ],
 };

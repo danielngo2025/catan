@@ -1,0 +1,222 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Standard Model · Visual Learn Lab</title>
+<meta name="description" content="The Standard Model of particle physics, made interactive — explore all 17 elementary particles, their masses and charges, and light up which ones feel each fundamental force.">
+<link rel="stylesheet" href="assets/site.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🧩</text></svg>">
+<style>
+  .forcebar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+  .forcebar .fbtn{font-size:13px;font-weight:700;padding:7px 13px;border-radius:999px;
+    background:var(--panel2);border:1px solid var(--line);color:var(--muted);cursor:pointer}
+  .forcebar .fbtn:hover{color:var(--ink);border-color:var(--accent)}
+  .forcebar .fbtn.active{color:#0e1726}
+  .gridwrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .sm-grid{display:grid;grid-template-columns:112px repeat(5,minmax(88px,1fr));
+    grid-auto-rows:minmax(66px,auto);gap:8px;min-width:700px}
+  .hdr{display:flex;align-items:flex-end;justify-content:center;font-size:11px;font-weight:700;
+    text-transform:uppercase;letter-spacing:.6px;color:var(--muted);padding-bottom:2px;text-align:center}
+  .rlbl{display:flex;align-items:center;font-size:12px;color:var(--muted);font-weight:600;line-height:1.25}
+  .p{position:relative;border-radius:11px;padding:8px 6px 7px;cursor:pointer;text-align:center;
+    border:1px solid var(--line);background:var(--panel2);transition:transform .1s,box-shadow .1s,opacity .15s}
+  .p:hover{transform:translateY(-2px)}
+  .p .sym{font-size:24px;font-weight:800;line-height:1}
+  .p .sym sub{font-size:12px;font-weight:700}
+  .p .nm{font-size:11px;color:var(--muted);margin-top:3px}
+  .p .cn{position:absolute;top:5px;right:7px;font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .p.q{background:rgba(176,124,255,.14);border-color:rgba(176,124,255,.45)}
+  .p.l{background:rgba(63,206,143,.13);border-color:rgba(63,206,143,.4)}
+  .p.b{background:rgba(244,185,66,.14);border-color:rgba(244,185,66,.45)}
+  .p.h{background:rgba(255,107,107,.14);border-color:rgba(255,107,107,.5);
+    display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .p.sel{box-shadow:0 0 0 2px var(--accent),0 6px 18px rgba(0,0,0,.35)}
+  .p.dim{opacity:.16;pointer-events:none}
+  .p.hot{box-shadow:0 0 0 2px var(--good)}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;font-size:12px;color:var(--muted)}
+  .legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+  .detail{display:grid;grid-template-columns:auto 1fr;gap:4px 16px;margin-top:6px;align-items:baseline}
+  .detail dt{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.4px}
+  .detail dd{margin:0;font-weight:700;font-variant-numeric:tabular-nums}
+  .chips{display:flex;gap:6px;flex-wrap:wrap}
+  .chip{font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;background:var(--panel2);border:1px solid var(--line)}
+  .dhead{display:flex;align-items:center;gap:12px}
+  .dhead .big{font-size:40px;font-weight:800;line-height:1}
+  .fnote{background:linear-gradient(180deg,#1a2c49,#16233a);border:1px solid var(--accent);
+    border-radius:10px;padding:11px 14px;margin-top:14px;font-size:14px;min-height:20px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-top:4px}
+  .qc{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .qc b{color:var(--ink)} .qc p{margin:4px 0 0;color:var(--muted);font-size:13px}
+</style>
+
+<div id="site-nav"></div>
+
+<main class="page">
+  <h1>🧩 The Standard Model of particle physics</h1>
+  <p class="lede">Everything you've ever touched is built from just a handful of elementary particles — and
+    every push and pull between them comes from four forces. The <b>Standard Model</b> is the theory that
+    catalogs them: <b>17 particles</b> that, so far, appear to have no smaller parts. Tap any tile to inspect
+    it, or pick a <b>force</b> to light up exactly which particles feel it.</p>
+
+  <div class="card">
+    <div class="forcebar" id="forcebar">
+      <span style="font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px">Highlight force:</span>
+      <button class="fbtn" data-f="strong">Strong</button>
+      <button class="fbtn" data-f="em">Electromagnetic</button>
+      <button class="fbtn" data-f="weak">Weak</button>
+      <button class="fbtn" data-f="higgs">Higgs</button>
+      <button class="fbtn" data-f="">Show all</button>
+    </div>
+
+    <div class="gridwrap">
+      <div class="sm-grid" id="grid"></div>
+    </div>
+
+    <div class="legend">
+      <span><i style="background:#b07cff"></i>Quarks</span>
+      <span><i style="background:#3fce8f"></i>Leptons</span>
+      <span><i style="background:#f4b942"></i>Gauge bosons (force carriers)</span>
+      <span><i style="background:#ff6b6b"></i>Higgs boson</span>
+      <span class="muted">Top-right number = rest mass rank (1 = lightest)</span>
+    </div>
+
+    <div class="fnote" id="fnote">Pick a force above, or tap a particle to see its details below.</div>
+  </div>
+
+  <h2>Selected particle</h2>
+  <div class="card" id="detailcard">
+    <div class="dhead"><span class="big" id="d-sym">e</span>
+      <div><div id="d-name" style="font-size:20px;font-weight:800">Electron</div>
+        <div class="muted" id="d-tag">Lepton · Generation I</div></div>
+    </div>
+    <dl class="detail" style="margin-top:12px">
+      <dt>Charge</dt><dd id="d-charge">−1</dd>
+      <dt>Mass</dt><dd id="d-mass">0.511 MeV/c²</dd>
+      <dt>Spin</dt><dd id="d-spin">½</dd>
+      <dt>Feels</dt><dd><div class="chips" id="d-forces"></div></dd>
+    </dl>
+    <p class="muted" id="d-blurb" style="margin:12px 0 0"></p>
+  </div>
+
+  <h2>How to read it</h2>
+  <div class="card">
+    <div class="cards">
+      <div class="qc"><b>Matter: 12 fermions</b><p>Six <em>quarks</em> and six <em>leptons</em> (spin ½). Quarks clump into protons and neutrons; the electron is a lepton. Everyday matter uses only the first generation: up, down, electron, and its neutrino.</p></div>
+      <div class="qc"><b>Three generations</b><p>The columns repeat the same pattern three times, each heavier and less stable than the last. Nobody knows <em>why</em> there are exactly three — one of the model's deepest open questions.</p></div>
+      <div class="qc"><b>Forces: 4 gauge bosons</b><p>Forces are carried by particles (spin 1): the <em>gluon</em> (strong), the <em>photon</em> (electromagnetic), and the <em>W</em> and <em>Z</em> (weak). Toggle a force above to see who feels it.</p></div>
+      <div class="qc"><b>The Higgs</b><p>The lone spin-0 particle, confirmed at CERN in 2012. Particles gain mass by coupling to its field — the stronger the coupling, the heavier the particle (why the top quark is so massive).</p></div>
+    </div>
+    <p class="muted" style="margin:12px 0 0">The Standard Model is one of the most precisely tested theories
+      in science — yet it's known to be <b>incomplete</b>. It says nothing about <b>gravity</b>, offers no
+      particle for <b>dark matter</b>, and can't explain why the universe is made of matter rather than
+      antimatter. The next big theory has to include everything here and then some.</p>
+  </div>
+
+  <footer class="site-foot">
+    <span class="views" data-count-path="self" style="visibility:hidden"></span>
+  </footer>
+</main>
+
+<script src="assets/config.js"></script>
+<script src="assets/site.js"></script>
+<script>
+(function () {
+  // col: 1-3 = generations I/II/III, 4 = gauge bosons, 5 = Higgs. row: 1-4 within the grid body.
+  var P = [
+    { sym:"u", name:"Up quark",       cat:"q", col:1, row:1, charge:"+⅔", mass:"≈2.2 MeV/c²",  rank:3,  spin:"½", gen:"I",   forces:["strong","em","weak","higgs"], blurb:"The lightest quark. Two ups plus a down make a proton." },
+    { sym:"c", name:"Charm quark",    cat:"q", col:2, row:1, charge:"+⅔", mass:"≈1.27 GeV/c²", rank:7,  spin:"½", gen:"II",  forces:["strong","em","weak","higgs"], blurb:"A heavier cousin of the up quark, found in short-lived particles." },
+    { sym:"t", name:"Top quark",      cat:"q", col:3, row:1, charge:"+⅔", mass:"≈173 GeV/c²",  rank:17, spin:"½", gen:"III", forces:["strong","em","weak","higgs"], blurb:"The heaviest known elementary particle — as massive as a whole gold atom." },
+    { sym:"d", name:"Down quark",     cat:"q", col:1, row:2, charge:"−⅓", mass:"≈4.7 MeV/c²",  rank:4,  spin:"½", gen:"I",   forces:["strong","em","weak","higgs"], blurb:"One up and two downs make a neutron. Part of every atomic nucleus." },
+    { sym:"s", name:"Strange quark",  cat:"q", col:2, row:2, charge:"−⅓", mass:"≈95 MeV/c²",   rank:6,  spin:"½", gen:"II",  forces:["strong","em","weak","higgs"], blurb:"Named for the unexpectedly long life of the particles it forms." },
+    { sym:"b", name:"Bottom quark",   cat:"q", col:3, row:2, charge:"−⅓", mass:"≈4.18 GeV/c²", rank:8,  spin:"½", gen:"III", forces:["strong","em","weak","higgs"], blurb:"Heavy and useful — 'B' particles are a key probe of matter–antimatter differences." },
+    { sym:"e", name:"Electron",       cat:"l", col:1, row:3, charge:"−1", mass:"0.511 MeV/c²", rank:2,  spin:"½", gen:"I",   forces:["em","weak","higgs"], blurb:"Carries electric current and forms every chemical bond. Utterly stable." },
+    { sym:"μ", name:"Muon",           cat:"l", col:2, row:3, charge:"−1", mass:"105.7 MeV/c²", rank:5,  spin:"½", gen:"II",  forces:["em","weak","higgs"], blurb:"A heavy electron that rains down from cosmic-ray collisions, living ~2 microseconds." },
+    { sym:"τ", name:"Tau",            cat:"l", col:3, row:3, charge:"−1", mass:"1.777 GeV/c²", rank:9,  spin:"½", gen:"III", forces:["em","weak","higgs"], blurb:"The heaviest lepton — so massive it can decay into hadrons." },
+    { sym:"ν<sub>e</sub>",  name:"Electron neutrino", cat:"l", col:1, row:4, charge:"0", mass:"<0.1 eV/c²", rank:1, spin:"½", gen:"I",   forces:["weak"], blurb:"Nearly massless and chargeless — feels only the weak force, so trillions pass through you each second." },
+    { sym:"ν<sub>μ</sub>",  name:"Muon neutrino",     cat:"l", col:2, row:4, charge:"0", mass:"<0.1 eV/c²", rank:1, spin:"½", gen:"II",  forces:["weak"], blurb:"Produced alongside muons; oscillates into other neutrino flavors as it travels." },
+    { sym:"ν<sub>τ</sub>",  name:"Tau neutrino",      cat:"l", col:3, row:4, charge:"0", mass:"<0.1 eV/c²", rank:1, spin:"½", gen:"III", forces:["weak"], blurb:"The last fermion detected (2000). Like all neutrinos, ghostly and hard to catch." },
+    { sym:"g", name:"Gluon",  cat:"b", col:4, row:1, charge:"0",  mass:"0 (massless)",   rank:0, spin:"1", gen:"—", forces:["strong"], blurb:"Carries the strong force and glues quarks together. There are eight of them, and they even pull on each other." },
+    { sym:"γ", name:"Photon", cat:"b", col:4, row:2, charge:"0",  mass:"0 (massless)",   rank:0, spin:"1", gen:"—", forces:["em"], blurb:"The carrier of electromagnetism — and the particle of light itself. Massless, so it travels at c." },
+    { sym:"Z", name:"Z boson", cat:"b", col:4, row:3, charge:"0", mass:"91.19 GeV/c²",   rank:15, spin:"1", gen:"—", forces:["weak","higgs"], blurb:"The neutral carrier of the weak force. Its large mass is why the weak force has such a tiny range." },
+    { sym:"W", name:"W boson", cat:"b", col:4, row:4, charge:"±1", mass:"80.38 GeV/c²",  rank:14, spin:"1", gen:"—", forces:["em","weak","higgs"], blurb:"The charged carrier of the weak force. It drives beta decay by turning one quark flavor into another." },
+    { sym:"H", name:"Higgs boson", cat:"h", col:5, row:1, charge:"0", mass:"125.25 GeV/c²", rank:16, spin:"0", gen:"—", forces:["higgs"], blurb:"A ripple in the Higgs field that gives mass to the other particles. Discovered at the LHC in 2012." }
+  ];
+
+  var FORCES = {
+    strong: { name:"Strong",          desc:"Binds quarks into protons and neutrons, and those into nuclei. Carried by gluons — about 100× stronger than electromagnetism, but only over ~10⁻¹⁵ m. Only quarks and gluons feel it." },
+    em:     { name:"Electromagnetic",  desc:"Acts on anything with electric charge, carried by the photon. It holds electrons to nuclei, so it's behind all of chemistry, light, and electronics." },
+    weak:   { name:"Weak",             desc:"Causes radioactive decay and powers fusion in the Sun. Carried by the heavy W and Z bosons. It's the only force neutrinos feel — and every matter particle feels it." },
+    higgs:  { name:"Higgs",            desc:"Not a force in the everyday sense: coupling to the Higgs field is what gives a particle its mass. Massless particles (photon, gluon) don't couple; the top quark couples the hardest." }
+  };
+  var CATNAME = { q:"Quark", l:"Lepton", b:"Gauge boson", h:"Scalar boson" };
+
+  var grid = document.getElementById("grid");
+  var headers = ["", "Gen I", "Gen II", "Gen III", "Force carriers", "Higgs"];
+  var rowLabels = ["Up-type quarks", "Down-type quarks", "Charged leptons", "Neutrinos"];
+
+  // header row
+  headers.forEach(function (h, i) {
+    var el = document.createElement("div");
+    el.className = "hdr"; el.textContent = h;
+    el.style.gridColumn = (i + 1); el.style.gridRow = 1;
+    grid.appendChild(el);
+  });
+  // row labels down the left
+  rowLabels.forEach(function (t, r) {
+    var el = document.createElement("div");
+    el.className = "rlbl"; el.textContent = t;
+    el.style.gridColumn = 1; el.style.gridRow = r + 2;
+    grid.appendChild(el);
+  });
+  // particle tiles
+  P.forEach(function (p) {
+    var el = document.createElement("div");
+    el.className = "p " + p.cat; el.dataset.id = p.name;
+    el.style.gridColumn = p.col + 1;                 // +1 for the row-label column
+    if (p.cat === "h") { el.style.gridColumn = 6; el.style.gridRow = "2 / span 4"; }
+    else { el.style.gridRow = p.row + 1; }
+    el.innerHTML = (p.rank ? '<span class="cn">' + p.rank + '</span>' : '') +
+      '<div class="sym">' + p.sym + '</div><div class="nm">' + p.name.replace(/ (quark|neutrino)$/, '') + '</div>';
+    el.onclick = function () { select(p); };
+    p._el = el;
+    grid.appendChild(el);
+  });
+
+  function select(p) {
+    P.forEach(function (q) { q._el.classList.toggle("sel", q === p); });
+    document.getElementById("d-sym").innerHTML = p.sym;
+    document.getElementById("d-name").textContent = p.name;
+    document.getElementById("d-tag").textContent = CATNAME[p.cat] + (p.gen !== "—" ? " · Generation " + p.gen : "");
+    document.getElementById("d-charge").textContent = p.charge;
+    document.getElementById("d-mass").textContent = p.mass;
+    document.getElementById("d-spin").textContent = p.spin;
+    document.getElementById("d-blurb").textContent = p.blurb;
+    var chips = p.forces.map(function (f) { return '<span class="chip">' + FORCES[f].name + '</span>'; });
+    document.getElementById("d-forces").innerHTML = chips.join("") || '<span class="chip">— gravity only</span>';
+  }
+
+  var FCOLOR = { strong:"#b07cff", em:"#6db4ff", weak:"#f4b942", higgs:"#ff6b6b" };
+  var activeForce = "";
+  function applyForce(f) {
+    activeForce = f;
+    document.querySelectorAll("#forcebar .fbtn").forEach(function (b) {
+      var on = b.dataset.f === f;
+      b.classList.toggle("active", on);
+      b.style.background = on && f ? FCOLOR[f] : "";
+      b.style.borderColor = on && f ? FCOLOR[f] : "";
+    });
+    P.forEach(function (p) {
+      var feels = !f || p.forces.indexOf(f) !== -1;
+      p._el.classList.toggle("dim", !feels);
+      p._el.classList.toggle("hot", !!f && feels);
+    });
+    document.getElementById("fnote").innerHTML = f
+      ? "<b>" + FORCES[f].name + " force.</b> " + FORCES[f].desc
+      : "Pick a force above, or tap a particle to see its details below.";
+  }
+  document.querySelectorAll("#forcebar .fbtn").forEach(function (b) {
+    b.onclick = function () { applyForce(b.dataset.f); };
+  });
+
+  select(P[6]);   // start on the electron
+})();
+</script>
