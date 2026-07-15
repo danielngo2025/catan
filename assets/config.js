@@ -35,5 +35,7 @@ window.SITE = {
       blurb: "Why moving clocks run slow — slide a light clock toward light speed and watch time dilate and lengths contract, all because light's speed never changes." },
     { path: "electromagnetism.html", title: "Electromagnetism", emoji: "🧲",
       blurb: "Electricity, magnetism and light are one thing — watch perpendicular E and B fields propagate and sweep the frequency across the whole spectrum." },
+    { path: "bigbang.html", title: "The Big Bang", emoji: "💥",
+      blurb: "The expanding universe — watch galaxies fly apart by Hubble's law, redshift with distance, and see why the expansion has no center." },
   ],
 };

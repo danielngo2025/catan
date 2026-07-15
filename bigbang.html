@@ -1,0 +1,169 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Big Bang · Visual Learn Lab</title>
+<meta name="description" content="The Big Bang, made visual — watch a field of galaxies expand, see Hubble's law (farther means faster) and redshift, and discover why the expanding universe has no center.">
+<link rel="stylesheet" href="assets/site.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>💥</text></svg>">
+<style>
+  canvas{width:100%;background:radial-gradient(circle at 50% 50%,#0c1424,#05080f);border:1px solid var(--line);border-radius:12px;display:block;cursor:pointer}
+  .metrics{display:flex;gap:14px;flex-wrap:wrap;margin:14px 0 0}
+  .metric{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 14px;min-width:120px}
+  .metric .v{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
+  .metric .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .btnrow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}
+  .hintbox{background:linear-gradient(180deg,#1a2c49,#16233a);border:1px solid var(--accent);border-radius:10px;padding:12px 14px;margin-top:14px}
+  .timeline{display:flex;gap:0;flex-wrap:wrap;margin-top:4px;border-radius:10px;overflow:hidden;border:1px solid var(--line)}
+  .ep{flex:1 1 130px;background:var(--panel2);padding:10px 12px;border-right:1px solid var(--line)}
+  .ep:last-child{border-right:0}
+  .ep b{display:block;color:var(--ink);font-size:13px}
+  .ep span{color:var(--muted);font-size:12px}
+  .ep .t{color:var(--accent);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-top:4px}
+  .qc{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .qc b{color:var(--ink)} .qc p{margin:4px 0 0;color:var(--muted);font-size:13px}
+</style>
+
+<div id="site-nav"></div>
+
+<main class="page">
+  <h1>💥 The Big Bang — the expanding universe</h1>
+  <p class="lede">In the 1920s Edwin Hubble found that almost every galaxy is rushing away from us — and the
+    farther one is, the faster it flees. Rewind that expansion and everything converges: about <b>13.8 billion
+    years</b> ago the entire observable universe was packed into an unimaginably hot, dense point, and it has
+    been expanding ever since. Below is a field of galaxies. Hit <b>Expand</b> and watch space stretch —
+    distant galaxies redshift and race away fastest. Then <b>click any galaxy</b> to make it "home."</p>
+
+  <div class="card">
+    <canvas id="stage" width="720" height="380"></canvas>
+    <div class="metrics">
+      <div class="metric"><div class="v" id="m-scale">1.00×</div><div class="k">Scale factor</div></div>
+      <div class="metric"><div class="v" id="m-state">Paused</div><div class="k">Expansion</div></div>
+      <div class="metric"><div class="v" id="m-home">Center</div><div class="k">"Home" galaxy</div></div>
+    </div>
+    <div class="btnrow">
+      <button class="primary" id="play">▶ Expand</button>
+      <button id="rewind">⏪ Rewind to Big Bang</button>
+      <button id="reset">Reset</button>
+      <span class="muted">Tip: click a galaxy to re-center the view on it.</span>
+    </div>
+    <div class="hintbox" id="hint"></div>
+  </div>
+
+  <h2>A brief history of everything</h2>
+  <div class="card" style="padding:0;background:transparent;border:0">
+    <div class="timeline">
+      <div class="ep"><span class="t">0</span><b>Big Bang</b><span>hot, dense start</span></div>
+      <div class="ep"><span class="t">10⁻³² s</span><b>Inflation</b><span>space balloons</span></div>
+      <div class="ep"><span class="t">3 min</span><b>First nuclei</b><span>H &amp; He form</span></div>
+      <div class="ep"><span class="t">380,000 yr</span><b>First atoms</b><span>light escapes (CMB)</span></div>
+      <div class="ep"><span class="t">~200 M yr</span><b>First stars</b><span>darkness ends</span></div>
+      <div class="ep"><span class="t">13.8 B yr</span><b>Today</b><span>you, here, now</span></div>
+    </div>
+  </div>
+
+  <h2>What the expansion tells us</h2>
+  <div class="card">
+    <div class="cards">
+      <div class="qc"><b>Hubble's law</b><p>Recession speed is proportional to distance: a galaxy twice as far away recedes twice as fast. Watch the outer galaxies pull away fastest — that's the signature of uniform expansion.</p></div>
+      <div class="qc"><b>Space itself stretches</b><p>Galaxies aren't flying <em>through</em> space from an explosion — the space <em>between</em> them is growing. The wave­lengths of their light get stretched too, shifting it red.</p></div>
+      <div class="qc"><b>There is no center</b><p>Click any galaxy: every observer sees the same thing — everyone else rushing away from <em>them</em>. The Big Bang happened everywhere at once, not at one point in space.</p></div>
+      <div class="qc"><b>The evidence</b><p>Three pillars: the redshift of galaxies, the leftover heat glow (the cosmic microwave background), and the exact ratio of hydrogen to helium the theory predicts.</p></div>
+    </div>
+    <p class="muted" style="margin:12px 0 0">The expansion isn't just continuing — it's <b>accelerating</b>, driven by a mysterious
+      <b>dark energy</b> that makes up ~68% of the universe. What it is remains one of the biggest open questions in
+      physics. The Big Bang explains the universe's history astonishingly well, yet what banged, and why, is still unknown.</p>
+  </div>
+
+  <footer class="site-foot">
+    <span class="views" data-count-path="self" style="visibility:hidden"></span>
+  </footer>
+</main>
+
+<script src="assets/config.js"></script>
+<script src="assets/site.js"></script>
+<script>
+(function () {
+  var c = document.getElementById("stage"), x = c.getContext("2d");
+  var W = c.width, H = c.height, cxp = W / 2, cyp = H / 2, SC = 92;
+  var a = 1, playing = false, home = 0;
+  var gal = [];
+
+  function frac(n) { var s = Math.sin(n * 12.9898) * 43758.5453; return s - Math.floor(s); }
+  (function build() {
+    var cols = 9, rows = 7, sp = 0.62, i = 0;
+    for (var r = 0; r < rows; r++) for (var col = 0; col < cols; col++) {
+      var gx = (col - (cols - 1) / 2) * sp + (frac(i * 3 + 1) - 0.5) * 0.34;
+      var gy = (r - (rows - 1) / 2) * sp + (frac(i * 5 + 2) - 0.5) * 0.34;
+      gal.push({ gx: gx, gy: gy, rad: 2 + frac(i * 7 + 3) * 2.4 });
+      i++;
+    }
+    // default home = galaxy nearest comoving origin
+    var best = 1e9; for (var k = 0; k < gal.length; k++) { var d = gal[k].gx * gal[k].gx + gal[k].gy * gal[k].gy; if (d < best) { best = d; home = k; } }
+  })();
+
+  function screenPos(g) {
+    return [cxp + (g.gx - gal[home].gx) * a * SC, cyp + (g.gy - gal[home].gy) * a * SC];
+  }
+  // color by recession speed (∝ comoving distance from home) → redshift
+  function color(dc) {
+    var t = Math.max(0, Math.min(1, dc / 3));         // 0 near, 1 far
+    var hue = 210 - t * 210;                          // blue → red
+    return "hsl(" + hue + ",85%," + (64 - t * 12) + "%)";
+  }
+
+  function render() {
+    x.clearRect(0, 0, W, H);
+    var hg = gal[home];
+    for (var i = 0; i < gal.length; i++) {
+      var g = gal[i], p = screenPos(g);
+      var dc = Math.hypot(g.gx - hg.gx, g.gy - hg.gy);
+      // recession arrow (radially outward, length ∝ distance) — the Hubble signature
+      if (i !== home && dc > 0.01 && p[0] > -20 && p[0] < W + 20 && p[1] > -20 && p[1] < H + 20) {
+        var ux = (p[0] - cxp), uy = (p[1] - cyp), L = Math.hypot(ux, uy) || 1;
+        var arr = Math.min(26, dc * a * 7);
+        x.strokeStyle = "rgba(147,164,191,.25)"; x.lineWidth = 1;
+        x.beginPath(); x.moveTo(p[0], p[1]); x.lineTo(p[0] + ux / L * arr, p[1] + uy / L * arr); x.stroke();
+      }
+      if (p[0] < -10 || p[0] > W + 10 || p[1] < -10 || p[1] > H + 10) continue;
+      x.fillStyle = i === home ? "#fff" : color(dc);
+      x.beginPath(); x.arc(p[0], p[1], g.rad, 0, 7); x.fill();
+      if (i === home) { x.strokeStyle = "var(--accent)"; x.strokeStyle = "#f4b942"; x.lineWidth = 2; x.beginPath(); x.arc(p[0], p[1], g.rad + 5, 0, 7); x.stroke(); }
+    }
+  }
+
+  function updateStats() {
+    document.getElementById("m-scale").textContent = a.toFixed(2) + "×";
+    document.getElementById("m-state").textContent = playing ? "Expanding" : "Paused";
+    document.getElementById("m-home").textContent = "#" + (home + 1);
+    document.getElementById("hint").innerHTML = a < 0.5
+      ? "💥 Near the Big Bang everything is crammed together. Press <b>Expand</b> and watch space stretch — galaxies that start farther apart separate faster."
+      : "💥 Every galaxy recedes from <b>home</b>, and the farther ones (redder) recede faster — that's <b>Hubble's law</b>. Click a different galaxy: it looks the same from there. There's no center.";
+  }
+
+  var frame = 0;
+  function loop() {
+    if (playing) { a *= 1.006; if (a > 8) { a = 8; playing = false; } }   // accelerating expansion, capped
+    render(); if (frame++ % 8 === 0) updateStats(); requestAnimationFrame(loop);
+  }
+
+  document.getElementById("play").onclick = function () {
+    playing = !playing; this.textContent = playing ? "⏸ Pause" : "▶ Expand"; this.classList.toggle("primary", !playing); updateStats();
+  };
+  document.getElementById("rewind").onclick = function () {
+    a = 0.18; playing = false; document.getElementById("play").textContent = "▶ Expand"; document.getElementById("play").classList.add("primary"); updateStats();
+  };
+  document.getElementById("reset").onclick = function () {
+    a = 1; playing = false; document.getElementById("play").textContent = "▶ Expand"; document.getElementById("play").classList.add("primary"); updateStats();
+  };
+  c.addEventListener("click", function (ev) {
+    var rect = c.getBoundingClientRect(), sx = c.width / rect.width, sy = c.height / rect.height;
+    var mx = (ev.clientX - rect.left) * sx, my = (ev.clientY - rect.top) * sy;
+    var best = 1e9, bi = -1;
+    for (var i = 0; i < gal.length; i++) { var p = screenPos(gal[i]); var d = Math.hypot(p[0] - mx, p[1] - my); if (d < best) { best = d; bi = i; } }
+    if (bi >= 0 && best < 40) { home = bi; updateStats(); }
+  });
+
+  updateStats(); loop();
+})();
+</script>
