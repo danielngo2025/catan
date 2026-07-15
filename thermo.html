@@ -1,0 +1,167 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Thermodynamics · Visual Learn Lab</title>
+<meta name="description" content="The Second Law of Thermodynamics, made visual — release a gas in a box and watch entropy climb toward its maximum and never reverse.">
+<link rel="stylesheet" href="assets/site.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🌡️</text></svg>">
+<style>
+  canvas{width:100%;background:#0a1220;border:1px solid var(--line);border-radius:12px;display:block}
+  .metrics{display:flex;gap:14px;flex-wrap:wrap;margin:14px 0 0}
+  .metric{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 14px;min-width:110px}
+  .metric .v{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums}
+  .metric .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .ebar-wrap{margin-top:14px}
+  .ebar-wrap .lbl{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:4px}
+  .ebar{height:14px;border-radius:8px;background:var(--panel2);border:1px solid var(--line);overflow:hidden}
+  .ebar i{display:block;height:100%;background:linear-gradient(90deg,#3fce8f,#f4b942);transition:width .12s linear}
+  .btnrow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}
+  .hintbox{background:linear-gradient(180deg,#1a2c49,#16233a);border:1px solid var(--accent);border-radius:10px;padding:12px 14px;margin-top:14px}
+  .laws{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:4px}
+  .law{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .law b{color:var(--ink)} .law p{margin:4px 0 0;color:var(--muted);font-size:13px}
+</style>
+
+<div id="site-nav"></div>
+
+<main class="page">
+  <h1>🌡️ Thermodynamics — entropy &amp; the arrow of time</h1>
+  <p class="lede">The most famous law of thermodynamics — the Second — says the <b>entropy</b> (disorder)
+    of an isolated system only ever goes up. It's why heat flows from hot to cold, why your coffee cools
+    but never spontaneously reheats, and why the past is different from the future. Below, all the gas
+    starts crammed in the left half. Hit <b>Release</b> and watch it spread to fill the box — and watch
+    entropy climb to its maximum and stay there.</p>
+
+  <div class="card">
+    <canvas id="box" width="680" height="330"></canvas>
+    <div class="metrics">
+      <div class="metric"><div class="v" id="m-left">—</div><div class="k">Particles left</div></div>
+      <div class="metric"><div class="v" id="m-right">—</div><div class="k">Particles right</div></div>
+      <div class="metric"><div class="v" id="m-ent">0%</div><div class="k">Entropy (of max)</div></div>
+      <div class="metric"><div class="v" id="m-time">0</div><div class="k">Steps elapsed</div></div>
+    </div>
+    <div class="ebar-wrap">
+      <div class="lbl"><span>ordered (all on one side)</span><span>maximum disorder (evenly mixed)</span></div>
+      <div class="ebar"><i id="efill" style="width:0%"></i></div>
+    </div>
+    <div class="btnrow">
+      <button class="primary" id="release">▶ Release the gas</button>
+      <button id="reset">Reset (cram left)</button>
+      <label class="field">Particles <input type="range" id="count" min="40" max="400" step="20" value="200"><b id="countv">200</b></label>
+    </div>
+    <div class="hintbox" id="hint"></div>
+  </div>
+
+  <h2>The four laws (in plain English)</h2>
+  <div class="card">
+    <div class="laws">
+      <div class="law"><b>0th — Equilibrium</b><p>If A and B are each in thermal balance with C, they're in balance with each other. This is what lets a thermometer work.</p></div>
+      <div class="law"><b>1st — Energy is conserved</b><p>You can't create or destroy energy, only move or convert it. Heat + work in = change in internal energy. No free lunch.</p></div>
+      <div class="law"><b>2nd — Entropy increases</b><p>Isolated systems drift toward disorder. Heat flows hot→cold on its own; the reverse needs work. This is the arrow of time (shown above).</p></div>
+      <div class="law"><b>3rd — Absolute zero</b><p>As temperature approaches 0&nbsp;K, entropy approaches a minimum — and you can never quite reach 0&nbsp;K in finite steps.</p></div>
+    </div>
+    <p class="muted" style="margin:12px 0 0">Why won't the gas ever cram itself back into the left half on
+      its own? It <em>could</em> — but the odds of all N particles being on one side at once are about
+      <b>1 in 2<sup>N</sup></b>. For just 200 particles that's 1 in ~10<sup>60</sup>: you'd wait far
+      longer than the age of the universe. Entropy doesn't rise because it's a law of force — it rises
+      because disorder is overwhelmingly more likely than order.</p>
+  </div>
+
+  <footer class="site-foot">
+    <span class="views" data-count-path="self" style="visibility:hidden"></span>
+  </footer>
+</main>
+
+<script src="assets/config.js"></script>
+<script src="assets/site.js"></script>
+<script>
+(function () {
+  var c = document.getElementById("box"), x = c.getContext("2d");
+  var W = c.width, H = c.height, R = 3, mid = W / 2;
+  var parts = [], N = 200, steps = 0, running = false, raf = null;
+
+  function reset() {
+    running = false; steps = 0;
+    if (raf) { cancelAnimationFrame(raf); raf = null; }
+    document.getElementById("release").textContent = "▶ Release the gas";
+    document.getElementById("release").classList.add("primary");
+    parts = [];
+    for (var i = 0; i < N; i++) {
+      var ang = Math.PI * (0.15 + 0.7 * frac(i * 7 + 3));   // deterministic-ish spread of directions
+      var sp = 1.6 + 1.2 * frac(i * 13 + 5);
+      parts.push({
+        x: R + frac(i * 3 + 1) * (mid - 2 * R),             // left half only
+        y: R + frac(i * 5 + 2) * (H - 2 * R),
+        vx: Math.cos(ang) * sp * (frac(i) < .5 ? 1 : -1),
+        vy: Math.sin(ang) * sp * (frac(i * 2) < .5 ? 1 : -1)
+      });
+    }
+    render(); updateStats();
+  }
+  // small deterministic pseudo-random in [0,1) (Math.random avoided for reproducible layout)
+  function frac(n) { var s = Math.sin(n * 12.9898) * 43758.5453; return s - Math.floor(s); }
+
+  function step() {
+    for (var i = 0; i < parts.length; i++) {
+      var p = parts[i];
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < R) { p.x = R; p.vx = -p.vx; }
+      else if (p.x > W - R) { p.x = W - R; p.vx = -p.vx; }
+      if (p.y < R) { p.y = R; p.vy = -p.vy; }
+      else if (p.y > H - R) { p.y = H - R; p.vy = -p.vy; }
+    }
+    steps++;
+  }
+
+  function render() {
+    x.clearRect(0, 0, W, H);
+    // faint divider line
+    x.strokeStyle = "#1d2f4d"; x.setLineDash([5, 5]); x.lineWidth = 1;
+    x.beginPath(); x.moveTo(mid, 0); x.lineTo(mid, H); x.stroke(); x.setLineDash([]);
+    // particles
+    for (var i = 0; i < parts.length; i++) {
+      var p = parts[i];
+      x.fillStyle = p.x < mid ? "#6db4ff" : "#f4b942";
+      x.beginPath(); x.arc(p.x, p.y, R, 0, 7); x.fill();
+    }
+  }
+
+  function updateStats() {
+    var left = 0;
+    for (var i = 0; i < parts.length; i++) if (parts[i].x < mid) left++;
+    var right = parts.length - left, f = parts.length ? left / parts.length : 0;
+    var S = mixS(f) / Math.log(2);           // 0..1, fraction of maximum entropy
+    document.getElementById("m-left").textContent = left;
+    document.getElementById("m-right").textContent = right;
+    document.getElementById("m-ent").textContent = Math.round(S * 100) + "%";
+    document.getElementById("m-time").textContent = steps;
+    document.getElementById("efill").style.width = (S * 100).toFixed(0) + "%";
+    var pct = Math.round(S * 100);
+    document.getElementById("hint").innerHTML = pct < 8
+      ? "🎯 Low entropy: the gas is ordered (all on the left). This is a special, unlikely state — press <b>Release</b>."
+      : pct > 88
+        ? "🎯 Maximum entropy reached: the gas is evenly mixed (~50/50). It now just fluctuates near the max and will essentially never return to the ordered state on its own."
+        : "🎯 Entropy is rising as the gas spreads out — the system is marching from an unlikely ordered state toward the overwhelmingly likely mixed one.";
+  }
+  function mixS(f) { return (f <= 0 || f >= 1) ? 0 : -(f * Math.log(f) + (1 - f) * Math.log(1 - f)); }
+
+  function loop() {
+    step(); render();
+    if (steps % 3 === 0) updateStats();
+    raf = requestAnimationFrame(loop);
+  }
+
+  document.getElementById("release").onclick = function () {
+    running = !running;
+    var b = document.getElementById("release");
+    if (running) { b.textContent = "⏸ Pause"; b.classList.remove("primary"); loop(); }
+    else { b.textContent = "▶ Release the gas"; b.classList.add("primary"); if (raf) cancelAnimationFrame(raf); raf = null; }
+  };
+  document.getElementById("reset").onclick = reset;
+  document.getElementById("count").addEventListener("input", function () {
+    N = +this.value; document.getElementById("countv").textContent = N; reset();
+  });
+
+  reset();
+})();
+</script>

@@ -23,5 +23,7 @@ window.SITE = {
       blurb: "The math of tiny gains — improve 1% a day and see why continuous improvement beats big one-off pushes." },
     { path: "uncertainty.html", title: "Uncertainty Principle", emoji: "⚛️",
       blurb: "Heisenberg's rule: pin down a particle's position and its momentum blurs. Squeeze one, watch the other spread." },
+    { path: "thermo.html",  title: "Thermodynamics",    emoji: "🌡️",
+      blurb: "Why heat flows one way and time has an arrow — release a gas, watch entropy climb, and see why it never un-mixes." },
   ],
 };
