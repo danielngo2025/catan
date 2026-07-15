@@ -7,6 +7,9 @@ window.SITE = {
   // Leave "" to disable analytics until you've created the account.
   goatcounterCode: "learn-lab",
 
+  // Where the "Expert feedback" button sends corrections (opens the visitor's mail app).
+  feedbackEmail: "danhtnn@gmail.com",
+
   // Ordered list drives the homepage grid. `group` drives the nav dropdown menus
   // (groups appear in the order they first show up below).
   topics: [

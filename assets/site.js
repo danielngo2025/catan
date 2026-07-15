@@ -85,9 +85,52 @@
     document.querySelectorAll("[data-count-path]").forEach(function (el) { el.style.display = "none"; });
   }
 
+  // --- Expert feedback widget (topic pages only; corrections are emailed, never shown on the site) ---
+  function injectFeedback() {
+    if (file === "index.html") return;                 // per-idea only
+    var email = SITE.feedbackEmail;
+    if (!email) return;
+    var topic = SITE.topics.filter(function (t) { return t.path === file; })[0];
+    var title = topic ? topic.title : (document.title || "").split(" ·")[0];
+    var wrap = document.createElement("div");
+    wrap.className = "fb-wrap";
+    wrap.innerHTML =
+      '<button class="fb-btn" id="fb-open">💬 Expert feedback</button>' +
+      '<div class="fb-panel" id="fb-panel" hidden>' +
+        '<div class="fb-head"><span>Expert feedback</span><button class="fb-x" id="fb-x" aria-label="Close">✕</button></div>' +
+        '<div id="fb-body">' +
+          '<p class="fb-note">See something wrong in the explanation or visualization for <b>' + title +
+            '</b>? Send a correction — it\'s emailed privately and never posted on the site.</p>' +
+          '<input class="fb-in" id="fb-name" placeholder="Your name / credentials (optional)">' +
+          '<textarea class="fb-in fb-text" id="fb-text" rows="5" placeholder="What is incorrect, and what should it say instead?"></textarea>' +
+          '<div class="fb-actions"><button class="fb-send" id="fb-send">Send via email</button></div>' +
+        '</div>' +
+        '<div class="fb-done" id="fb-done" hidden>📨 Opening your email app… If nothing opens, email <b>' + email + '</b> directly.</div>' +
+      '</div>';
+    document.body.appendChild(wrap);
+
+    var panel = document.getElementById("fb-panel");
+    document.getElementById("fb-open").onclick = function () {
+      panel.hidden = !panel.hidden;
+      if (!panel.hidden) document.getElementById("fb-text").focus();
+    };
+    document.getElementById("fb-x").onclick = function () { panel.hidden = true; };
+    document.getElementById("fb-send").onclick = function () {
+      var txt = document.getElementById("fb-text").value.trim();
+      if (!txt) { document.getElementById("fb-text").focus(); return; }
+      var name = document.getElementById("fb-name").value.trim();
+      var subject = "Expert Feedback: " + title;
+      var body = "Idea: " + title + " (" + realPath + ")\nFrom: " + (name || "(anonymous)") + "\n\n" + txt;
+      window.location.href = "mailto:" + email + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
+      document.getElementById("fb-body").hidden = true;
+      document.getElementById("fb-done").hidden = false;
+    };
+  }
+
   window.LAB = { fetchCount: fetchCount, renderCounts: renderCounts, path: realPath, basedir: basedir };
 
   buildNav();
+  injectFeedback();
   loadAnalytics();
   if (document.readyState !== "loading") renderCounts();
   else document.addEventListener("DOMContentLoaded", renderCounts);

@@ -82,6 +82,27 @@ button.primary{background:var(--accent);color:#241a00;border-color:var(--accent)
   text-align:center;padding:22px 16px}
 .site-foot .views{position:static}
 
+/* --- expert feedback widget (injected by site.js on topic pages) --- */
+.fb-wrap{position:fixed;right:18px;bottom:18px;z-index:300;display:flex;flex-direction:column;align-items:flex-end;gap:10px}
+.fb-btn{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:999px;
+  padding:10px 16px;font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.35)}
+.fb-btn:hover{border-color:var(--accent)}
+.fb-panel{width:min(360px,92vw);background:var(--panel);border:1px solid var(--line);border-radius:14px;
+  padding:14px;box-shadow:0 16px 44px rgba(0,0,0,.55)}
+.fb-panel[hidden]{display:none}
+.fb-head{display:flex;justify-content:space-between;align-items:center;font-weight:800;margin-bottom:8px}
+.fb-x{background:none;border:0;color:var(--muted);font-size:16px;cursor:pointer;line-height:1}
+.fb-x:hover{color:var(--ink)}
+.fb-note{color:var(--muted);font-size:12.5px;line-height:1.5;margin:0 0 10px}
+.fb-in{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:8px;color:var(--ink);
+  padding:8px 10px;font:inherit;font-size:13px;margin-bottom:8px}
+.fb-in:focus{outline:none;border-color:var(--accent)}
+.fb-text{resize:vertical;min-height:90px}
+.fb-actions{display:flex;justify-content:flex-end}
+.fb-send{background:var(--accent);color:#241a00;border:0;border-radius:8px;padding:8px 15px;font-weight:700;cursor:pointer}
+.fb-done{color:var(--good);font-size:13px;line-height:1.5}
+.fb-done[hidden]{display:none}
+
 @media(max-width:640px){
   .hero h1{font-size:30px}
   .nav .brand{font-size:14px}
