@@ -29,5 +29,7 @@ window.SITE = {
       blurb: "The double-slit experiment — fire particles one at a time to build an interference pattern, then watch it collapse when you detect which slit they use." },
     { path: "standardmodel.html", title: "Standard Model", emoji: "🧩",
       blurb: "The 17 elementary particles that build everything — tap any tile to inspect its mass and charge, and light up which ones feel each fundamental force." },
+    { path: "relativity.html", title: "General Relativity", emoji: "🌌",
+      blurb: "Gravity is curved spacetime — warp the grid with a mass, launch a probe, and watch its orbit precess the way Einstein predicts but Newton can't." },
   ],
 };
