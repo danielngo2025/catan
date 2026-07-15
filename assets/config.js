@@ -39,5 +39,7 @@ window.SITE = {
       blurb: "The expanding universe — watch galaxies fly apart by Hubble's law, redshift with distance, and see why the expansion has no center." },
     { path: "qft.html", title: "Quantum Field Theory", emoji: "🌊",
       blurb: "Particles are ripples in fields — poke excitations into a quantum field, annihilate matter with antimatter, and watch the vacuum bubble with virtual pairs." },
+    { path: "statmech.html", title: "Statistical Mechanics", emoji: "🎲",
+      blurb: "Order from molecular chaos — start every particle at one speed and watch collisions thermalize the gas into the Maxwell–Boltzmann distribution." },
   ],
 };

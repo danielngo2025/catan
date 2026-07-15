@@ -1,0 +1,179 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Statistical Mechanics · Visual Learn Lab</title>
+<meta name="description" content="Statistical mechanics, made visual — start every particle at the same speed and watch collisions alone thermalize the gas into the Maxwell–Boltzmann distribution, with temperature emerging as average kinetic energy.">
+<link rel="stylesheet" href="assets/site.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🎲</text></svg>">
+<style>
+  canvas{width:100%;background:#0a1220;border:1px solid var(--line);border-radius:12px;display:block}
+  .metrics{display:flex;gap:14px;flex-wrap:wrap;margin:14px 0 0}
+  .metric{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 14px;min-width:120px}
+  .metric .v{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
+  .metric .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .btnrow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}
+  .hintbox{background:linear-gradient(180deg,#1a2c49,#16233a);border:1px solid var(--accent);border-radius:10px;padding:12px 14px;margin-top:14px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-top:4px}
+  .qc{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .qc b{color:var(--ink)} .qc p{margin:4px 0 0;color:var(--muted);font-size:13px}
+</style>
+
+<div id="site-nav"></div>
+
+<main class="page">
+  <h1>🎲 Statistical Mechanics — order out of molecular chaos</h1>
+  <p class="lede">You can't track 10²³ molecules — but you don't have to. Statistical mechanics is the bridge
+    that turns the <b>random motion of countless particles</b> into the smooth, predictable laws of
+    <b>temperature, pressure, and heat</b>. Watch it happen below: every particle starts at the <b>exact same
+    speed</b>, but collisions quickly scramble them into a fixed, universal shape — the <b>Maxwell–Boltzmann
+    distribution</b>. No one designs that curve; it emerges. And <b>temperature</b> turns out to be nothing but
+    the average kinetic energy of the crowd.</p>
+
+  <div class="card">
+    <canvas id="stage" width="720" height="400"></canvas>
+    <div class="metrics">
+      <div class="metric"><div class="v" id="m-temp">—</div><div class="k">Temperature (∝ avg KE)</div></div>
+      <div class="metric"><div class="v" id="m-avg">—</div><div class="k">Average speed</div></div>
+      <div class="metric"><div class="v" id="m-coll">0</div><div class="k">Collisions</div></div>
+    </div>
+    <div class="btnrow">
+      <button class="primary" id="reset">↺ Reset (all equal speed)</button>
+      <button id="heat">🔥 Add heat</button>
+      <button id="cool">❄️ Cool down</button>
+    </div>
+    <div class="hintbox" id="hint"></div>
+  </div>
+
+  <h2>The bridge from micro to macro</h2>
+  <div class="card">
+    <div class="cards">
+      <div class="qc"><b>Temperature is average energy</b><p>Heat isn't a substance — it's motion. Temperature is just the mean kinetic energy of the particles. "Hot" literally means "jiggling faster."</p></div>
+      <div class="qc"><b>The distribution is inevitable</b><p>Start everyone at one speed and collisions spread them into the Maxwell–Boltzmann curve — a few slowpokes, a few speedsters, most near the middle. It's the overwhelmingly most likely arrangement.</p></div>
+      <div class="qc"><b>Macro laws are averages</b><p>Pressure is countless tiny impacts averaged over a wall; the gas laws (PV = nRT) fall out of the statistics. Reliable large-scale rules from unpredictable individuals.</p></div>
+      <div class="qc"><b>Entropy = counting</b><p>The Second Law is really about odds: there are vastly more disordered arrangements than ordered ones, so systems drift toward disorder. It links straight to thermodynamics.</p></div>
+    </div>
+    <p class="muted" style="margin:12px 0 0">This is how physics connects the two worlds: the microscopic laws are reversible and
+      chaotic, yet averaging over enormous numbers produces the steady, irreversible behavior we actually experience.
+      The same statistical thinking underpins chemistry, materials science, and even information theory.</p>
+  </div>
+
+  <footer class="site-foot">
+    <span class="views" data-count-path="self" style="visibility:hidden"></span>
+  </footer>
+</main>
+
+<script src="assets/config.js"></script>
+<script src="assets/site.js"></script>
+<script>
+(function () {
+  var c = document.getElementById("stage"), x = c.getContext("2d");
+  var W = c.width, H = c.height, R = 6, N = 170, S0 = 2.4;
+  var box = { x0: 8, y0: 8, x1: 440, y1: H - 8 };
+  var hist = { x0: 462, x1: W - 12, y0: 24, y1: H - 34, bins: 22, vmax: 7 };
+  var ps = [], collisions = 0;
+
+  function reset() {
+    ps = []; collisions = 0;
+    for (var i = 0; i < N; i++) {
+      var ang = 2 * Math.PI * Math.random();
+      ps.push({ x: box.x0 + R + Math.random() * (box.x1 - box.x0 - 2 * R),
+                y: box.y0 + R + Math.random() * (box.y1 - box.y0 - 2 * R),
+                vx: Math.cos(ang) * S0, vy: Math.sin(ang) * S0 });
+    }
+  }
+
+  function step() {
+    var i, j, p;
+    for (i = 0; i < ps.length; i++) {
+      p = ps[i]; p.x += p.vx; p.y += p.vy;
+      if (p.x < box.x0 + R) { p.x = box.x0 + R; p.vx = Math.abs(p.vx); }
+      else if (p.x > box.x1 - R) { p.x = box.x1 - R; p.vx = -Math.abs(p.vx); }
+      if (p.y < box.y0 + R) { p.y = box.y0 + R; p.vy = Math.abs(p.vy); }
+      else if (p.y > box.y1 - R) { p.y = box.y1 - R; p.vy = -Math.abs(p.vy); }
+    }
+    // elastic equal-mass collisions: swap the velocity components along the line of centers
+    for (i = 0; i < ps.length; i++) for (j = i + 1; j < ps.length; j++) {
+      var a = ps[i], b = ps[j], dx = b.x - a.x, dy = b.y - a.y, d2 = dx * dx + dy * dy;
+      if (d2 < (2 * R) * (2 * R) && d2 > 0.0001) {
+        var d = Math.sqrt(d2), nx = dx / d, ny = dy / d;
+        var dvx = b.vx - a.vx, dvy = b.vy - a.vy, rel = dvx * nx + dvy * ny;
+        if (rel < 0) {                                    // only if approaching
+          a.vx += rel * nx; a.vy += rel * ny; b.vx -= rel * nx; b.vy -= rel * ny;
+          var overlap = (2 * R - d) / 2;                   // separate so they don't stick
+          a.x -= nx * overlap; a.y -= ny * overlap; b.x += nx * overlap; b.y += ny * overlap;
+          collisions++;
+        }
+      }
+    }
+  }
+
+  function speed(p) { return Math.hypot(p.vx, p.vy); }
+  function speedColor(s) {
+    var t = Math.max(0, Math.min(1, s / 5));
+    return "hsl(" + (210 - t * 210) + ",85%,62%)";       // slow blue → fast red
+  }
+
+  function render() {
+    x.clearRect(0, 0, W, H);
+    // box
+    x.strokeStyle = "#28406a"; x.lineWidth = 1; x.strokeRect(box.x0, box.y0, box.x1 - box.x0, box.y1 - box.y0);
+    for (var i = 0; i < ps.length; i++) {
+      var p = ps[i]; x.fillStyle = speedColor(speed(p));
+      x.beginPath(); x.arc(p.x, p.y, R, 0, 7); x.fill();
+    }
+    drawHist();
+  }
+
+  function drawHist() {
+    var counts = new Array(hist.bins).fill(0), bw = hist.vmax / hist.bins, i, v2sum = 0;
+    for (i = 0; i < ps.length; i++) { var s = speed(ps[i]); v2sum += s * s; var b = Math.floor(s / bw); if (b >= 0 && b < hist.bins) counts[b]++; }
+    var maxc = Math.max(6, Math.max.apply(null, counts));
+    var pw = (hist.x1 - hist.x0) / hist.bins, ph = hist.y1 - hist.y0;
+    // frame
+    x.strokeStyle = "#28406a"; x.lineWidth = 1;
+    x.beginPath(); x.moveTo(hist.x0, hist.y0); x.lineTo(hist.x0, hist.y1); x.lineTo(hist.x1, hist.y1); x.stroke();
+    // bars colored by speed
+    for (i = 0; i < hist.bins; i++) {
+      var h = counts[i] / maxc * ph, vx = (i + 0.5) * bw;
+      x.fillStyle = speedColor(vx);
+      x.fillRect(hist.x0 + i * pw + 1, hist.y1 - h, pw - 2, h);
+    }
+    // theoretical Maxwell–Boltzmann (2D → Rayleigh): f(v) = (v/σ²)·exp(-v²/2σ²), σ² = <v²>/2
+    var sig2 = (v2sum / ps.length) / 2 || 1;
+    x.strokeStyle = "#fff"; x.lineWidth = 2; x.beginPath();
+    for (var px = 0; px <= hist.bins * 4; px++) {
+      var v = px / 4 * bw, f = (v / sig2) * Math.exp(-v * v / (2 * sig2));
+      var expected = ps.length * f * bw;                  // expected count per bin
+      var yh = Math.min(ph, expected / maxc * ph);
+      var sx = hist.x0 + (v / hist.vmax) * (hist.x1 - hist.x0);
+      if (px === 0) x.moveTo(sx, hist.y1 - yh); else x.lineTo(sx, hist.y1 - yh);
+    }
+    x.stroke();
+    // labels
+    x.fillStyle = "#93a4bf"; x.font = "12px system-ui"; x.textAlign = "left";
+    x.fillText("speed distribution", hist.x0, hist.y0 - 8);
+    x.fillText("slow", hist.x0, hist.y1 + 16); x.textAlign = "right"; x.fillText("fast →", hist.x1, hist.y1 + 16);
+    x.textAlign = "left"; x.fillStyle = "#fff"; x.fillText("— Maxwell–Boltzmann", hist.x0 + 92, hist.y0 - 8);
+  }
+
+  var frame = 0;
+  function updateStats() {
+    var v2 = 0, sv = 0; for (var i = 0; i < ps.length; i++) { var s = speed(ps[i]); sv += s; v2 += s * s; }
+    var T = (0.5 * v2 / ps.length);                        // avg KE (mass = 1), arbitrary units
+    document.getElementById("m-temp").textContent = T.toFixed(2);
+    document.getElementById("m-avg").textContent = (sv / ps.length).toFixed(2);
+    document.getElementById("m-coll").textContent = collisions.toLocaleString();
+    document.getElementById("hint").innerHTML = collisions < 400
+      ? "🎲 Right now every particle has the <b>same speed</b> — a single spike, not a natural gas. Collisions are just starting to shuffle energy around…"
+      : "🎲 Collisions have spread the speeds into the <b>Maxwell–Boltzmann</b> curve (white line) — and it stays there. Total energy is conserved, so <b>temperature holds steady</b> even as the shape settles. Add heat or cool to shift the whole curve.";
+  }
+
+  function loop() { step(); render(); if (frame++ % 6 === 0) updateStats(); requestAnimationFrame(loop); }
+
+  document.getElementById("reset").onclick = function () { reset(); updateStats(); };
+  document.getElementById("heat").onclick = function () { for (var i = 0; i < ps.length; i++) { ps[i].vx *= 1.15; ps[i].vy *= 1.15; } updateStats(); };
+  document.getElementById("cool").onclick = function () { for (var i = 0; i < ps.length; i++) { ps[i].vx *= 0.87; ps[i].vy *= 0.87; } updateStats(); };
+
+  reset(); updateStats(); loop();
+})();
+</script>
