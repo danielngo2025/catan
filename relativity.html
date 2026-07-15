@@ -42,6 +42,7 @@
     </div>
     <div class="btnrow">
       <button class="primary" id="launch">🛰 Launch probe</button>
+      <button id="ray">💡 Fire light ray</button>
       <button id="clear">Clear paths</button>
       <label class="field">Mass <input type="range" id="mass" min="20" max="130" step="5" value="60"><b id="massv">60</b></label>
       <label class="field">Launch speed <input type="range" id="speed" min="30" max="95" step="1" value="52"><b id="speedv">5.2</b></label>
@@ -77,6 +78,7 @@
   var W = c.width, H = c.height, cx = W / 2, cy = H / 2;
   var mass = 60, speed = 5.2, einstein = true;
   var probe = null;                       // {x,y,vx,vy,pts,status,orbits,angPrev,startAng,precDeg,peri}
+  var rays = [];                          // photons: {x,y,vx,vy,pts,status}
   var GM, rs;
 
   function recompute() { GM = mass * 90; rs = 2 * GM / (48 * 48); }  // rs = 2GM/c²; tuned so a black hole forms only at high mass
@@ -186,13 +188,61 @@
     }
   }
 
+  var CRAY = 35;                          // constant photon speed — high, so deflection stays realistically gentle (~2GM/b·c²)
+  function fireRays() {
+    rays = [];
+    var offs = [-128, -96, -68, -44, -24, -10, 10, 24, 44, 68, 96, 128];  // impact parameters; none dead-center
+    for (var i = 0; i < offs.length; i++) {
+      var y0 = cy + offs[i];
+      rays.push({ x: 2, y: y0, vx: CRAY, vy: 0, pts: [[2, y0]], status: "flying" });
+    }
+  }
+
+  function stepRays() {
+    if (!rays.length) return;
+    var STEPS = 9, dt = 0.08;             // fine steps so fast photons curve smoothly instead of whipping around
+    for (var j = 0; j < rays.length; j++) {
+      var ry = rays[j];
+      if (ry.status !== "flying") continue;
+      for (var i = 0; i < STEPS; i++) {
+        var a = accel(ry.x, ry.y);
+        if (a.captured) { ry.status = "captured"; break; }
+        ry.vx += a.ax * dt; ry.vy += a.ay * dt;
+        var sp = Math.hypot(ry.vx, ry.vy) || 1e-6;   // light keeps constant speed — only its direction bends
+        ry.vx = ry.vx / sp * CRAY; ry.vy = ry.vy / sp * CRAY;
+        ry.x += ry.vx * dt; ry.y += ry.vy * dt;
+        if (ry.x > W || ry.x < 0 || ry.y < 0 || ry.y > H) { ry.status = "exited"; break; }
+      }
+      ry.pts.push([ry.x, ry.y]);
+    }
+  }
+
+  function drawRays() {
+    for (var j = 0; j < rays.length; j++) {
+      var ry = rays[j];
+      x.lineWidth = 1.4; x.strokeStyle = "rgba(255,214,120,.85)";
+      x.beginPath();
+      for (var i = 0; i < ry.pts.length; i++) { var p = ry.pts[i]; if (i === 0) x.moveTo(p[0], p[1]); else x.lineTo(p[0], p[1]); }
+      x.stroke();
+      if (ry.status === "flying") { x.fillStyle = "#fff6d8"; x.beginPath(); x.arc(ry.x, ry.y, 2.4, 0, 7); x.fill(); }
+    }
+  }
+
   function updateStats() {
     document.getElementById("m-mode").textContent = einstein ? "Einstein" : "Newton";
     document.getElementById("m-status").textContent = probe ? probe.status : "—";
     document.getElementById("m-orbits").textContent = probe ? probe.orbits : 0;
     document.getElementById("m-prec").textContent = probe ? probe.precDeg.toFixed(1) + "°" : "0°";
     var h;
-    if (!probe) h = "🌌 The grid shows spacetime curved by the mass. Press <b>Launch probe</b> to send a test object along a geodesic.";
+    if (rays.length) {
+      var cap = 0; for (var j = 0; j < rays.length; j++) if (rays[j].status === "captured") cap++;
+      if (cap) h = "💡 The light rays <b>bend</b> toward the mass — gravitational lensing. " + cap + " ray" + (cap > 1 ? "s" : "") +
+        (rs >= 7 ? " passed inside the photon sphere and got <b>swallowed by the black hole</b>" : " struck the star and were absorbed") +
+        ". Even massless light must follow curved spacetime.";
+      else if (einstein) h = "💡 Parallel light rays <b>bend</b> as they cross curved spacetime and cross on the far side — <b>gravitational lensing</b>. Confirmed in 1919 and now used to weigh galaxies. Crank the mass up to bend them harder or swallow them.";
+      else h = "💡 In Newton's picture light bends only about <b>half</b> as much — Einstein's spacetime curvature doubles the deflection, which is exactly what the 1919 eclipse measured. Toggle to Einstein to compare.";
+    }
+    else if (!probe) h = "🌌 The grid shows spacetime curved by the mass. Press <b>Launch probe</b> to send a test object along a geodesic, or <b>Fire light ray</b> to see light bend.";
     else if (probe.status === "captured") h = "🕳️ The probe crossed the <b>event horizon</b> and can never escape — a black hole. Its path spiraled in as spacetime curvature became infinite.";
     else if (probe.status === "escaped") h = "🚀 The probe had enough speed to escape the well entirely (an unbound, hyperbolic path).";
     else if (einstein) h = "🌀 In Einstein's model the orbit <b>precesses</b> — each loop rotates a little, tracing a rosette. This is real: it's what settled Mercury's anomalous orbit. Toggle to Newton to see the ellipse close instead.";
@@ -202,19 +252,20 @@
 
   function render() {
     x.clearRect(0, 0, W, H);
-    drawGrid(); drawProbe(); drawMass();
+    drawGrid(); drawRays(); drawProbe(); drawMass();
   }
 
   var frame = 0;
   function loop() {
-    stepProbe(); render();
+    stepProbe(); stepRays(); render();
     if (frame++ % 6 === 0) updateStats();
     requestAnimationFrame(loop);
   }
 
   document.getElementById("launch").onclick = launch;
+  document.getElementById("ray").onclick = function () { fireRays(); updateStats(); };
   document.getElementById("clear").onclick = function () {
-    probe = null; document.getElementById("launch").textContent = "🛰 Launch probe"; updateStats();
+    probe = null; rays = []; document.getElementById("launch").textContent = "🛰 Launch probe"; updateStats();
   };
   document.getElementById("mass").addEventListener("input", function () {
     mass = +this.value; document.getElementById("massv").textContent = mass; recompute();
@@ -226,6 +277,7 @@
     einstein = this.checked;
     document.getElementById("modewrap").classList.toggle("on", einstein);
     if (probe) launch();                    // relaunch identically so the two models can be compared
+    if (rays.length) fireRays();            // re-fire rays so Einstein vs Newton bending can be compared
     updateStats();
   });
 
