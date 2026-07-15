@@ -1,0 +1,225 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Quantum Mechanics · Visual Learn Lab</title>
+<meta name="description" content="The double-slit experiment, made visual — fire particles one at a time, watch an interference pattern build from single dots, then switch on a which-path detector and see it collapse.">
+<link rel="stylesheet" href="assets/site.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🌀</text></svg>">
+<style>
+  canvas{width:100%;background:#0a1220;border:1px solid var(--line);border-radius:12px;display:block}
+  .metrics{display:flex;gap:14px;flex-wrap:wrap;margin:14px 0 0}
+  .metric{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 14px;min-width:110px}
+  .metric .v{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums}
+  .metric .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .btnrow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}
+  .toggle{display:flex;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--line);
+    border-radius:8px;padding:7px 12px;font-size:13px;font-weight:700;cursor:pointer;user-select:none}
+  .toggle input{accent-color:var(--bad);width:16px;height:16px}
+  .toggle.on{border-color:var(--bad);color:#ffd5d5}
+  .hintbox{background:linear-gradient(180deg,#1a2c49,#16233a);border:1px solid var(--accent);border-radius:10px;padding:12px 14px;margin-top:14px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:4px}
+  .qc{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .qc b{color:var(--ink)} .qc p{margin:4px 0 0;color:var(--muted);font-size:13px}
+</style>
+
+<div id="site-nav"></div>
+
+<main class="page">
+  <h1>🌀 Quantum Mechanics — the double-slit experiment</h1>
+  <p class="lede">Fire tiny particles — electrons, photons — one at a time at a wall with two slits. Each
+    lands as a single <b>dot</b>, like a bullet. Yet let thousands pile up and they form <b>interference
+    fringes</b> — bright and dark bands, as if each particle were a wave passing through <em>both</em> slits
+    at once. Now switch on a <b>which-path detector</b> to catch which slit each one uses… and the fringes
+    vanish. Watching the particle changes what it does. This is the heart of quantum weirdness.</p>
+
+  <div class="card">
+    <canvas id="stage" width="700" height="360"></canvas>
+    <div class="metrics">
+      <div class="metric"><div class="v" id="m-fired">0</div><div class="k">Particles fired</div></div>
+      <div class="metric"><div class="v" id="m-rate">0/s</div><div class="k">Fire rate</div></div>
+      <div class="metric"><div class="v" id="m-mode">Wave</div><div class="k">Pattern</div></div>
+    </div>
+    <div class="btnrow">
+      <button class="primary" id="one">⚛ Fire one</button>
+      <button id="auto">▶ Auto-fire</button>
+      <button id="reset">Reset screen</button>
+      <label class="field">Slit separation <input type="range" id="sep" min="2" max="5" step="0.5" value="3"><b id="sepv">3.0</b></label>
+      <label class="toggle" id="detwrap"><input type="checkbox" id="det"> 🔬 Which-path detector</label>
+    </div>
+    <div class="hintbox" id="hint"></div>
+  </div>
+
+  <h2>What you're seeing</h2>
+  <div class="card">
+    <div class="cards">
+      <div class="qc"><b>Superposition</b><p>With the detector off, each particle doesn't pick a slit — it travels as a wave of <em>possibilities</em> through both, and the two paths interfere with themselves.</p></div>
+      <div class="qc"><b>Wave–particle duality</b><p>It arrives as one localized dot (particle), but where it's <em>likely</em> to land is set by a wave. Neither picture alone is complete.</p></div>
+      <div class="qc"><b>The Born rule</b><p>The wave gives a <em>probability</em>, not a path. Bright fringes = high odds, dark = near-zero. Any single dot is random; only the crowd reveals the pattern.</p></div>
+      <div class="qc"><b>Measurement collapse</b><p>Detecting the path forces the particle to <em>be</em> at one slit. The superposition is destroyed, the interference disappears, and you get two plain clumps.</p></div>
+    </div>
+    <p class="muted" style="margin:12px 0 0">The unsettling part isn't that particles are wavy — it's that
+      <b>observation itself</b> changes the outcome. You can't sneak a look at which slit is used without
+      erasing the very interference that proves it went through both. Richard Feynman called this the one
+      mystery that holds "the heart of quantum mechanics."</p>
+  </div>
+
+  <footer class="site-foot">
+    <span class="views" data-count-path="self" style="visibility:hidden"></span>
+  </footer>
+</main>
+
+<script src="assets/config.js"></script>
+<script src="assets/site.js"></script>
+<script>
+(function () {
+  var c = document.getElementById("stage"), x = c.getContext("2d");
+  var W = c.width, H = c.height, cy = H / 2;
+  var srcX = 42, barX = 268, bandL = 470, bandR = 600, profX = 614; // apparatus geometry
+  var half = 150;                        // usable half-height on the detection band
+  var sep = 3, detector = false;
+  var dots = [], fired = 0, flash = null, auto = false;
+  var framesFired = 0, frameTick = 0;    // frame-counted fire-rate estimate
+
+  function slitOffset() { return 16 + sep * 7; }   // vertical gap from center, in px
+  var slitH = 20;
+
+  // Probability of a particle landing at vertical offset u (pixels from center).
+  function intensity(u) {
+    if (detector) {
+      // Two independent clumps behind the slits — no interference.
+      var g = slitOffset(), s = 22;
+      return Math.exp(-((u - g) * (u - g)) / (2 * s * s)) +
+             Math.exp(-((u + g) * (u + g)) / (2 * s * s));
+    }
+    var beta = sep * u * 0.026;                     // two-slit interference
+    var alpha = u * 0.016;                           // single-slit diffraction envelope
+    var sinc = alpha === 0 ? 1 : Math.sin(alpha) / alpha;
+    var co = Math.cos(beta);
+    return co * co * sinc * sinc;
+  }
+
+  // Rejection-sample a landing offset from intensity().
+  function sampleU() {
+    for (var t = 0; t < 200; t++) {
+      var u = (Math.random() * 2 - 1) * half;
+      if (Math.random() * 1.05 < intensity(u)) return u;
+    }
+    return (Math.random() * 2 - 1) * half;
+  }
+
+  function fireOne() {
+    var u = sampleU();
+    var y = cy + u;
+    var dx = bandL + Math.random() * (bandR - bandL);
+    dots.push({ x: dx, y: y });
+    if (dots.length > 4000) dots.shift();
+    // Route the trajectory through a slit. With the detector on we "know" which; pick by side.
+    var topSlit = detector ? (u >= 0) : (Math.random() < 0.5);
+    var sy = cy + (topSlit ? -slitOffset() : slitOffset());
+    flash = { sy: sy, top: topSlit, dx: dx, y: y, life: 1 };
+    fired++;
+    framesFired++;
+  }
+
+  function drawApparatus() {
+    // source
+    x.fillStyle = "#3fce8f";
+    x.beginPath(); x.arc(srcX, cy, 7, 0, 7); x.fill();
+    x.fillStyle = "#0a1220"; x.beginPath(); x.arc(srcX, cy, 3, 0, 7); x.fill();
+    // barrier with two slits
+    var off = slitOffset();
+    var glow = flash && flash.life > 0 && detector;
+    x.fillStyle = "#274063";
+    var segs = [
+      [0, cy - off - slitH / 2],
+      [cy - off + slitH / 2, cy + off - slitH / 2],
+      [cy + off + slitH / 2, H]
+    ];
+    for (var i = 0; i < segs.length; i++) x.fillRect(barX, segs[i][0], 12, segs[i][1] - segs[i][0]);
+    // highlight the used slit when the detector is watching
+    if (glow) {
+      var gy = cy + (flash.top ? -off : off);
+      x.fillStyle = "rgba(255,107,107,.55)";
+      x.fillRect(barX - 3, gy - slitH / 2, 18, slitH);
+    }
+    // detection screen frame
+    x.strokeStyle = "#1d2f4d"; x.lineWidth = 1;
+    x.strokeRect(bandL - 2, 6, (bandR - bandL) + 4, H - 12);
+    // theoretical intensity profile (faint reference curve on the right)
+    x.strokeStyle = "rgba(147,164,191,.6)"; x.lineWidth = 2; x.beginPath();
+    for (var yy = 8; yy <= H - 8; yy += 2) {
+      var px = profX + intensity(yy - cy) * 66;
+      if (yy === 8) x.moveTo(px, yy); else x.lineTo(px, yy);
+    }
+    x.stroke();
+    x.fillStyle = "#93a4bf"; x.font = "11px system-ui"; x.textAlign = "left";
+    x.fillText("predicted", profX - 2, H - 4);
+  }
+
+  function render() {
+    x.clearRect(0, 0, W, H);
+    drawApparatus();
+    // accumulated dots
+    x.fillStyle = detector ? "rgba(244,185,66,.9)" : "rgba(109,180,255,.9)";
+    for (var i = 0; i < dots.length; i++) {
+      x.beginPath(); x.arc(dots[i].x, dots[i].y, 1.6, 0, 7); x.fill();
+    }
+    // fading trajectory of the most recent shot
+    if (flash && flash.life > 0) {
+      x.strokeStyle = "rgba(232,238,247," + (flash.life * 0.5).toFixed(3) + ")";
+      x.lineWidth = 1;
+      x.beginPath();
+      x.moveTo(srcX, cy); x.lineTo(barX + 6, flash.sy); x.lineTo(flash.dx, flash.y);
+      x.stroke();
+      x.fillStyle = "#e8eef7";
+      x.beginPath(); x.arc(flash.dx, flash.y, 2.6, 0, 7); x.fill();
+      flash.life -= 0.06;
+    }
+  }
+
+  function updateStats() {
+    document.getElementById("m-fired").textContent = fired;
+    document.getElementById("m-mode").textContent = detector ? "Two bands" : "Wave";
+    var pct = detector
+      ? "🔬 Detector ON — each particle is forced to reveal its slit, so it behaves like a classic particle. The interference is gone; you just get two clumps behind the slits."
+      : (fired < 40
+          ? "⚛ Each dot lands in a seemingly random spot. Keep firing — no single particle looks wave-like, but the pattern is hiding in the odds."
+          : "🌀 Interference fringes are emerging! Bright bands where the two paths add up, dark bands where they cancel — built one random dot at a time.");
+    document.getElementById("hint").innerHTML = pct;
+  }
+
+  // one always-on loop: fires while auto is set, and animates the fading flash otherwise
+  function loop() {
+    if (auto) for (var k = 0; k < 4; k++) fireOne();
+    render();
+    frameTick++;
+    if (frameTick % 12 === 0) {                    // ~5 Hz stats + rate estimate
+      document.getElementById("m-rate").textContent = auto ? (framesFired * 5) + "/s" : "0/s";
+      framesFired = 0;
+      updateStats();
+    }
+    requestAnimationFrame(loop);
+  }
+
+  function reset() { dots = []; fired = 0; flash = null; framesFired = 0; updateStats(); }
+
+  document.getElementById("one").onclick = function () { fireOne(); updateStats(); };
+  document.getElementById("auto").onclick = function () {
+    auto = !auto;
+    this.textContent = auto ? "⏸ Stop" : "▶ Auto-fire";
+    this.classList.toggle("primary", auto);
+  };
+  document.getElementById("reset").onclick = reset;
+  document.getElementById("sep").addEventListener("input", function () {
+    sep = +this.value; document.getElementById("sepv").textContent = sep.toFixed(1); reset();
+  });
+  document.getElementById("det").addEventListener("change", function () {
+    detector = this.checked;
+    document.getElementById("detwrap").classList.toggle("on", detector);
+    reset();
+  });
+
+  reset();
+  loop();
+})();
+</script>
