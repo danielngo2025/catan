@@ -37,5 +37,7 @@ window.SITE = {
       blurb: "Electricity, magnetism and light are one thing — watch perpendicular E and B fields propagate and sweep the frequency across the whole spectrum." },
     { path: "bigbang.html", title: "The Big Bang", emoji: "💥",
       blurb: "The expanding universe — watch galaxies fly apart by Hubble's law, redshift with distance, and see why the expansion has no center." },
+    { path: "qft.html", title: "Quantum Field Theory", emoji: "🌊",
+      blurb: "Particles are ripples in fields — poke excitations into a quantum field, annihilate matter with antimatter, and watch the vacuum bubble with virtual pairs." },
   ],
 };

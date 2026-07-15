@@ -1,0 +1,179 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Quantum Field Theory · Visual Learn Lab</title>
+<meta name="description" content="Quantum field theory, made visual — a quantum field ripples across space, and each particle is just a localized excitation of it. Create particles, annihilate matter with antimatter, and watch the vacuum bubble.">
+<link rel="stylesheet" href="assets/site.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🌊</text></svg>">
+<style>
+  canvas{width:100%;background:#0a1220;border:1px solid var(--line);border-radius:12px;display:block;cursor:crosshair}
+  .metrics{display:flex;gap:14px;flex-wrap:wrap;margin:14px 0 0}
+  .metric{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 14px;min-width:120px}
+  .metric .v{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
+  .metric .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .btnrow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}
+  .toggle{display:flex;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--line);
+    border-radius:8px;padding:7px 12px;font-size:13px;font-weight:700;cursor:pointer;user-select:none}
+  .toggle input{accent-color:var(--accent);width:16px;height:16px}
+  .toggle.on{border-color:var(--accent);color:var(--accent)}
+  .hintbox{background:linear-gradient(180deg,#1a2c49,#16233a);border:1px solid var(--accent);border-radius:10px;padding:12px 14px;margin-top:14px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-top:4px}
+  .qc{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .qc b{color:var(--ink)} .qc p{margin:4px 0 0;color:var(--muted);font-size:13px}
+</style>
+
+<div id="site-nav"></div>
+
+<main class="page">
+  <h1>🌊 Quantum Field Theory — particles are ripples in fields</h1>
+  <p class="lede">Quantum field theory is the deepest layer we know — it merges quantum mechanics with
+    special relativity, and it's the language the Standard Model is written in. Its big idea flips the picture
+    upside down: <b>fields are fundamental, not particles</b>. Space is filled everywhere with quantum fields —
+    one for electrons, one for photons, one for each kind of particle — and a <b>particle is simply a localized
+    excitation, a "quantum" of ripple, in its field</b>. Click the field below to poke a particle into it.</p>
+
+  <div class="card">
+    <canvas id="stage" width="720" height="320"></canvas>
+    <div class="metrics">
+      <div class="metric"><div class="v" id="m-part">0</div><div class="k">Particles</div></div>
+      <div class="metric"><div class="v" id="m-anti">0</div><div class="k">Antiparticles</div></div>
+      <div class="metric"><div class="v" id="m-vac">Off</div><div class="k">Vacuum fluctuations</div></div>
+    </div>
+    <div class="btnrow">
+      <button class="primary" id="add">⚛ Add particle</button>
+      <button id="addanti">🔸 Add antiparticle</button>
+      <button id="clear">Clear</button>
+      <label class="toggle" id="vacwrap"><input type="checkbox" id="vac"> 🫧 Vacuum fluctuations</label>
+    </div>
+    <div class="hintbox" id="hint"></div>
+  </div>
+
+  <h2>Why fields, not particles?</h2>
+  <div class="card">
+    <div class="cards">
+      <div class="qc"><b>One field per particle type</b><p>Every electron in the universe is identical because they're all ripples in the <em>same</em> electron field. That's why particles of a kind are perfectly interchangeable.</p></div>
+      <div class="qc"><b>Excitations are quantized</b><p>You can't have half a ripple — field excitations come in whole units. That "quantum" is exactly what we call a particle. The field's quantization is where the "quantum" comes from.</p></div>
+      <div class="qc"><b>Particles come and go</b><p>Because energy is just field excitation, particles can be <em>created</em> and <em>destroyed</em>. Matter meeting antimatter cancels back to nothing but a flash of energy — try it above.</p></div>
+      <div class="qc"><b>The vacuum is alive</b><p>Even "empty" space is a field in its ground state, jittering with zero-point energy. Particle–antiparticle pairs constantly flicker in and out — real, measurable effects (like the Casimir force).</p></div>
+    </div>
+    <p class="muted" style="margin:12px 0 0">Forces work this way too: particles interact by <b>exchanging</b> quanta of other fields —
+      two electrons repel by tossing photons between them. QFT's predictions (like the electron's magnetic moment) match
+      experiment to better than one part in a billion, making it the most accurately tested theory in all of science.</p>
+  </div>
+
+  <footer class="site-foot">
+    <span class="views" data-count-path="self" style="visibility:hidden"></span>
+  </footer>
+</main>
+
+<script src="assets/config.js"></script>
+<script src="assets/site.js"></script>
+<script>
+(function () {
+  var c = document.getElementById("stage"), x = c.getContext("2d");
+  var W = c.width, H = c.height, mid = H / 2;
+  var t = 0, fluct = false;
+  var parts = [], ghosts = [], flashes = [];
+  var AMP = 40, WID = 24;
+
+  function vac(xp) {
+    var A = fluct ? 11 : 4.5;
+    return A * (0.6 * Math.sin(0.021 * xp + t * 1.3) + 0.34 * Math.sin(0.045 * xp - t * 1.7 + 1) + 0.22 * Math.sin(0.083 * xp + t * 2.1 + 2));
+  }
+  function phi(xp) {
+    var v = vac(xp), i;
+    for (i = 0; i < parts.length; i++) { var p = parts[i]; v += p.sign * AMP * Math.exp(-((xp - p.x) * (xp - p.x)) / (2 * WID * WID)); }
+    for (i = 0; i < ghosts.length; i++) { var g = ghosts[i]; var f = g.life / g.max; v += g.sign * AMP * 0.7 * f * Math.exp(-((xp - g.x) * (xp - g.x)) / (2 * WID * WID)); }
+    return v;
+  }
+
+  function addParticle(sign, px, v) {
+    parts.push({ x: px == null ? 40 + Math.random() * (W - 80) : px, v: v == null ? (Math.random() - 0.5) * 3 : v, sign: sign });
+  }
+
+  function step() {
+    t += 0.03;
+    var i, j;
+    for (i = 0; i < parts.length; i++) {
+      var p = parts[i]; p.x += p.v;
+      if (p.x < 8) { p.x = 8; p.v = Math.abs(p.v); }
+      else if (p.x > W - 8) { p.x = W - 8; p.v = -Math.abs(p.v); }
+    }
+    // annihilation: a particle meeting an antiparticle cancels to a flash of energy
+    for (i = 0; i < parts.length; i++) for (j = i + 1; j < parts.length; j++) {
+      if (parts[i].sign !== parts[j].sign && Math.abs(parts[i].x - parts[j].x) < 20) {
+        flashes.push({ x: (parts[i].x + parts[j].x) / 2, r: 4, life: 1 });
+        parts[i].dead = parts[j].dead = true;
+      }
+    }
+    parts = parts.filter(function (p) { return !p.dead; });
+    // vacuum fluctuations: transient pairs flicker in and out of empty space
+    if (fluct && Math.random() < 0.06) {
+      var gx = 40 + Math.random() * (W - 80), life = 30 + Math.random() * 40;
+      ghosts.push({ x: gx - 10, sign: 1, life: life, max: life });
+      ghosts.push({ x: gx + 10, sign: -1, life: life, max: life });
+    }
+    for (i = 0; i < ghosts.length; i++) ghosts[i].life--;
+    ghosts = ghosts.filter(function (g) { return g.life > 0; });
+    for (i = 0; i < flashes.length; i++) { flashes[i].r += 3.4; flashes[i].life -= 0.05; }
+    flashes = flashes.filter(function (f) { return f.life > 0; });
+  }
+
+  function render() {
+    x.clearRect(0, 0, W, H);
+    // baseline
+    x.strokeStyle = "#1d2f4d"; x.setLineDash([4, 4]); x.lineWidth = 1;
+    x.beginPath(); x.moveTo(0, mid); x.lineTo(W, mid); x.stroke(); x.setLineDash([]);
+    // field line with glow
+    x.save(); x.shadowColor = "rgba(109,180,255,.7)"; x.shadowBlur = 10;
+    x.strokeStyle = "rgba(120,195,255,.95)"; x.lineWidth = 2.2; x.beginPath();
+    for (var xp = 0; xp <= W; xp += 3) { var y = mid - phi(xp); if (xp === 0) x.moveTo(xp, y); else x.lineTo(xp, y); }
+    x.stroke(); x.restore();
+    // particle / antiparticle markers
+    for (var i = 0; i < parts.length; i++) {
+      var p = parts[i], py = mid - p.sign * AMP;
+      x.fillStyle = p.sign > 0 ? "#6db4ff" : "#f4b942";
+      x.save(); x.shadowColor = x.fillStyle; x.shadowBlur = 12; x.beginPath(); x.arc(p.x, py, 5, 0, 7); x.fill(); x.restore();
+    }
+    // annihilation flashes
+    for (var k = 0; k < flashes.length; k++) {
+      var f = flashes[k];
+      x.strokeStyle = "rgba(255,255,255," + f.life.toFixed(2) + ")"; x.lineWidth = 2;
+      x.beginPath(); x.arc(f.x, mid, f.r, 0, 7); x.stroke();
+      x.fillStyle = "rgba(63,206,143," + (f.life * 0.5).toFixed(2) + ")"; x.beginPath(); x.arc(f.x, mid, 6, 0, 7); x.fill();
+    }
+    // legend
+    x.font = "12px system-ui"; x.textAlign = "left";
+    x.fillStyle = "#6db4ff"; x.fillText("● particle", 12, 20);
+    x.fillStyle = "#f4b942"; x.fillText("● antiparticle", 92, 20);
+    x.fillStyle = "#93a4bf"; x.fillText("the wavy line is the quantum field itself", 12, H - 12);
+  }
+
+  var frame = 0;
+  function updateStats() {
+    var np = 0, na = 0;
+    for (var i = 0; i < parts.length; i++) parts[i].sign > 0 ? np++ : na++;
+    document.getElementById("m-part").textContent = np;
+    document.getElementById("m-anti").textContent = na;
+    document.getElementById("m-vac").textContent = fluct ? "On" : "Off";
+    document.getElementById("hint").innerHTML = (np + na === 0 && !fluct)
+      ? "🌊 The gently rippling line is a quantum field in its <b>vacuum</b> state. <b>Click the field</b> (or use the buttons) to add a particle — a localized lump of excitation."
+      : "🌊 Each bump is a <b>particle</b>: a quantum of field excitation. Add an antiparticle (opposite bump) and let it meet a particle — they <b>annihilate</b> into a flash of pure energy. Toggle vacuum fluctuations to watch pairs flicker out of nothing.";
+  }
+
+  function loop() { step(); render(); if (frame++ % 8 === 0) updateStats(); requestAnimationFrame(loop); }
+
+  document.getElementById("add").onclick = function () { addParticle(1); updateStats(); };
+  document.getElementById("addanti").onclick = function () { addParticle(-1); updateStats(); };
+  document.getElementById("clear").onclick = function () { parts = []; ghosts = []; flashes = []; updateStats(); };
+  document.getElementById("vac").addEventListener("change", function () {
+    fluct = this.checked; document.getElementById("vacwrap").classList.toggle("on", fluct); updateStats();
+  });
+  c.addEventListener("click", function (ev) {
+    var rect = c.getBoundingClientRect(), sx = c.width / rect.width;
+    addParticle(1, (ev.clientX - rect.left) * sx, (Math.random() - 0.5) * 2); updateStats();
+  });
+
+  updateStats(); loop();
+})();
+</script>
