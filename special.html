@@ -1,0 +1,153 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Special Relativity · Visual Learn Lab</title>
+<meta name="description" content="Special relativity, made visual — slide a light clock toward light speed and watch time dilate, lengths contract, and the Lorentz factor climb, all because light's speed never changes.">
+<link rel="stylesheet" href="assets/site.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🚀</text></svg>">
+<style>
+  canvas{width:100%;background:#0a1220;border:1px solid var(--line);border-radius:12px;display:block}
+  .metrics{display:flex;gap:14px;flex-wrap:wrap;margin:14px 0 0}
+  .metric{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 14px;min-width:120px}
+  .metric .v{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
+  .metric .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .btnrow{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:12px}
+  .field input[type=range]{width:240px}
+  .hintbox{background:linear-gradient(180deg,#1a2c49,#16233a);border:1px solid var(--accent);border-radius:10px;padding:12px 14px;margin-top:14px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-top:4px}
+  .qc{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .qc b{color:var(--ink)} .qc p{margin:4px 0 0;color:var(--muted);font-size:13px}
+</style>
+
+<div id="site-nav"></div>
+
+<main class="page">
+  <h1>🚀 Special Relativity — why moving clocks run slow</h1>
+  <p class="lede">Einstein started from one stubborn fact: <b>light always travels at the same speed</b>,
+    no matter how fast you're moving. Follow that to its conclusion and something has to give — and what
+    gives is <b>time itself</b>. Below are two identical "light clocks," each ticking once per round trip of
+    a photon between two mirrors. The top one is at rest; the bottom one moves. Because the moving photon has
+    to travel a longer <b>diagonal</b> path at the same speed <em>c</em>, it ticks slower. Slide toward light
+    speed and watch the gap explode.</p>
+
+  <div class="card">
+    <canvas id="stage" width="720" height="340"></canvas>
+    <div class="metrics">
+      <div class="metric"><div class="v" id="m-gamma">1.00</div><div class="k">Lorentz factor γ</div></div>
+      <div class="metric"><div class="v" id="m-rest">0</div><div class="k">Rest-clock ticks</div></div>
+      <div class="metric"><div class="v" id="m-move">0</div><div class="k">Moving-clock ticks</div></div>
+      <div class="metric"><div class="v" id="m-len">100%</div><div class="k">Length (of rest)</div></div>
+    </div>
+    <div class="btnrow">
+      <label class="field">Speed v = <b id="betav">0.00</b> c
+        <input type="range" id="beta" min="0" max="99" step="1" value="0"></label>
+      <button id="reset">Reset ticks</button>
+    </div>
+    <div class="hintbox" id="hint"></div>
+  </div>
+
+  <h2>The consequences</h2>
+  <div class="card">
+    <div class="cards">
+      <div class="qc"><b>Nothing outruns light</b><p>The speed of light <em>c</em> is the universe's hard limit and is the same for every observer. You can add speed forever and only ever approach <em>c</em>, never reach it.</p></div>
+      <div class="qc"><b>Time dilation</b><p>A moving clock ticks slower by the factor γ. At 87% of light speed γ = 2, so time runs at half rate; at 99.5% it runs 10× slow. Real muons and atomic clocks confirm it.</p></div>
+      <div class="qc"><b>Length contraction</b><p>A moving object shrinks along its direction of motion by the same factor γ. Space and time trade off so that everyone still measures light at exactly <em>c</em>.</p></div>
+      <div class="qc"><b>E = mc²</b><p>Mass and energy are the same thing. A tiny mass holds enormous energy (c² is a huge number) — the principle behind the Sun, nuclear power, and the bomb.</p></div>
+    </div>
+    <p class="muted" style="margin:12px 0 0">There's no experiment you could do inside the moving ship to tell you're moving —
+      to <em>you</em>, your own clock ticks normally and it's the outside world that looks slow and contracted.
+      Motion is <b>relative</b>; only the speed of light is absolute. GPS satellites apply these corrections
+      (plus general-relativity ones) every day, or your maps would drift kilometres off within hours.</p>
+  </div>
+
+  <footer class="site-foot">
+    <span class="views" data-count-path="self" style="visibility:hidden"></span>
+  </footer>
+</main>
+
+<script src="assets/config.js"></script>
+<script src="assets/site.js"></script>
+<script>
+(function () {
+  var c = document.getElementById("stage"), x = c.getContext("2d");
+  var W = c.width, H = c.height;
+  var beta = 0, restTicks = 0, moveTicks = 0;
+  var C = 3.0;                             // photon speed in px/frame (same for both clocks)
+  var Hc = 118;                            // mirror separation
+
+  // lane geometry
+  var lane1 = { top: 44, bot: 44 + Hc, mx: 96 };            // rest clock (fixed)
+  var lane2 = { top: 196, bot: 196 + Hc };                   // moving clock (drifts)
+  var restY = lane1.bot, restDir = -1;                       // photon y, direction
+  var moveX = 60, moveY = lane2.bot, moveDir = -1;
+  var trail = [];
+
+  function gamma() { return 1 / Math.sqrt(1 - beta * beta); }
+
+  function drawClock(cxpos, topY, botY, mw, label, photon) {
+    x.strokeStyle = "#3a5686"; x.lineWidth = 4; x.lineCap = "round";
+    x.beginPath(); x.moveTo(cxpos - mw, topY); x.lineTo(cxpos + mw, topY);
+    x.moveTo(cxpos - mw, botY); x.lineTo(cxpos + mw, botY); x.stroke();
+    x.fillStyle = "#93a4bf"; x.font = "12px system-ui"; x.textAlign = "left";
+    x.fillText(label, cxpos - mw, topY - 10);
+  }
+
+  function step() {
+    // rest clock: pure vertical bounce
+    restY += C * restDir;
+    if (restY <= lane1.top) { restY = lane1.top; restDir = 1; }
+    else if (restY >= lane1.bot) { restY = lane1.bot; restDir = -1; restTicks++; }
+
+    // moving clock: vertical component = C·sqrt(1-β²), horizontal drift = C·β (keeps photon on the mirror)
+    var vy = C * Math.sqrt(1 - beta * beta), vx = C * beta;
+    moveY += vy * moveDir;
+    if (moveY <= lane2.top) { moveY = lane2.top; moveDir = 1; }
+    else if (moveY >= lane2.bot) { moveY = lane2.bot; moveDir = -1; moveTicks++; }
+    moveX += vx;
+    if (moveX > W - 60) { moveX = 60; moveY = lane2.bot; moveDir = -1; trail = []; }  // wrap around
+    trail.push([moveX, moveY]);
+    if (trail.length > 400) trail.shift();
+  }
+
+  function render() {
+    x.clearRect(0, 0, W, H);
+    // rest clock
+    drawClock(lane1.mx, lane1.top, lane1.bot, 34, "At rest (v = 0)", null);
+    x.fillStyle = "#6db4ff"; x.beginPath(); x.arc(lane1.mx, restY, 5, 0, 7); x.fill();
+
+    // moving clock: diagonal trail + drifting mirrors
+    x.strokeStyle = "rgba(244,185,66,.5)"; x.lineWidth = 1.5; x.beginPath();
+    for (var i = 0; i < trail.length; i++) { var p = trail[i]; if (i === 0) x.moveTo(p[0], p[1]); else x.lineTo(p[0], p[1]); }
+    x.stroke();
+    drawClock(moveX, lane2.top, lane2.bot, 34, "Moving at v →", null);
+    x.fillStyle = "#f4b942"; x.beginPath(); x.arc(moveX, moveY, 5, 0, 7); x.fill();
+    // motion arrow
+    x.strokeStyle = "#f4b942"; x.lineWidth = 2; x.beginPath();
+    x.moveTo(moveX + 44, (lane2.top + lane2.bot) / 2); x.lineTo(moveX + 74, (lane2.top + lane2.bot) / 2); x.stroke();
+    x.beginPath(); x.moveTo(moveX + 74, (lane2.top + lane2.bot) / 2); x.lineTo(moveX + 66, (lane2.top + lane2.bot) / 2 - 5);
+    x.lineTo(moveX + 66, (lane2.top + lane2.bot) / 2 + 5); x.closePath(); x.fillStyle = "#f4b942"; x.fill();
+  }
+
+  var frame = 0;
+  function updateStats() {
+    var g = gamma();
+    document.getElementById("m-gamma").textContent = g.toFixed(2);
+    document.getElementById("m-rest").textContent = restTicks;
+    document.getElementById("m-move").textContent = moveTicks;
+    document.getElementById("m-len").textContent = Math.round(100 / g) + "%";
+    document.getElementById("betav").textContent = beta.toFixed(2);
+    document.getElementById("hint").innerHTML = beta < 0.01
+      ? "🚀 At rest both clocks tick together (γ = 1). Nudge the speed up and the bottom photon starts taking a diagonal path."
+      : "🚀 The moving photon travels a longer <b>diagonal</b> at the same speed <em>c</em>, so it reaches the mirror later — the moving clock ticks <b>" + g.toFixed(2) + "×</b> slower. To the traveler, though, their own clock feels perfectly normal.";
+  }
+
+  function loop() { step(); render(); if (frame++ % 8 === 0) updateStats(); requestAnimationFrame(loop); }
+
+  document.getElementById("beta").addEventListener("input", function () {
+    beta = this.value / 100; updateStats();
+  });
+  document.getElementById("reset").onclick = function () { restTicks = 0; moveTicks = 0; updateStats(); };
+
+  updateStats(); loop();
+})();
+</script>

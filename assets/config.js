@@ -31,5 +31,7 @@ window.SITE = {
       blurb: "The 17 elementary particles that build everything — tap any tile to inspect its mass and charge, and light up which ones feel each fundamental force." },
     { path: "relativity.html", title: "General Relativity", emoji: "🌌",
       blurb: "Gravity is curved spacetime — warp the grid with a mass, launch a probe, and watch its orbit precess the way Einstein predicts but Newton can't." },
+    { path: "special.html", title: "Special Relativity", emoji: "🚀",
+      blurb: "Why moving clocks run slow — slide a light clock toward light speed and watch time dilate and lengths contract, all because light's speed never changes." },
   ],
 };
