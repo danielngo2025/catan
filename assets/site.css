@@ -46,7 +46,7 @@ button.primary{background:var(--accent);color:#241a00;border-color:var(--accent)
 .muted{color:var(--muted)}
 
 /* --- homepage --- */
-.hero{text-align:center;padding:46px 20px 10px}
+.hero{text-align:center;padding:28px 20px 6px}
 .hero h1{font-size:40px;margin:0 0 8px}
 .hero h1 span{color:var(--accent)}
 .hero p{color:var(--muted);font-size:18px;margin:0}
