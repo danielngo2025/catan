@@ -38,7 +38,6 @@
     grid.innerHTML = SITE.topics.map(function (t) {
       var p = base + t.path;
       return '<a class="topic" href="' + t.path + '">' +
-        '<span class="views" data-count-path="' + p + '" style="visibility:hidden"></span>' +
         '<span class="emoji">' + t.emoji + '</span>' +
         '<h3>' + t.title + '</h3>' +
         '<p>' + t.blurb + '</p>' +

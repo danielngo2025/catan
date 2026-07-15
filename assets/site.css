@@ -13,7 +13,7 @@ a:hover{text-decoration:underline}
 
 /* --- top nav (injected by site.js) --- */
 #site-nav{position:sticky;top:0;z-index:100}
-.nav{display:flex;align-items:center;gap:6px;height:var(--nav-h);padding:0 16px;
+.nav{display:flex;align-items:center;gap:6px;min-height:var(--nav-h);padding:5px 16px;flex-wrap:wrap;
   background:rgba(14,23,38,.9);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
 .nav .brand{font-weight:800;letter-spacing:.3px;margin-right:10px;white-space:nowrap}
 .nav .brand span{color:var(--accent)}
@@ -22,8 +22,20 @@ a:hover{text-decoration:underline}
 .nav a.navlink:hover{color:var(--ink);background:var(--panel2);text-decoration:none}
 .nav a.navlink.active{color:var(--ink);background:var(--panel2);box-shadow:0 0 0 1px var(--line) inset}
 .nav .spacer{flex:1}
-.nav .navlinks{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
-.nav .navlinks::-webkit-scrollbar{display:none}
+.nav .navlinks{display:flex;gap:4px;flex-wrap:wrap;align-items:center}
+.navgroup{position:relative}
+.navbtn{font-family:inherit;color:var(--muted);font-weight:600;font-size:13px;padding:6px 10px;border-radius:8px;
+  background:transparent;border:1px solid transparent;cursor:pointer;white-space:nowrap;
+  display:inline-flex;align-items:center;gap:5px}
+.navbtn:hover{color:var(--ink);background:var(--panel2)}
+.navbtn.active{color:var(--ink);background:var(--panel2);box-shadow:0 0 0 1px var(--line) inset}
+.navbtn .caret{font-size:10px;opacity:.7;transition:transform .15s}
+.navgroup.open .navbtn .caret{transform:rotate(180deg)}
+.navmenu{display:none;position:absolute;top:calc(100% + 7px);left:0;min-width:214px;z-index:200;
+  flex-direction:column;gap:2px;padding:6px;background:var(--panel);border:1px solid var(--line);
+  border-radius:12px;box-shadow:0 14px 34px rgba(0,0,0,.45)}
+.navgroup.open .navmenu{display:flex}
+.navmenu a.navlink{display:block;padding:8px 11px;border-radius:8px;font-size:13px}
 
 /* --- generic page container (topic pages that aren't full-bleed) --- */
 main.page{max-width:1080px;margin:0 auto;padding:26px 20px 60px}

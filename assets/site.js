@@ -9,21 +9,48 @@
   var realPath = location.pathname;                 // exactly what count.js records (e.g. /catan/goal.html)
   var basedir = realPath.replace(/[^\/]*$/, "");    // directory the site is served from (e.g. /catan/)
 
-  // --- nav bar ---
+  // --- nav bar (grouped dropdown menus) ---
   function buildNav() {
     var host = document.getElementById("site-nav");
     if (!host) return;
-    var links = SITE.topics.map(function (t) {
-      var active = t.path === file ? " active" : "";
-      return '<a class="navlink' + active + '" href="' + t.path + '">' + t.emoji + " " + t.title + "</a>";
+    // bucket topics by group, preserving first-seen group order
+    var order = [], byGroup = {};
+    SITE.topics.forEach(function (t) {
+      var g = t.group || "More";
+      if (!byGroup[g]) { byGroup[g] = []; order.push(g); }
+      byGroup[g].push(t);
+    });
+    var groups = order.map(function (g) {
+      var items = byGroup[g].map(function (t) {
+        var active = t.path === file ? " active" : "";
+        return '<a class="navlink' + active + '" href="' + t.path + '">' + t.emoji + " " + t.title + "</a>";
+      }).join("");
+      var here = byGroup[g].some(function (t) { return t.path === file; }) ? " active" : "";
+      return '<div class="navgroup">' +
+        '<button class="navbtn' + here + '" type="button">' + g + ' <span class="caret">▾</span></button>' +
+        '<div class="navmenu">' + items + '</div>' +
+      '</div>';
     }).join("");
     host.innerHTML =
       '<nav class="nav">' +
         '<a class="brand" href="index.html">◈ ' + (SITE.name.split(" ")[0] || "Visual") +
           ' <span>' + SITE.name.split(" ").slice(1).join(" ") + "</span></a>" +
-        '<div class="navlinks">' + links + "</div>" +
+        '<div class="navlinks">' + groups + "</div>" +
         '<div class="spacer"></div>' +
       "</nav>";
+
+    // click a group to toggle its menu; click elsewhere (or another group) closes it
+    var navgroups = host.querySelectorAll(".navgroup");
+    function closeAll() { navgroups.forEach(function (n) { n.classList.remove("open"); }); }
+    navgroups.forEach(function (n) {
+      n.querySelector(".navbtn").addEventListener("click", function (e) {
+        e.stopPropagation();
+        var wasOpen = n.classList.contains("open");
+        closeAll();
+        if (!wasOpen) n.classList.add("open");
+      });
+    });
+    document.addEventListener("click", closeAll);
   }
 
   // --- GoatCounter ---
@@ -52,16 +79,10 @@
     }).then(function (d) { return d.count; }); // already comma-formatted, e.g. "1,234"
   }
 
-  // Fill any [data-count-path] element with its view count; hide on failure.
+  // Per-idea view counts are intentionally not displayed — keep any counter elements hidden.
+  // (Pageview tracking via GoatCounter still runs; only the on-page count badges are removed.)
   function renderCounts() {
-    document.querySelectorAll("[data-count-path]").forEach(function (el) {
-      var p = el.getAttribute("data-count-path");
-      if (p === "self") p = realPath;   // this page's own recorded path
-      fetchCount(p).then(function (n) {
-        el.textContent = "👁 " + n;
-        el.style.visibility = "visible";
-      }).catch(function () { el.style.display = "none"; });
-    });
+    document.querySelectorAll("[data-count-path]").forEach(function (el) { el.style.display = "none"; });
   }
 
   window.LAB = { fetchCount: fetchCount, renderCounts: renderCounts, path: realPath, basedir: basedir };
