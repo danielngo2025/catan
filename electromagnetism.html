@@ -1,0 +1,168 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Electromagnetism · Visual Learn Lab</title>
+<meta name="description" content="Electromagnetism, made visual — watch a self-propagating wave of perpendicular electric and magnetic fields, and sweep the frequency across the whole spectrum from radio to gamma rays.">
+<link rel="stylesheet" href="assets/site.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🧲</text></svg>">
+<style>
+  canvas{width:100%;background:#0a1220;border:1px solid var(--line);border-radius:12px;display:block}
+  .metrics{display:flex;gap:14px;flex-wrap:wrap;margin:14px 0 0}
+  .metric{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 14px;min-width:120px}
+  .metric .v{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums}
+  .metric .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .btnrow{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:14px}
+  .field input[type=range]{width:min(420px,70vw)}
+  .hintbox{background:linear-gradient(180deg,#1a2c49,#16233a);border:1px solid var(--accent);border-radius:10px;padding:12px 14px;margin-top:14px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-top:4px}
+  .qc{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .qc b{color:var(--ink)} .qc p{margin:4px 0 0;color:var(--muted);font-size:13px}
+</style>
+
+<div id="site-nav"></div>
+
+<main class="page">
+  <h1>🧲 Electromagnetism — electricity, magnetism &amp; light are one thing</h1>
+  <p class="lede">In the 1860s James Clerk Maxwell wrote four equations that tied electricity and magnetism
+    into a single force. They had a stunning consequence: a <b>changing electric field creates a magnetic
+    field</b>, whose change creates an electric field, and so on — a self-sustaining ripple that flies through
+    empty space at one fixed speed. That speed turned out to be the speed of <b>light</b>. Light <em>is</em>
+    an electromagnetic wave. Below, the red <b>E</b> field and blue <b>B</b> field oscillate at right angles;
+    slide the frequency to travel the whole spectrum.</p>
+
+  <div class="card">
+    <canvas id="stage" width="720" height="330"></canvas>
+    <div class="metrics">
+      <div class="metric"><div class="v" id="m-band">Visible light</div><div class="k">Band</div></div>
+      <div class="metric"><div class="v" id="m-freq">—</div><div class="k">Frequency</div></div>
+      <div class="metric"><div class="v" id="m-wave">—</div><div class="k">Wavelength</div></div>
+      <div class="metric"><div class="v" id="m-energy">—</div><div class="k">Photon energy</div></div>
+    </div>
+    <div class="btnrow">
+      <label class="field">Frequency (radio → gamma)
+        <input type="range" id="freq" min="0" max="100" step="1" value="67"></label>
+    </div>
+    <div class="hintbox" id="hint"></div>
+  </div>
+
+  <h2>What Maxwell showed</h2>
+  <div class="card">
+    <div class="cards">
+      <div class="qc"><b>One force, not two</b><p>Electricity and magnetism are two faces of the same thing. A moving charge makes a magnetic field; a changing magnetic field pushes charges. Maxwell unified them in four equations.</p></div>
+      <div class="qc"><b>Fields make fields</b><p>A changing E field induces a B field and vice versa. Once started, the pair regenerates each other and propagates on its own — no medium required, straight through vacuum.</p></div>
+      <div class="qc"><b>Light falls out of the math</b><p>The equations force the wave to travel at <em>c</em> ≈ 300,000 km/s. Maxwell realized that matched light's measured speed — so light must be an EM wave. A theory predicting what light <em>is</em>.</p></div>
+      <div class="qc"><b>One spectrum</b><p>Radio, microwave, infrared, visible, UV, X-ray, gamma — all the <em>same</em> wave, differing only in frequency. Visible light is a razor-thin slice your eyes happen to detect.</p></div>
+    </div>
+    <p class="muted" style="margin:12px 0 0">Higher frequency means shorter wavelength and more energy per photon (E = hf) — which is why
+      gamma rays are dangerous and radio waves are harmless. Maxwell's unification was the template for all of physics
+      that followed: the <b>electroweak</b> theory later merged electromagnetism with the weak force, and the dream of
+      unifying all four forces continues today.</p>
+  </div>
+
+  <footer class="site-foot">
+    <span class="views" data-count-path="self" style="visibility:hidden"></span>
+  </footer>
+</main>
+
+<script src="assets/config.js"></script>
+<script src="assets/site.js"></script>
+<script>
+(function () {
+  var c = document.getElementById("stage"), x = c.getContext("2d");
+  var W = c.width, H = c.height, mid = H / 2 + 6, A = 78;
+  var slider = 67, phase = 0;
+  var LIGHT = 3e8;
+
+  function freqHz() { return Math.pow(10, 4 + (slider / 100) * 16); }        // 10^4 .. 10^20 Hz
+  function cycles() { return 1.4 + (slider / 100) * 22; }                    // on-screen cycles
+
+  function spectrum(f) {
+    var lam = LIGHT / f;
+    if (f < 3e9) return { name: "Radio waves", col: "#c98a5a" };
+    if (f < 3e11) return { name: "Microwaves", col: "#f0932b" };
+    if (f < 4.0e14) return { name: "Infrared", col: "#e0554e" };
+    if (f < 7.9e14) { var nm = lam * 1e9; var t = Math.max(0, Math.min(1, (700 - nm) / 300)); return { name: "Visible light", col: "hsl(" + (t * 270) + ",95%,62%)" }; }
+    if (f < 3e16) return { name: "Ultraviolet", col: "#a66bff" };
+    if (f < 3e19) return { name: "X-rays", col: "#5db4f0" };
+    return { name: "Gamma rays", col: "#dfe6ff" };
+  }
+  function fmtLen(m) {
+    if (m >= 1e3) return (m / 1e3).toFixed(1) + " km";
+    if (m >= 1) return m.toFixed(2) + " m";
+    if (m >= 1e-2) return (m * 100).toFixed(1) + " cm";
+    if (m >= 1e-3) return (m * 1e3).toFixed(1) + " mm";
+    if (m >= 1e-6) return (m * 1e6).toFixed(1) + " µm";
+    if (m >= 1e-9) return (m * 1e9).toFixed(1) + " nm";
+    return (m * 1e12).toFixed(1) + " pm";
+  }
+  function fmtFreq(f) {
+    var u = [["Hz", 1], ["kHz", 1e3], ["MHz", 1e6], ["GHz", 1e9], ["THz", 1e12], ["PHz", 1e15], ["EHz", 1e18]];
+    for (var i = u.length - 1; i >= 0; i--) if (f >= u[i][1]) return (f / u[i][1]).toFixed(f >= u[i][1] * 100 ? 0 : 1) + " " + u[i][0];
+    return f.toFixed(0) + " Hz";
+  }
+  function fmtEnergy(f) {
+    var eV = 4.1357e-15 * f;
+    if (eV >= 1e6) return (eV / 1e6).toFixed(1) + " MeV";
+    if (eV >= 1e3) return (eV / 1e3).toFixed(1) + " keV";
+    if (eV >= 1) return eV.toFixed(2) + " eV";
+    if (eV >= 1e-3) return (eV * 1e3).toFixed(1) + " meV";
+    return eV.toExponential(1) + " eV";
+  }
+
+  function render() {
+    x.clearRect(0, 0, W, H);
+    var col = spectrum(freqHz()).col;
+    var k = 2 * Math.PI * cycles() / W;
+    // propagation axis
+    x.strokeStyle = "#28406a"; x.lineWidth = 1; x.setLineDash([4, 4]);
+    x.beginPath(); x.moveTo(0, mid); x.lineTo(W, mid); x.stroke(); x.setLineDash([]);
+
+    // B field (blue) — perpendicular to E, drawn skewed into the page for a 3D feel
+    x.strokeStyle = "rgba(93,180,240,.85)"; x.lineWidth = 2; x.beginPath();
+    for (var xb = 0; xb <= W; xb += 4) {
+      var b = A * Math.sin(k * xb - phase);
+      var px = xb + 0.62 * b, py = mid - 0.32 * b;
+      if (xb === 0) x.moveTo(px, py); else x.lineTo(px, py);
+    }
+    x.stroke();
+
+    // E field (band color) — vertical, with field-vector stems
+    x.strokeStyle = "rgba(255,255,255,.10)"; x.lineWidth = 1;
+    for (var xs = 0; xs <= W; xs += 16) {
+      var e = A * Math.sin(k * xs - phase);
+      x.beginPath(); x.moveTo(xs, mid); x.lineTo(xs, mid - e); x.stroke();
+    }
+    x.strokeStyle = col; x.lineWidth = 2.4; x.beginPath();
+    for (var xe = 0; xe <= W; xe += 3) {
+      var ee = A * Math.sin(k * xe - phase);
+      if (xe === 0) x.moveTo(xe, mid - ee); else x.lineTo(xe, mid - ee);
+    }
+    x.stroke();
+
+    // labels + propagation arrow
+    x.fillStyle = col; x.font = "bold 13px system-ui"; x.textAlign = "left"; x.fillText("E  (electric)", 10, 22);
+    x.fillStyle = "rgba(93,180,240,.95)"; x.fillText("B  (magnetic)", 10, H - 12);
+    x.strokeStyle = "#93a4bf"; x.lineWidth = 2;
+    x.beginPath(); x.moveTo(W - 96, mid + 96); x.lineTo(W - 26, mid + 96); x.stroke();
+    x.beginPath(); x.moveTo(W - 26, mid + 96); x.lineTo(W - 36, mid + 91); x.lineTo(W - 36, mid + 101); x.closePath(); x.fillStyle = "#93a4bf"; x.fill();
+    x.fillStyle = "#93a4bf"; x.font = "12px system-ui"; x.fillText("travels at c →", W - 150, mid + 82);
+  }
+
+  function updateStats() {
+    var f = freqHz(), s = spectrum(f);
+    document.getElementById("m-band").textContent = s.name;
+    document.getElementById("m-band").style.color = s.col;
+    document.getElementById("m-freq").textContent = fmtFreq(f);
+    document.getElementById("m-wave").textContent = fmtLen(LIGHT / f);
+    document.getElementById("m-energy").textContent = fmtEnergy(f);
+    document.getElementById("hint").innerHTML = "🧲 This is <b style='color:" + s.col + "'>" + s.name +
+      "</b>. Same wave as every other band — only the frequency differs. Notice the <b>E</b> and <b>B</b> fields stay exactly perpendicular and in step, regenerating each other as the wave races along at <em>c</em>.";
+  }
+
+  var frame = 0;
+  function loop() { phase += 0.05; render(); if (frame++ % 10 === 0) updateStats(); requestAnimationFrame(loop); }
+
+  document.getElementById("freq").addEventListener("input", function () { slider = +this.value; updateStats(); });
+  updateStats(); loop();
+})();
+</script>

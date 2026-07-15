@@ -33,5 +33,7 @@ window.SITE = {
       blurb: "Gravity is curved spacetime — warp the grid with a mass, launch a probe, and watch its orbit precess the way Einstein predicts but Newton can't." },
     { path: "special.html", title: "Special Relativity", emoji: "🚀",
       blurb: "Why moving clocks run slow — slide a light clock toward light speed and watch time dilate and lengths contract, all because light's speed never changes." },
+    { path: "electromagnetism.html", title: "Electromagnetism", emoji: "🧲",
+      blurb: "Electricity, magnetism and light are one thing — watch perpendicular E and B fields propagate and sweep the frequency across the whole spectrum." },
   ],
 };
