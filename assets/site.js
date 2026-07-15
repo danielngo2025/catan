@@ -88,8 +88,8 @@
   // --- Expert feedback widget (topic pages only; corrections are emailed, never shown on the site) ---
   function injectFeedback() {
     if (file === "index.html") return;                 // per-idea only
-    var email = SITE.feedbackEmail;
-    if (!email) return;
+    var key = SITE.web3formsKey;
+    if (!key) return;
     var topic = SITE.topics.filter(function (t) { return t.path === file; })[0];
     var title = topic ? topic.title : (document.title || "").split(" ·")[0];
     var wrap = document.createElement("div");
@@ -100,30 +100,51 @@
         '<div class="fb-head"><span>Expert feedback</span><button class="fb-x" id="fb-x" aria-label="Close">✕</button></div>' +
         '<div id="fb-body">' +
           '<p class="fb-note">See something wrong in the explanation or visualization for <b>' + title +
-            '</b>? Send a correction — it\'s emailed privately and never posted on the site.</p>' +
+            '</b>? Send a correction — it goes to me privately and is never posted on the site.</p>' +
           '<input class="fb-in" id="fb-name" placeholder="Your name / credentials (optional)">' +
           '<textarea class="fb-in fb-text" id="fb-text" rows="5" placeholder="What is incorrect, and what should it say instead?"></textarea>' +
-          '<div class="fb-actions"><button class="fb-send" id="fb-send">Send via email</button></div>' +
+          '<div class="fb-actions"><button class="fb-send" id="fb-send">Send</button></div>' +
         '</div>' +
-        '<div class="fb-done" id="fb-done" hidden>📨 Opening your email app… If nothing opens, email <b>' + email + '</b> directly.</div>' +
+        '<div class="fb-done" id="fb-done" hidden></div>' +
       '</div>';
     document.body.appendChild(wrap);
 
     var panel = document.getElementById("fb-panel");
+    var body = document.getElementById("fb-body");
+    var done = document.getElementById("fb-done");
+    var sendBtn = document.getElementById("fb-send");
     document.getElementById("fb-open").onclick = function () {
       panel.hidden = !panel.hidden;
       if (!panel.hidden) document.getElementById("fb-text").focus();
     };
     document.getElementById("fb-x").onclick = function () { panel.hidden = true; };
-    document.getElementById("fb-send").onclick = function () {
+    sendBtn.onclick = function () {
       var txt = document.getElementById("fb-text").value.trim();
       if (!txt) { document.getElementById("fb-text").focus(); return; }
       var name = document.getElementById("fb-name").value.trim();
-      var subject = "Expert Feedback: " + title;
-      var body = "Idea: " + title + " (" + realPath + ")\nFrom: " + (name || "(anonymous)") + "\n\n" + txt;
-      window.location.href = "mailto:" + email + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
-      document.getElementById("fb-body").hidden = true;
-      document.getElementById("fb-done").hidden = false;
+      sendBtn.disabled = true; sendBtn.textContent = "Sending…";
+      fetch("https://api.web3forms.com/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify({
+          access_key: key,
+          subject: "Expert Feedback: " + title,
+          from_name: name || "Anonymous expert",
+          idea: title,
+          page_url: location.href,
+          message: txt,
+          botcheck: false                              // Web3Forms honeypot
+        })
+      }).then(function (r) { return r.json(); }).then(function (d) {
+        if (!d || !d.success) throw new Error((d && d.message) || "failed");
+        body.hidden = true;
+        done.className = "fb-done ok"; done.textContent = "✅ Thanks! Your correction was sent.";
+        done.hidden = false;
+      }).catch(function () {
+        sendBtn.disabled = false; sendBtn.textContent = "Send";
+        done.className = "fb-done err"; done.textContent = "⚠️ Couldn't send — please check your connection and try again.";
+        done.hidden = false;
+      });
     };
   }
 

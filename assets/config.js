@@ -7,8 +7,9 @@ window.SITE = {
   // Leave "" to disable analytics until you've created the account.
   goatcounterCode: "learn-lab",
 
-  // Where the "Expert feedback" button sends corrections (opens the visitor's mail app).
-  feedbackEmail: "danhtnn@gmail.com",
+  // "Expert feedback" delivery via Web3Forms (https://web3forms.com). This access key is
+  // write-only and safe in public source; submissions are emailed to the key's owner.
+  web3formsKey: "0d9ecc1c-731e-4ec0-89ed-ca31a0fa796c",
 
   // Ordered list drives the homepage grid. `group` drives the nav dropdown menus
   // (groups appear in the order they first show up below).

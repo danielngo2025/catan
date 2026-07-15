@@ -100,8 +100,11 @@ button.primary{background:var(--accent);color:#241a00;border-color:var(--accent)
 .fb-text{resize:vertical;min-height:90px}
 .fb-actions{display:flex;justify-content:flex-end}
 .fb-send{background:var(--accent);color:#241a00;border:0;border-radius:8px;padding:8px 15px;font-weight:700;cursor:pointer}
-.fb-done{color:var(--good);font-size:13px;line-height:1.5}
+.fb-done{font-size:13px;line-height:1.5;margin-top:2px}
+.fb-done.ok{color:var(--good)}
+.fb-done.err{color:var(--bad)}
 .fb-done[hidden]{display:none}
+.fb-send:disabled{opacity:.6;cursor:default}
 
 @media(max-width:640px){
   .hero h1{font-size:30px}
