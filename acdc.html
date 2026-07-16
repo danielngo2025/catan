@@ -1,0 +1,166 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AC vs DC · Visual Learn Lab</title>
+<meta name="description" content="The War of the Currents, made visual — send power down a line and see why Tesla's AC beat Edison's DC: transformers raise the voltage so I²R transmission losses nearly vanish.">
+<link rel="stylesheet" href="assets/site.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🔌</text></svg>">
+<style>
+  canvas{width:100%;background:#0a1220;border:1px solid var(--line);border-radius:12px;display:block}
+  .toggle{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:12px}
+  .toggle button{border:0;border-radius:0;background:var(--panel2);padding:8px 18px;font-weight:700}
+  .toggle button.on{background:var(--accent);color:#241a00}
+  .metrics{display:flex;gap:14px;flex-wrap:wrap;margin:14px 0 0}
+  .metric{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 14px;min-width:120px}
+  .metric .v{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums}
+  .metric .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:14px}
+  .fld{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
+  .fld input[type=range]{width:100%;accent-color:var(--accent)}
+  .fld input:disabled{opacity:.4}
+  .fld b{color:var(--ink);font-variant-numeric:tabular-nums}
+  .hintbox{background:linear-gradient(180deg,#1a2c49,#16233a);border:1px solid var(--accent);border-radius:10px;padding:12px 14px;margin-top:14px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-top:4px}
+  .qc{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .qc b{color:var(--ink)} .qc p{margin:4px 0 0;color:var(--muted);font-size:13px}
+</style>
+
+<div id="site-nav"></div>
+
+<main class="page">
+  <h1>🔌 AC vs DC — the War of the Currents</h1>
+  <p class="lede">In the 1880s Edison pushed <b>DC</b> and Tesla &amp; Westinghouse pushed <b>AC</b> for powering
+    cities. The physics that decided it is one formula: power lost heating the wires is <b>I²R</b>. Send the same
+    power at a higher <b>voltage</b> and the <b>current I drops</b>, so the loss plummets with the <em>square</em>.
+    AC's killer advantage: a <b>transformer</b> can cheaply crank voltage up to hundreds of thousands of volts for
+    the long haul, then back down for your home. DC couldn't. Push power to the city below and see who wins.</p>
+
+  <div class="card">
+    <div class="toggle" id="mode"><button data-m="ac" class="on">⚡ AC (Tesla)</button><button data-m="dc">🔋 DC (Edison)</button></div>
+    <canvas id="stage" width="720" height="270"></canvas>
+    <div class="metrics">
+      <div class="metric"><div class="v" id="m-v">—</div><div class="k">Transmission voltage</div></div>
+      <div class="metric"><div class="v" id="m-i">—</div><div class="k">Line current</div></div>
+      <div class="metric"><div class="v" id="m-loss">—</div><div class="k">Power lost as heat</div></div>
+      <div class="metric"><div class="v" id="m-del">—</div><div class="k">Delivered to city</div></div>
+    </div>
+    <div class="controls">
+      <label class="fld">Distance to city = <b id="dv">120 km</b><input type="range" id="dist" min="5" max="400" step="5" value="120"></label>
+      <label class="fld">Transmission voltage = <b id="vv">150 kV</b><input type="range" id="volt" min="1" max="500" step="1" value="150"></label>
+    </div>
+    <div class="hintbox" id="hint"></div>
+  </div>
+
+  <h2>Why AC won</h2>
+  <div class="card">
+    <div class="cards">
+      <div class="qc"><b>Loss = I²R</b><p>Every wire has resistance R, and pushing current I through it wastes I²R as heat. To move a fixed amount of power, you can use high voltage with low current, or low voltage with high current — and low current wins, hugely, because the loss goes as the current <em>squared</em>.</p></div>
+      <div class="qc"><b>Transformers need AC</b><p>A transformer changes voltage using a <em>changing</em> magnetic field — which only alternating current provides. Steady DC can't be stepped up or down simply, so Edison was stuck transmitting near household voltage.</p></div>
+      <div class="qc"><b>Edison's one-mile problem</b><p>At ~110–240 V the current is so large that DC lines lose everything within about a mile, forcing a power station in every neighborhood. AC substations feed whole regions from one distant plant.</p></div>
+      <div class="qc"><b>Up for the road, down for the home</b><p>The grid steps up to hundreds of kV between cities, then down to 120/240 V at your street. High voltage is efficient but dangerous, so it never enters your house.</p></div>
+    </div>
+    <p class="muted" style="margin:12px 0 0">DC did eventually get its revenge: modern <b>HVDC</b> lines (using power electronics unavailable in Edison's day)
+      now carry bulk power across continents with even lower loss than AC. But for building the everyday grid — generators, transformers,
+      motors — Tesla's alternating current was the decisive winner.</p>
+  </div>
+
+  <footer class="site-foot">
+    <span class="views" data-count-path="self" style="visibility:hidden"></span>
+  </footer>
+</main>
+
+<script src="assets/config.js"></script>
+<script src="assets/site.js"></script>
+<script>
+(function () {
+  var c = document.getElementById("stage"), x = c.getContext("2d"), W = c.width, H = c.height;
+  var mode = "ac", dist = 120, volt = 150000, P = 1e6;     // deliver-attempt 1 MW; volt in V
+  var RPERKM = 0.08, flow = 0;
+
+  function calc() {
+    var V = mode === "dc" ? 240 : volt;
+    var R = RPERKM * dist;
+    var I = P / V;
+    var loss = I * I * R;
+    var eff = Math.max(0, 1 - loss / P);
+    return { V: V, R: R, I: I, loss: Math.min(loss, P), eff: eff };
+  }
+
+  function fmtP(w) { return w >= 1e6 ? (w / 1e6).toFixed(2) + " MW" : w >= 1e3 ? (w / 1e3).toFixed(0) + " kW" : w.toFixed(0) + " W"; }
+  function fmtV(v) { return v >= 1000 ? (v / 1000).toFixed(0) + " kV" : v.toFixed(0) + " V"; }
+  function fmtI(i) { return i >= 1000 ? (i / 1000).toFixed(1) + " kA" : i.toFixed(0) + " A"; }
+
+  function render() {
+    var r = calc(), eff = r.eff;
+    x.clearRect(0, 0, W, H);
+    var plantX = 70, cityX = W - 80, lineY = 120;
+
+    // power plant
+    x.fillStyle = "#3a4759"; x.fillRect(20, 90, 60, 70);
+    x.fillStyle = "#93a4bf"; x.font = "11px system-ui"; x.textAlign = "center"; x.fillText("power", 50, 175); x.fillText("plant", 50, 188);
+    x.fillStyle = "#f4b942"; x.fillText("⚡", 50, 130);
+
+    // transmission line — colour by loss (green efficient → red hot)
+    var hot = 1 - eff, col = "rgb(" + (60 + 195 * hot | 0) + "," + (206 - 160 * hot | 0) + "," + (110 - 90 * hot | 0) + ")";
+    x.strokeStyle = col; x.lineWidth = 3 + 4 * hot;
+    x.beginPath(); x.moveTo(plantX + 10, lineY); x.lineTo(cityX - 10, lineY); x.stroke();
+    // heat shimmer if lossy
+    if (hot > 0.3) { x.fillStyle = "rgba(255,107,107," + (hot * 0.5).toFixed(2) + ")"; x.font = "12px system-ui"; x.fillText("🔥 overheating — power wasted as heat", (plantX + cityX) / 2, lineY - 12); }
+    // flowing energy dots (speed/brightness ∝ delivered)
+    flow = (flow + 0.6 + eff) % 40;
+    for (var d = -40; d < cityX - plantX; d += 40) {
+      var dx = plantX + 10 + d + flow;
+      if (dx > plantX + 10 && dx < cityX - 10) { x.fillStyle = "rgba(244,185,66," + (0.25 + 0.75 * eff).toFixed(2) + ")"; x.beginPath(); x.arc(dx, lineY, 3, 0, 7); x.fill(); }
+    }
+
+    // transformers (AC only)
+    if (mode === "ac") {
+      [[plantX + 26, "▲"], [cityX - 26, "▼"]].forEach(function (tp) {
+        x.fillStyle = "#1d2f4d"; x.strokeStyle = "#6db4ff"; x.lineWidth = 1.5;
+        x.fillRect(tp[0] - 12, lineY - 16, 24, 32); x.strokeRect(tp[0] - 12, lineY - 16, 24, 32);
+        x.fillStyle = "#6db4ff"; x.font = "12px system-ui"; x.textAlign = "center"; x.fillText(tp[1], tp[0], lineY + 4);
+      });
+      x.fillStyle = "#6db4ff"; x.font = "10px system-ui"; x.fillText("step-up", plantX + 26, lineY - 22); x.fillText("step-down", cityX - 26, lineY - 22);
+    }
+
+    // city — brightness ∝ delivered power
+    var lit = eff;
+    for (var b = 0; b < 5; b++) for (var fl = 0; fl < 4; fl++) {
+      x.fillStyle = "rgba(244,220,120," + (0.12 + 0.85 * lit * (Math.random() < 0.9 ? 1 : 0.3)).toFixed(2) + ")";
+      x.fillRect(cityX + 6 + b * 13, 96 + fl * 16, 9, 11);
+    }
+    x.strokeStyle = "#3a4759"; x.strokeRect(cityX + 4, 90, 68, 70);
+    x.fillStyle = "#93a4bf"; x.textAlign = "center"; x.font = "11px system-ui"; x.fillText("city", cityX + 38, 175);
+
+    // distance label
+    x.fillStyle = "#5b7099"; x.fillText(dist + " km of line", (plantX + cityX) / 2, lineY + 34);
+
+    updateStats(r);
+  }
+
+  function updateStats(r) {
+    document.getElementById("m-v").textContent = fmtV(r.V);
+    document.getElementById("m-i").textContent = fmtI(r.I);
+    document.getElementById("m-loss").textContent = Math.round(r.loss / P * 100) + "%";
+    document.getElementById("m-del").textContent = Math.round(r.eff * 100) + "%";
+    document.getElementById("m-del").style.color = r.eff > 0.85 ? "var(--good)" : r.eff > 0.4 ? "var(--accent)" : "var(--bad)";
+    var h;
+    if (mode === "dc") h = "🔌 <b>Edison's DC</b> can't be transformed, so it's stuck at 240 V. Over " + dist + " km the current is a massive <b>" + fmtI(r.I) + "</b>, and I²R wastes <b>" + Math.round(r.loss / P * 100) + "%</b> as heat — the line cooks and the city goes dark. This is why DC needed a power station every mile.";
+    else if (r.eff > 0.9) h = "🔌 <b>Tesla's AC</b> steps up to <b>" + fmtV(r.V) + "</b>, dropping the current to just <b>" + fmtI(r.I) + "</b>. I²R losses are only <b>" + Math.round(r.loss / P * 100) + "%</b> even across " + dist + " km — the city stays bright. That's the whole grid.";
+    else h = "🔌 Even on AC, <b>" + fmtV(r.V) + "</b> is too low for " + dist + " km: the current (" + fmtI(r.I) + ") is high enough that I²R wastes <b>" + Math.round(r.loss / P * 100) + "%</b>. Slide the voltage up and watch the loss collapse.";
+    document.getElementById("hint").innerHTML = h;
+  }
+
+  document.querySelectorAll("#mode button").forEach(function (b) {
+    b.onclick = function () {
+      mode = b.dataset.m;
+      document.querySelectorAll("#mode button").forEach(function (o) { o.classList.toggle("on", o === b); });
+      document.getElementById("volt").disabled = mode === "dc";
+    };
+  });
+  document.getElementById("dist").addEventListener("input", function () { dist = +this.value; document.getElementById("dv").textContent = dist + " km"; });
+  document.getElementById("volt").addEventListener("input", function () { volt = +this.value * 1000; document.getElementById("vv").textContent = this.value + " kV"; });
+
+  (function loop() { render(); requestAnimationFrame(loop); })();
+})();
+</script>
