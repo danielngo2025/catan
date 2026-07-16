@@ -1,0 +1,231 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Schrödinger's Equation · Visual Learn Lab</title>
+<meta name="description" content="Schrödinger's equation, made visual — see quantized energy levels and the wavefunction in a box, then fire a wave packet at a wall and watch it quantum-tunnel through.">
+<link rel="stylesheet" href="assets/site.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🐱</text></svg>">
+<style>
+  canvas{width:100%;background:#0a1220;border:1px solid var(--line);border-radius:12px;display:block}
+  .formula{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px;text-align:center;
+    font-size:22px;font-weight:800;margin-bottom:14px}
+  .formula small{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-top:4px}
+  .tabs{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:12px}
+  .tabs button{border:0;border-radius:0;background:var(--panel2);padding:8px 16px;font-weight:700}
+  .tabs button.on{background:var(--accent);color:#241a00}
+  .btnrow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}
+  .btnrow .lvl{display:flex;gap:6px;flex-wrap:wrap}
+  .btnrow .lvl button{font-size:13px;padding:7px 11px}
+  .btnrow .lvl button.on{background:var(--accent);color:#241a00;border-color:var(--accent)}
+  .field input[type=range]{width:200px}
+  .metrics{display:flex;gap:14px;flex-wrap:wrap;margin:14px 0 0}
+  .metric{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 14px;min-width:120px}
+  .metric .v{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums}
+  .metric .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .legend{font-size:12px;color:var(--muted);margin-top:8px}
+  .legend b{color:#6db4ff} .legend i{color:#f4b942;font-style:normal}
+  .hintbox{background:linear-gradient(180deg,#1a2c49,#16233a);border:1px solid var(--accent);border-radius:10px;padding:12px 14px;margin-top:14px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-top:4px}
+  .qc{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .qc b{color:var(--ink)} .qc p{margin:4px 0 0;color:var(--muted);font-size:13px}
+</style>
+
+<div id="site-nav"></div>
+
+<main class="page">
+  <h1>🐱 Schrödinger's Equation — the wavefunction</h1>
+  <p class="lede">This is the master equation of quantum mechanics. A particle isn't a dot with a position —
+    it's a spread-out <b>wavefunction ψ</b>, and Schrödinger's equation says how ψ flows and changes in time.
+    You never see ψ directly; its square <b>|ψ|²</b> gives the <b>probability</b> of finding the particle
+    somewhere (the Born rule). Two of its strangest predictions: energy that comes in <b>discrete levels</b>,
+    and particles that <b>tunnel through walls</b> they can't classically cross. Explore both below.</p>
+
+  <div class="formula">iℏ ∂ψ/∂t = Ĥψ<small>the wavefunction ψ evolves in time, driven by the energy operator Ĥ = −(ℏ²/2m)∇² + V</small></div>
+
+  <div class="card">
+    <div class="tabs" id="tabs"><button data-m="box" class="on">Particle in a box</button><button data-m="tunnel">Quantum tunnelling</button></div>
+    <canvas id="stage" width="720" height="340"></canvas>
+
+    <div id="ctl-box">
+      <div class="btnrow">
+        <span class="muted" style="font-size:12px;align-self:center">Energy level:</span>
+        <div class="lvl" id="levels"></div>
+        <button id="sup">Superpose 1 + 2</button>
+      </div>
+      <div class="legend"><b>— Re ψ</b> (the wavefunction, phase rotates in time) &nbsp; <i>▓ |ψ|²</i> (probability of finding the particle)</div>
+    </div>
+    <div id="ctl-tunnel" style="display:none">
+      <div class="btnrow">
+        <button class="primary" id="fire">▶ Fire wave packet</button>
+        <label class="field">Barrier height <input type="range" id="vb" min="5" max="60" step="1" value="22"></label>
+      </div>
+      <div class="legend"><i>▓ |ψ|²</i> (probability) &nbsp; <span style="color:#ff6b6b">▊ barrier</span> — the wall the particle classically can't pass</div>
+    </div>
+
+    <div class="metrics" id="metrics"></div>
+    <div class="hintbox" id="hint"></div>
+  </div>
+
+  <h2>What the equation reveals</h2>
+  <div class="card">
+    <div class="cards">
+      <div class="qc"><b>Energy is quantized</b><p>Confine a wave and only whole numbers of half-wavelengths fit — so only special energies E ∝ n² are allowed. This "particle in a box" is why atoms have discrete energy levels and emit sharp spectral colours.</p></div>
+      <div class="qc"><b>|ψ|² is probability</b><p>The wavefunction itself is complex and unobservable; Max Born's rule says |ψ|² is the probability density. A stationary state has a fixed |ψ|² even though ψ keeps rotating in phase.</p></div>
+      <div class="qc"><b>Quantum tunnelling</b><p>A wave packet meeting a barrier taller than its energy still leaks partly through — impossible for a classical ball. It powers nuclear fusion in the Sun, alpha decay, flash memory, and the scanning tunnelling microscope.</p></div>
+      <div class="qc"><b>Superposition &amp; time</b><p>Add two energy states and |ψ|² sloshes back and forth — the "beat" between their energies. The equation is linear, so any sum of solutions is also a solution: the heart of quantum weirdness.</p></div>
+    </div>
+    <p class="muted" style="margin:12px 0 0">Schrödinger's equation is to quantum mechanics what Newton's laws are to everyday motion — give it the forces
+      (the potential V) and it predicts the future of ψ exactly and deterministically. The randomness enters only when you
+      <em>measure</em>: then |ψ|² tells you the odds. Dirac later made it compatible with relativity; this non-relativistic form still
+      governs chemistry, materials, and every quantum device.</p>
+  </div>
+
+  <footer class="site-foot">
+    <span class="views" data-count-path="self" style="visibility:hidden"></span>
+  </footer>
+</main>
+
+<script src="assets/config.js"></script>
+<script src="assets/site.js"></script>
+<script>
+(function () {
+  var c = document.getElementById("stage"), x = c.getContext("2d"), W = c.width, H = c.height;
+  var mode = "box", t = 0;
+
+  // ---------- particle in a box ----------
+  var selN = 1, sup = false;
+  var levBox = document.getElementById("levels");
+  levBox.innerHTML = [1, 2, 3, 4, 5].map(function (n) { return '<button data-n="' + n + (n === 1 ? '" class="on"' : '"') + '>n=' + n + "</button>"; }).join("");
+  function selLevel(n) { selN = n; sup = false; syncLev(); }
+  function syncLev() {
+    levBox.querySelectorAll("button").forEach(function (b) { b.classList.toggle("on", !sup && +b.dataset.n === selN); });
+    document.getElementById("sup").classList.toggle("on", sup);
+  }
+  levBox.querySelectorAll("button").forEach(function (b) { b.onclick = function () { selLevel(+b.dataset.n); }; });
+  document.getElementById("sup").onclick = function () { sup = !sup; if (sup) t = 0; syncLev(); };
+
+  function drawBox() {
+    var mx = 118, mw = W - mx - 12, mid = H / 2, amp = H * 0.32;
+    // energy ladder
+    x.strokeStyle = "#28406a"; x.lineWidth = 1;
+    x.fillStyle = "#93a4bf"; x.font = "11px system-ui"; x.textAlign = "left";
+    x.fillText("energy", 10, 22); x.fillText("E ∝ n²", 10, H - 8);
+    var lb = H - 30, lh = H - 70;
+    for (var n = 1; n <= 5; n++) {
+      var y = lb - (n * n) / 25 * lh, on = (!sup && n === selN) || (sup && (n === 1 || n === 2));
+      x.strokeStyle = on ? "#f4b942" : "#28406a"; x.lineWidth = on ? 2 : 1;
+      x.beginPath(); x.moveTo(30, y); x.lineTo(95, y); x.stroke();
+      x.fillStyle = on ? "#f4b942" : "#5b7099"; x.fillText("n=" + n, 30, y - 4);
+    }
+    // box walls
+    x.strokeStyle = "#3a5686"; x.lineWidth = 2;
+    x.beginPath(); x.moveTo(mx, 30); x.lineTo(mx, H - 30); x.moveTo(mx + mw, 30); x.lineTo(mx + mw, H - 30);
+    x.moveTo(mx, mid); x.lineTo(mx + mw, mid); x.stroke();
+    // sample ψ
+    var S = 240, prob = [], reL = [];
+    for (var i = 0; i <= S; i++) {
+      var f = i / S, re, im;
+      if (sup) {
+        var s1 = Math.SQRT2 * Math.sin(Math.PI * f), s2 = Math.SQRT2 * Math.sin(2 * Math.PI * f);
+        re = (s1 * Math.cos(1 * t) + s2 * Math.cos(4 * t)) / Math.SQRT2;
+        im = -(s1 * Math.sin(1 * t) + s2 * Math.sin(4 * t)) / Math.SQRT2;
+      } else {
+        var s = Math.SQRT2 * Math.sin(selN * Math.PI * f);
+        re = s * Math.cos(selN * selN * t); im = -s * Math.sin(selN * selN * t);
+      }
+      prob.push(re * re + im * im); reL.push(re);
+    }
+    // |ψ|² filled (amber)
+    x.fillStyle = "rgba(244,185,66,.28)"; x.beginPath(); x.moveTo(mx, mid);
+    for (var j = 0; j <= S; j++) x.lineTo(mx + j / S * mw, mid - prob[j] * amp * 0.5);
+    x.lineTo(mx + mw, mid); x.closePath(); x.fill();
+    // Re ψ line (blue)
+    x.strokeStyle = "#6db4ff"; x.lineWidth = 2; x.beginPath();
+    for (var k = 0; k <= S; k++) { var px = mx + k / S * mw, py = mid - reL[k] * amp * 0.5; if (k === 0) x.moveTo(px, py); else x.lineTo(px, py); }
+    x.stroke();
+  }
+
+  // ---------- quantum tunnelling (time-dependent Schrödinger, Visscher leapfrog) ----------
+  var N = 480, R = new Float64Array(N), I = new Float64Array(N), V = new Float64Array(N);
+  var K0 = 0.62;                                          // packet momentum → energy K0²/2 ≈ 0.19
+  var bH = 0.22, bStart = Math.floor(N * 0.52), bEnd = bStart + 6, firing = false, transmitted = 0;
+  function setBarrier() { V.fill(0); for (var i = bStart; i < bEnd; i++) V[i] = bH; }
+  function fire() {
+    setBarrier();
+    var x0 = N * 0.22, sig = 22, k0 = K0, norm = 0;
+    for (var i = 0; i < N; i++) {
+      var e = Math.exp(-((i - x0) * (i - x0)) / (2 * sig * sig));
+      R[i] = e * Math.cos(k0 * i); I[i] = e * Math.sin(k0 * i); norm += R[i] * R[i] + I[i] * I[i];
+    }
+    var s = 1 / Math.sqrt(norm);
+    for (var j = 0; j < N; j++) { R[j] *= s; I[j] *= s; }
+    firing = true; transmitted = 0;
+  }
+  function Hf(f, i) { return -0.5 * (f[i + 1] - 2 * f[i] + f[i - 1]) + V[i] * f[i]; }
+  function stepTDSE() {
+    var dt = 0.10, steps = 9;
+    for (var s = 0; s < steps; s++) {
+      for (var i = 1; i < N - 1; i++) R[i] += dt * Hf(I, i);
+      for (var j = 1; j < N - 1; j++) I[j] -= dt * Hf(R, j);
+      // soft absorbing edges
+      for (var e = 0; e < 30; e++) { var d = 0.5 + 0.5 * e / 30; R[e] *= d; I[e] *= d; R[N - 1 - e] *= d; I[N - 1 - e] *= d; }
+    }
+    var tr = 0, tot = 1e-9;
+    for (var m = 0; m < N; m++) { var p = R[m] * R[m] + I[m] * I[m]; tot += p; if (m >= bEnd) tr += p; }
+    transmitted = Math.max(transmitted, tr / tot);        // hold the peak fraction that got through
+  }
+  function drawTunnel() {
+    var mid = H * 0.7, amp = H * 0.9;
+    // barrier
+    x.fillStyle = "rgba(255,107,107,.22)";
+    x.fillRect(bStart / N * W, mid - bH / 0.6 * (H * 0.5), (bEnd - bStart) / N * W, bH / 0.6 * (H * 0.5));
+    x.fillStyle = "rgba(255,107,107,.9)"; x.font = "12px system-ui"; x.textAlign = "center";
+    x.fillText("barrier", (bStart + bEnd) / 2 / N * W, mid - bH / 0.6 * (H * 0.5) - 6);
+    // baseline
+    x.strokeStyle = "#1d2f4d"; x.setLineDash([4, 4]); x.beginPath(); x.moveTo(0, mid); x.lineTo(W, mid); x.stroke(); x.setLineDash([]);
+    // |ψ|²
+    x.fillStyle = "rgba(244,185,66,.5)"; x.strokeStyle = "#f4b942"; x.lineWidth = 2; x.beginPath(); x.moveTo(0, mid);
+    for (var i = 0; i < N; i++) { var p = R[i] * R[i] + I[i] * I[i]; x.lineTo(i / N * W, mid - p * amp * 22); }
+    x.lineTo(W, mid); x.closePath(); x.fill();
+  }
+
+  function metrics(html) { document.getElementById("metrics").innerHTML = html; }
+  function m(v, k) { return '<div class="metric"><div class="v">' + v + '</div><div class="k">' + k + "</div></div>"; }
+
+  function frame() {
+    x.clearRect(0, 0, W, H);
+    if (mode === "box") {
+      t += (sup ? 0.02 : 0.03); drawBox();
+      metrics(m(sup ? "1 + 2" : "n = " + selN, "State") + m(sup ? "1 & 4" : (selN * selN), "Energy (∝ n²)") + m(sup ? "beating" : (selN - 1), sup ? "|ψ|² motion" : "Nodes"));
+      document.getElementById("hint").innerHTML = sup
+        ? "🐱 A <b>superposition</b> of the n=1 and n=2 states: |ψ|² sloshes side to side, oscillating at the difference of their energies. Because the equation is linear, this sum is itself a valid solution."
+        : "🐱 The <b>n=" + selN + "</b> energy level: a standing wave with " + (selN - 1) + " node" + (selN === 2 ? "" : "s") + " inside the box. Only these shapes 'fit', so energy is <b>quantized</b> (E ∝ n²). Its |ψ|² (amber) is fixed in time even as ψ (blue) rotates.";
+    } else {
+      if (firing) stepTDSE();
+      drawTunnel();
+      var Epkt = K0 * K0 / 2;
+      metrics(m((Epkt).toFixed(2), "Packet energy E") + m(bH.toFixed(2), "Barrier height V₀") + m((transmitted * 100).toFixed(0) + "%", "Transmitted"));
+      document.getElementById("hint").innerHTML = !firing
+        ? "🐱 Press <b>Fire</b> to launch a wave packet at the wall. The barrier is taller than the packet's energy (V₀ &gt; E), so a classical particle would always bounce back."
+        : transmitted > 0.01
+          ? "🐱 Part of the wave <b>tunnelled through</b> the barrier — there's now a real probability (" + (transmitted * 100).toFixed(0) + "%) of finding the particle on the far side, even though it lacked the energy to climb the wall. Lower the barrier to tunnel more."
+          : "🐱 The packet is hitting the barrier — watch some of |ψ|² leak through to the right while most reflects.";
+    }
+    requestAnimationFrame(frame);
+  }
+
+  document.querySelectorAll("#tabs button").forEach(function (b) {
+    b.onclick = function () {
+      mode = b.dataset.m; t = 0;
+      document.querySelectorAll("#tabs button").forEach(function (o) { o.classList.toggle("on", o === b); });
+      document.getElementById("ctl-box").style.display = mode === "box" ? "" : "none";
+      document.getElementById("ctl-tunnel").style.display = mode === "tunnel" ? "" : "none";
+      if (mode === "tunnel") { setBarrier(); R.fill(0); I.fill(0); firing = false; }
+    };
+  });
+  document.getElementById("fire").onclick = fire;
+  document.getElementById("vb").addEventListener("input", function () { bH = +this.value / 100; setBarrier(); });
+
+  syncLev(); setBarrier(); frame();
+})();
+</script>
