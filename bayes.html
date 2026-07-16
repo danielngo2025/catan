@@ -1,0 +1,167 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bayes' Theorem · Visual Learn Lab</title>
+<meta name="description" content="Bayes' theorem, made visual — a natural-frequency grid of 1,000 people shows why a positive result on a highly accurate test for a rare disease usually still means you're healthy.">
+<link rel="stylesheet" href="assets/site.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🎯</text></svg>">
+<style>
+  canvas{width:100%;background:#0a1220;border:1px solid var(--line);border-radius:12px;display:block}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:12px;color:var(--muted)}
+  .legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+  .posbar-wrap{margin-top:14px}
+  .posbar-wrap .cap{font-size:12px;color:var(--muted);margin-bottom:5px}
+  .posbar{display:flex;height:34px;border-radius:8px;overflow:hidden;border:1px solid var(--line);font-size:13px;font-weight:800;color:#0b1220}
+  .posbar span{display:flex;align-items:center;justify-content:center;white-space:nowrap;transition:width .12s}
+  .eq{font-size:13px;color:var(--muted);margin-top:12px;font-variant-numeric:tabular-nums;line-height:1.7}
+  .eq b{color:var(--ink)}
+  .controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:14px}
+  .fld{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
+  .fld input[type=range]{width:100%;accent-color:var(--accent)}
+  .fld b{color:var(--ink);font-variant-numeric:tabular-nums}
+  .presets{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+  .presets button{font-size:12px;padding:6px 10px}
+  .metrics{display:flex;gap:14px;flex-wrap:wrap;margin:14px 0 0}
+  .metric{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 14px;min-width:130px}
+  .metric .v{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
+  .metric .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .hintbox{background:linear-gradient(180deg,#1a2c49,#16233a);border:1px solid var(--accent);border-radius:10px;padding:12px 14px;margin-top:14px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-top:4px}
+  .qc{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .qc b{color:var(--ink)} .qc p{margin:4px 0 0;color:var(--muted);font-size:13px}
+</style>
+
+<div id="site-nav"></div>
+
+<main class="page">
+  <h1>🎯 Bayes' Theorem — the false-positive surprise</h1>
+  <p class="lede">Bayes' theorem is the rule for <b>updating a belief when new evidence arrives</b>: your prior
+    probability, reweighted by how well the evidence fits. Its most famous lesson is deeply counter-intuitive.
+    Suppose a disease affects 1% of people and there's a test that's ~99% accurate. You test <b>positive</b> —
+    how likely are you to actually be sick? Most people guess ~99%. The real answer is often under 20%. Below,
+    each square is one of 1,000 people — see exactly why.</p>
+
+  <div class="card">
+    <canvas id="grid" width="720" height="300"></canvas>
+    <div class="legend">
+      <span><i style="background:#ff6b6b"></i>Sick &amp; tested + (true positive)</span>
+      <span><i style="background:#f4b942"></i>Healthy &amp; tested + (false positive)</span>
+      <span><i style="background:#7a2e2e"></i>Sick &amp; tested − (missed)</span>
+      <span><i style="background:#2b3f63"></i>Healthy &amp; tested − (correct)</span>
+    </div>
+
+    <div class="posbar-wrap">
+      <div class="cap">Of everyone who tests positive, what fraction is actually sick?</div>
+      <div class="posbar"><span id="seg-tp" style="background:#ff6b6b">sick</span><span id="seg-fp" style="background:#f4b942">false alarm</span></div>
+    </div>
+    <div class="eq" id="eq"></div>
+
+    <div class="controls">
+      <label class="fld">Disease prevalence = <b id="pv">1.0%</b><input type="range" id="prev" min="1" max="500" step="1" value="10"></label>
+      <label class="fld">Test sensitivity (true + rate) = <b id="sev">99%</b><input type="range" id="sens" min="50" max="100" step="1" value="99"></label>
+      <label class="fld">Test specificity (true − rate) = <b id="spv">95%</b><input type="range" id="spec" min="50" max="100" step="1" value="95"></label>
+    </div>
+    <div class="presets">
+      <button data-p="10,99,95">Rare disease (the paradox)</button>
+      <button data-p="300,90,90">Common condition</button>
+      <button data-p="5,95,90">Mass screening</button>
+    </div>
+
+    <div class="metrics">
+      <div class="metric"><div class="v" id="m-post">—</div><div class="k">P(sick | positive)</div></div>
+      <div class="metric"><div class="v" id="m-pos">—</div><div class="k">Positives / 1,000</div></div>
+      <div class="metric"><div class="v" id="m-tp">—</div><div class="k">…truly sick</div></div>
+      <div class="metric"><div class="v" id="m-fp">—</div><div class="k">…false alarms</div></div>
+    </div>
+    <div class="hintbox" id="hint"></div>
+  </div>
+
+  <h2>How the update works</h2>
+  <div class="card">
+    <div class="cards">
+      <div class="qc"><b>Prior → posterior</b><p>Bayes multiplies your prior belief by the "likelihood" of the evidence and renormalizes: P(sick | +) = P(+ | sick)·P(sick) ⁄ P(+). Evidence <em>nudges</em> the prior; it doesn't replace it.</p></div>
+      <div class="qc"><b>Base rates dominate</b><p>With a rare disease there are ~99× more healthy people, so even a small false-positive rate produces a flood of false alarms that swamps the few true positives. Ignoring the base rate is the "base-rate fallacy."</p></div>
+      <div class="qc"><b>Evidence stacks up</b><p>Today's posterior is tomorrow's prior. A second independent positive test updates again and pushes the probability much higher — which is exactly why doctors confirm with a second, different test.</p></div>
+      <div class="qc"><b>Bayes is everywhere</b><p>Spam filters, medical screening, search-and-rescue, machine learning, and scientific inference all run on it. Misused in court it becomes the "prosecutor's fallacy" — confusing P(evidence | innocent) with P(innocent | evidence).</p></div>
+    </div>
+    <p class="muted" style="margin:12px 0 0">The grid makes the counter-intuitive feel obvious: a "99% accurate" test sounds airtight, but accuracy on
+      the <em>test</em> is not the same as the probability of being <em>sick given a positive</em>. Those two only converge when the
+      condition is common. Bayes' theorem is, in the end, just careful bookkeeping about which population a piece of evidence came from.</p>
+  </div>
+
+  <footer class="site-foot">
+    <span class="views" data-count-path="self" style="visibility:hidden"></span>
+  </footer>
+</main>
+
+<script src="assets/config.js"></script>
+<script src="assets/site.js"></script>
+<script>
+(function () {
+  var c = document.getElementById("grid"), x = c.getContext("2d"), W = c.width, H = c.height;
+  var N = 1000, COLS = 50, ROWS = 20;
+  var prev = 0.01, sens = 0.99, spec = 0.95;
+
+  function render() {
+    // exact posterior
+    var pPos = sens * prev + (1 - spec) * (1 - prev);
+    var post = pPos > 0 ? (sens * prev) / pPos : 0;
+    // rounded counts per 1,000 for the grid + text
+    var sick = Math.round(N * prev), healthy = N - sick;
+    var TP = Math.round(sick * sens), FN = sick - TP;
+    var FP = Math.round(healthy * (1 - spec)), TN = healthy - FP;
+    var pos = TP + FP;
+
+    // grid: fill order TP, FP, FN, TN (positives first & contiguous)
+    x.clearRect(0, 0, W, H);
+    var mx = 6, my = 6, cw = (W - 2 * mx) / COLS, ch = (H - 2 * my) / ROWS, pad = 2;
+    for (var idx = 0; idx < N; idx++) {
+      var col = idx % COLS, row = Math.floor(idx / COLS);
+      x.fillStyle = idx < TP ? "#ff6b6b" : idx < TP + FP ? "#f4b942" : idx < TP + FP + FN ? "#7a2e2e" : "#2b3f63";
+      x.fillRect(mx + col * cw + pad / 2, my + row * ch + pad / 2, cw - pad, ch - pad);
+    }
+
+    // positive bar (red = truly sick, amber = false alarm)
+    var pct = Math.round(post * 100);
+    document.getElementById("seg-tp").style.width = (post * 100) + "%";
+    document.getElementById("seg-fp").style.width = ((1 - post) * 100) + "%";
+    document.getElementById("seg-tp").textContent = post > 0.12 ? "sick " + pct + "%" : "";
+    document.getElementById("seg-fp").textContent = (1 - post) > 0.12 ? "false alarm " + (100 - pct) + "%" : "";
+
+    // equation with numbers
+    document.getElementById("eq").innerHTML =
+      "P(sick | +) = " +
+      "( " + (sens * 100).toFixed(0) + "% × " + fmtP(prev) + " ) ⁄ ( " +
+      (sens * 100).toFixed(0) + "% × " + fmtP(prev) + " + " + ((1 - spec) * 100).toFixed(0) + "% × " + fmtP(1 - prev) + " ) = <b>" + pct + "%</b>";
+
+    document.getElementById("m-post").textContent = pct + "%";
+    document.getElementById("m-pos").textContent = pos;
+    document.getElementById("m-tp").textContent = TP;
+    document.getElementById("m-fp").textContent = FP;
+
+    document.getElementById("hint").innerHTML = post < 0.5
+      ? "🎯 A positive test, yet you're <b>more likely healthy than sick</b> (" + pct + "% sick). The amber false alarms outnumber the red true positives, because the disease is rare — far more healthy people to misclassify. This is the <b>base-rate fallacy</b>."
+      : "🎯 Here a positive test <b>does</b> mean you're probably sick (" + pct + "%). When the condition is common (or the test's false-positive rate is tiny), true positives dominate and intuition lines up with the math.";
+  }
+  function fmtP(p) { return (p * 100 < 1 ? (p * 100).toFixed(1) : Math.round(p * 100)) + "%"; }
+
+  function bind(id, fn) { document.getElementById(id).addEventListener("input", function () { fn(+this.value); render(); }); }
+  bind("prev", function (v) { prev = v / 1000; document.getElementById("pv").textContent = fmtP(prev); });
+  bind("sens", function (v) { sens = v / 100; document.getElementById("sev").textContent = v + "%"; });
+  bind("spec", function (v) { spec = v / 100; document.getElementById("spv").textContent = v + "%"; });
+
+  document.querySelectorAll(".presets button").forEach(function (b) {
+    b.onclick = function () {
+      var a = b.dataset.p.split(",").map(Number);
+      document.getElementById("prev").value = a[0]; document.getElementById("sens").value = a[1]; document.getElementById("spec").value = a[2];
+      prev = a[0] / 1000; sens = a[1] / 100; spec = a[2] / 100;
+      document.getElementById("pv").textContent = fmtP(prev);
+      document.getElementById("sev").textContent = a[1] + "%";
+      document.getElementById("spv").textContent = a[2] + "%";
+      render();
+    };
+  });
+
+  render();
+})();
+</script>

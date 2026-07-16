@@ -58,6 +58,8 @@ window.SITE = {
       blurb: "Information measured in bits — tune a message source and watch Shannon entropy, per-symbol surprise, and compression savings respond." },
     { path: "chaos.html", title: "Chaos Theory", emoji: "🦋", group: "Math & CS",
       blurb: "Deterministic unpredictability — slide through the logistic map's bifurcation diagram from order into chaos, and watch two near-identical starts diverge." },
+    { path: "bayes.html", title: "Bayes' Theorem", emoji: "🎯", group: "Math & CS",
+      blurb: "The false-positive surprise — a grid of 1,000 people shows why a positive result on an accurate test for a rare disease usually still means you're healthy." },
     { path: "blackscholes.html", title: "Black-Scholes", emoji: "💹", group: "Economics & Finance",
       blurb: "Pricing a stock option — drag spot, strike, volatility, time and rate to see the fair price and watch time value melt into the payoff as expiry nears." },
   ],
