@@ -1,0 +1,177 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Black-Scholes · Visual Learn Lab</title>
+<meta name="description" content="The Black-Scholes equation, made visual — price a stock option with live sliders for spot, strike, volatility, time, and rate, and watch time value melt into the payoff as expiry nears.">
+<link rel="stylesheet" href="assets/site.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>💹</text></svg>">
+<style>
+  canvas{width:100%;background:#0a1220;border:1px solid var(--line);border-radius:12px;display:block}
+  .metrics{display:flex;gap:14px;flex-wrap:wrap;margin:14px 0 0}
+  .metric{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 14px;min-width:120px}
+  .metric .v{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
+  .metric .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:14px}
+  .fld{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
+  .fld input[type=range]{width:100%;accent-color:var(--accent)}
+  .fld b{color:var(--ink);font-variant-numeric:tabular-nums}
+  .toggle{display:inline-flex;gap:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-top:6px}
+  .toggle button{border:0;border-radius:0;background:var(--panel2);padding:7px 14px}
+  .toggle button.on{background:var(--accent);color:#241a00}
+  .hintbox{background:linear-gradient(180deg,#1a2c49,#16233a);border:1px solid var(--accent);border-radius:10px;padding:12px 14px;margin-top:14px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-top:4px}
+  .qc{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .qc b{color:var(--ink)} .qc p{margin:4px 0 0;color:var(--muted);font-size:13px}
+</style>
+
+<div id="site-nav"></div>
+
+<main class="page">
+  <h1>💹 The Black-Scholes Equation — pricing an option</h1>
+  <p class="lede">How much should you pay <em>today</em> for the right to buy a stock at a fixed price in the
+    future? In 1973 Black, Scholes and Merton found the answer, and it launched a multi-trillion-dollar
+    derivatives industry (and a Nobel Prize). The magic: an option's fair price depends almost entirely on how
+    <b>volatile</b> the stock is — not on whether you think it'll go up. Drag the inputs and watch the price,
+    and the value curve, respond.</p>
+
+  <div class="card">
+    <div class="toggle" id="mode"><button data-m="call" class="on">Call option</button><button data-m="put">Put option</button></div>
+    <canvas id="chart" width="720" height="320" style="margin-top:12px"></canvas>
+    <div class="metrics">
+      <div class="metric"><div class="v" id="m-price">—</div><div class="k" id="m-price-k">Call price</div></div>
+      <div class="metric"><div class="v" id="m-intr">—</div><div class="k">Intrinsic value</div></div>
+      <div class="metric"><div class="v" id="m-time">—</div><div class="k">Time value</div></div>
+      <div class="metric"><div class="v" id="m-delta">—</div><div class="k">Delta</div></div>
+    </div>
+    <div class="controls">
+      <label class="fld">Spot price  S = <b id="Sv">$100</b><input type="range" id="S" min="1" max="200" step="1" value="100"></label>
+      <label class="fld">Strike price  K = <b id="Kv">$100</b><input type="range" id="K" min="20" max="180" step="1" value="100"></label>
+      <label class="fld">Volatility  σ = <b id="vv">20%</b><input type="range" id="vol" min="1" max="100" step="1" value="20"></label>
+      <label class="fld">Time to expiry = <b id="Tv">1.00 yr</b><input type="range" id="T" min="1" max="200" step="1" value="100"></label>
+      <label class="fld">Risk-free rate  r = <b id="rv">5%</b><input type="range" id="r" min="0" max="15" step="1" value="5"></label>
+    </div>
+    <div class="hintbox" id="hint"></div>
+  </div>
+
+  <h2>The ideas inside the formula</h2>
+  <div class="card">
+    <div class="cards">
+      <div class="qc"><b>Intrinsic + time value</b><p>An option is worth at least its payoff if exercised now (intrinsic), plus a premium for the <em>chance</em> it moves further your way before expiry (time value). As expiry nears, time value melts to zero — watch the curve collapse onto the kinked payoff.</p></div>
+      <div class="qc"><b>Volatility is the engine</b><p>Counter-intuitively, the stock's expected direction barely matters. What you're really buying is <em>uncertainty</em>: more volatility means a bigger chance of a big favorable move, so the option costs more.</p></div>
+      <div class="qc"><b>Hedging &amp; risk-neutral pricing</b><p>The deep trick: you can cancel an option's risk by continuously trading Δ shares of the stock. Because the risk can be hedged away, the fair price can't depend on your opinion — only on volatility and rates.</p></div>
+      <div class="qc"><b>The map is not the territory</b><p>It assumes smooth, bell-curve returns and constant volatility. Real markets jump and panic — the 1987 crash and LTCM's 1998 blowup showed the tails are fatter than the model allows, which is why traders quote a "volatility smile."</p></div>
+    </div>
+    <p class="muted" style="margin:12px 0 0">Black-Scholes was the first time a corner of finance got a clean, physics-like equation
+      (it's mathematically a heat-diffusion equation in disguise). It didn't just describe the options market — it <em>created</em>
+      the modern one, and turned "quant" into a profession. Powerful, indispensable, and — as every good model is — wrong in
+      exactly the ways worth knowing.</p>
+  </div>
+
+  <footer class="site-foot">
+    <span class="views" data-count-path="self" style="visibility:hidden"></span>
+  </footer>
+</main>
+
+<script src="assets/config.js"></script>
+<script src="assets/site.js"></script>
+<script>
+(function () {
+  var S = 100, K = 100, vol = 0.20, T = 1.0, rate = 0.05, mode = "call";
+  var c = document.getElementById("chart"), x = c.getContext("2d"), W = c.width, H = c.height;
+
+  // standard normal CDF (Abramowitz & Stegun 26.2.17)
+  function N(z) {
+    var neg = z < 0; z = Math.abs(z);
+    var t = 1 / (1 + 0.2316419 * z), d = 0.3989422804 * Math.exp(-z * z / 2);
+    var p = 1 - d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
+    return neg ? 1 - p : p;
+  }
+  function bs(s, k, T, sig, r) {
+    if (T <= 0 || sig <= 0) return { call: Math.max(s - k, 0), put: Math.max(k - s, 0), delta: s >= k ? 1 : 0 };
+    var sq = sig * Math.sqrt(T);
+    var d1 = (Math.log(s / k) + (r + sig * sig / 2) * T) / sq, d2 = d1 - sq;
+    return {
+      call: s * N(d1) - k * Math.exp(-r * T) * N(d2),
+      put: k * Math.exp(-r * T) * N(-d2) - s * N(-d1),
+      delta: mode === "call" ? N(d1) : N(d1) - 1
+    };
+  }
+  function payoff(s) { return mode === "call" ? Math.max(s - K, 0) : Math.max(K - s, 0); }
+  function value(s) { var b = bs(s, K, T, vol, rate); return mode === "call" ? b.call : b.put; }
+
+  function render() {
+    var xMax = 200, i;
+    // find y-scale over the plotted range
+    var yMax = 1;
+    for (i = 0; i <= xMax; i += 2) yMax = Math.max(yMax, value(i), payoff(i));
+    yMax *= 1.1;
+    var PADL = 44, PADB = 26, PADT = 12, PADR = 10;
+    var plotW = W - PADL - PADR, plotH = H - PADB - PADT;
+    function X(s) { return PADL + s / xMax * plotW; }
+    function Y(v) { return PADT + plotH - v / yMax * plotH; }
+
+    x.clearRect(0, 0, W, H);
+    // axes
+    x.strokeStyle = "#28406a"; x.lineWidth = 1;
+    x.beginPath(); x.moveTo(PADL, PADT); x.lineTo(PADL, PADT + plotH); x.lineTo(PADL + plotW, PADT + plotH); x.stroke();
+    x.fillStyle = "#93a4bf"; x.font = "11px system-ui"; x.textAlign = "center";
+    for (i = 0; i <= xMax; i += 50) x.fillText("$" + i, X(i), H - 8);
+    x.save(); x.translate(12, PADT + plotH / 2); x.rotate(-Math.PI / 2); x.textAlign = "center"; x.fillText("option value", 0, 0); x.restore();
+
+    // strike marker
+    x.strokeStyle = "rgba(147,164,191,.4)"; x.setLineDash([4, 4]);
+    x.beginPath(); x.moveTo(X(K), PADT); x.lineTo(X(K), PADT + plotH); x.stroke(); x.setLineDash([]);
+    x.fillStyle = "#93a4bf"; x.textAlign = "left"; x.fillText("K", X(K) + 4, PADT + 12);
+
+    // payoff at expiry (dashed)
+    x.strokeStyle = "rgba(147,164,191,.7)"; x.setLineDash([5, 4]); x.lineWidth = 1.5; x.beginPath();
+    for (i = 0; i <= xMax; i += 2) { var py = Y(payoff(i)); if (i === 0) x.moveTo(X(i), py); else x.lineTo(X(i), py); }
+    x.stroke(); x.setLineDash([]);
+    // Black-Scholes value curve
+    x.strokeStyle = mode === "call" ? "#3fce8f" : "#ff6b6b"; x.lineWidth = 2.4; x.beginPath();
+    for (i = 0; i <= xMax; i += 1) { var vy = Y(value(i)); if (i === 0) x.moveTo(X(i), vy); else x.lineTo(X(i), vy); }
+    x.stroke();
+    // current spot marker + price dot
+    x.strokeStyle = "#f4b942"; x.lineWidth = 1.5; x.beginPath(); x.moveTo(X(S), PADT); x.lineTo(X(S), PADT + plotH); x.stroke();
+    var pv = value(S);
+    x.fillStyle = "#fff"; x.beginPath(); x.arc(X(S), Y(pv), 4.5, 0, 7); x.fill();
+    // legend
+    x.textAlign = "left"; x.fillStyle = mode === "call" ? "#3fce8f" : "#ff6b6b"; x.fillText("— value now", PADL + 8, PADT + 12);
+    x.fillStyle = "#93a4bf"; x.fillText("--- payoff at expiry", PADL + 100, PADT + 12);
+
+    updateStats(pv);
+  }
+
+  function updateStats(pv) {
+    var intr = payoff(S), tv = Math.max(0, pv - intr);
+    var b = bs(S, K, T, vol, rate);
+    document.getElementById("m-price").textContent = "$" + pv.toFixed(2);
+    document.getElementById("m-price-k").textContent = (mode === "call" ? "Call" : "Put") + " price";
+    document.getElementById("m-intr").textContent = "$" + intr.toFixed(2);
+    document.getElementById("m-time").textContent = "$" + tv.toFixed(2);
+    document.getElementById("m-delta").textContent = b.delta.toFixed(2);
+    var hint;
+    if (T <= 0.08) hint = "💹 Barely any time left — the option is worth almost exactly its <b>intrinsic</b> payoff. Time value has nearly evaporated (the curve hugs the kinked line).";
+    else if (vol >= 0.6) hint = "💹 Very high volatility inflates the price: a wild stock has a big chance of a large favorable move, so the option premium balloons even far out-of-the-money.";
+    else if (Math.abs(S - K) < 3) hint = "💹 At-the-money: the price is <b>almost pure time value</b> — a bet on movement in either direction. This is where volatility matters most.";
+    else hint = "💹 The green/red curve is Black-Scholes' fair value; the dashed line is what you'd get if it expired now. The gap between them is <b>time value</b> — what you pay for future possibility.";
+    document.getElementById("hint").innerHTML = hint;
+  }
+
+  function bind(id, fn) { document.getElementById(id).addEventListener("input", function () { fn(+this.value); render(); }); }
+  bind("S", function (v) { S = v; document.getElementById("Sv").textContent = "$" + v; });
+  bind("K", function (v) { K = v; document.getElementById("Kv").textContent = "$" + v; });
+  bind("vol", function (v) { vol = v / 100; document.getElementById("vv").textContent = v + "%"; });
+  bind("T", function (v) { T = v / 100; document.getElementById("Tv").textContent = (v / 100).toFixed(2) + " yr"; });
+  bind("r", function (v) { rate = v / 100; document.getElementById("rv").textContent = v + "%"; });
+  document.querySelectorAll("#mode button").forEach(function (b) {
+    b.onclick = function () {
+      mode = b.dataset.m;
+      document.querySelectorAll("#mode button").forEach(function (o) { o.classList.toggle("on", o === b); });
+      render();
+    };
+  });
+
+  render();
+})();
+</script>
