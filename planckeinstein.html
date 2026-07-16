@@ -1,0 +1,164 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Planck–Einstein Relation · Visual Learn Lab</title>
+<meta name="description" content="The Planck–Einstein relation E = hf, made visual — the photoelectric effect. Only light above a threshold frequency ejects electrons, no matter how bright, proving light comes in quanta.">
+<link rel="stylesheet" href="assets/site.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>⚡</text></svg>">
+<style>
+  canvas{width:100%;background:#080d18;border:1px solid var(--line);border-radius:12px;display:block}
+  .formula{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:16px;text-align:center;
+    font-size:26px;font-weight:800;margin-bottom:14px}
+  .formula small{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-top:4px}
+  .metrics{display:flex;gap:14px;flex-wrap:wrap;margin:14px 0 0}
+  .metric{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 14px;min-width:120px}
+  .metric .v{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums}
+  .metric .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:14px}
+  .fld{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
+  .fld input[type=range]{width:100%;accent-color:var(--accent)}
+  .fld b{color:var(--ink);font-variant-numeric:tabular-nums}
+  .metals{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+  .metals button{font-size:12px;padding:6px 10px}
+  .metals button.on{background:var(--accent);color:#241a00;border-color:var(--accent)}
+  .hintbox{background:linear-gradient(180deg,#1a2c49,#16233a);border:1px solid var(--accent);border-radius:10px;padding:12px 14px;margin-top:14px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-top:4px}
+  .qc{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .qc b{color:var(--ink)} .qc p{margin:4px 0 0;color:var(--muted);font-size:13px}
+</style>
+
+<div id="site-nav"></div>
+
+<main class="page">
+  <h1>⚡ The Planck–Einstein Relation — E = hf</h1>
+  <p class="lede">Planck's quanta were a maths trick until Einstein took them literally in 1905: light itself
+    comes in packets — <b>photons</b> — each carrying energy <b>E = hf</b>, proportional to its frequency, not
+    its brightness. The proof is the <b>photoelectric effect</b>: shine light on a metal and electrons fly off,
+    but <em>only</em> if the light's frequency is high enough. A dim blue beam works; a blindingly bright red one
+    does nothing. Classical waves couldn't explain that — photons can. Try it below.</p>
+
+  <div class="formula">E = h · f<small>photon energy = Planck's constant × frequency &nbsp;·&nbsp; (won Einstein the 1921 Nobel Prize)</small></div>
+
+  <div class="card">
+    <canvas id="stage" width="720" height="300"></canvas>
+    <div class="metrics">
+      <div class="metric"><div class="v" id="m-e">—</div><div class="k">Photon energy E = hf</div></div>
+      <div class="metric"><div class="v" id="m-phi">2.1 eV</div><div class="k">Work function φ</div></div>
+      <div class="metric"><div class="v" id="m-ke">—</div><div class="k">Max electron energy</div></div>
+      <div class="metric"><div class="v" id="m-stat">—</div><div class="k">Electrons?</div></div>
+    </div>
+    <div class="controls">
+      <label class="fld">Light frequency (→ energy) = <b id="ev">2.50 eV</b><input type="range" id="E" min="50" max="700" step="2" value="250"></label>
+      <label class="fld">Intensity (brightness) = <b id="iv">medium</b><input type="range" id="I" min="1" max="10" step="1" value="5"></label>
+    </div>
+    <div class="metals" id="metals"></div>
+    <div class="hintbox" id="hint"></div>
+  </div>
+
+  <h2>Why this broke classical physics</h2>
+  <div class="card">
+    <div class="cards">
+      <div class="qc"><b>Frequency, not brightness</b><p>A classical wave should dump more energy into electrons as you brighten it. Instead, brightness only changes <em>how many</em> electrons come out — their <em>energy</em> depends solely on the light's frequency. Only "one photon, one electron" explains that.</p></div>
+      <div class="qc"><b>The threshold</b><p>Below a cut-off frequency f₀ = φ/h, <em>nothing</em> is ejected however bright the light — because no single photon has enough energy (hf &lt; φ) to free an electron. Cross the threshold and it switches on instantly.</p></div>
+      <div class="qc"><b>Energy budget</b><p>Each freed electron leaves with kinetic energy KE = hf − φ: the photon's energy minus the "work function" φ needed to escape the metal. More frequency ⇒ faster electrons; more brightness ⇒ more electrons.</p></div>
+      <div class="qc"><b>Wave–particle duality</b><p>Light diffracts and interferes like a wave, yet here it plainly acts like a stream of particles. Both are true. Einstein's photon idea — not relativity — is what won him the Nobel Prize.</p></div>
+    </div>
+    <p class="muted" style="margin:12px 0 0">E = hf is the bridge between a wave property (frequency) and a particle property (energy). It sets the energy of every
+      photon from radio to gamma, underlies solar cells, digital cameras, and photosynthesis, and — paired with de Broglie's converse,
+      that particles also have a wavelength — completes the wave–particle picture at the heart of quantum mechanics.</p>
+  </div>
+
+  <footer class="site-foot">
+    <span class="views" data-count-path="self" style="visibility:hidden"></span>
+  </footer>
+</main>
+
+<script src="assets/config.js"></script>
+<script src="assets/site.js"></script>
+<script>
+(function () {
+  var c = document.getElementById("stage"), x = c.getContext("2d"), W = c.width, H = c.height;
+  var E = 2.5, intensity = 5, phi = 2.1, metalName = "Cesium";
+  var photons = [], electrons = [], spawnAcc = 0;
+  var plateX = W - 96;
+
+  var metals = [["Cesium", 2.1], ["Sodium", 2.28], ["Zinc", 4.3], ["Copper", 4.7]];
+  var mBox = document.getElementById("metals");
+  mBox.innerHTML = '<span class="muted" style="font-size:12px;align-self:center">Metal:</span>' +
+    metals.map(function (m, i) { return '<button data-i="' + i + (i === 0 ? '" class="on"' : '"') + '>' + m[0] + " (φ=" + m[1] + ")</button>"; }).join("");
+  mBox.querySelectorAll("button").forEach(function (b) {
+    b.onclick = function () {
+      var mm = metals[+b.dataset.i]; metalName = mm[0]; phi = mm[1];
+      mBox.querySelectorAll("button").forEach(function (o) { o.classList.toggle("on", o === b); });
+      document.getElementById("m-phi").textContent = phi + " eV"; updateStats();
+    };
+  });
+
+  function specRGB(nm) {
+    var r = 0, g = 0, b = 0;
+    if (nm < 440) { r = -(nm - 440) / 60; b = 1; } else if (nm < 490) { g = (nm - 440) / 50; b = 1; }
+    else if (nm < 510) { g = 1; b = -(nm - 510) / 20; } else if (nm < 580) { r = (nm - 510) / 70; g = 1; }
+    else if (nm < 645) { r = 1; g = -(nm - 645) / 65; } else r = 1;
+    return "rgb(" + (r * 255 | 0) + "," + (g * 255 | 0) + "," + (b * 255 | 0) + ")";
+  }
+  function photonColor(E) { var nm = 1240 / E; return nm > 700 ? "#9a3030" : nm < 400 ? "#c3a9ff" : specRGB(nm); }
+
+  function loop() {
+    x.clearRect(0, 0, W, H);
+    var ejects = E >= phi, KE = Math.max(0, E - phi), col = photonColor(E);
+
+    // metal plate
+    var grad = x.createLinearGradient(plateX, 0, W, 0);
+    grad.addColorStop(0, "#8493a8"); grad.addColorStop(1, "#3a4759");
+    x.fillStyle = grad; x.fillRect(plateX, 0, W - plateX, H);
+    x.fillStyle = "#cdd8e6"; x.font = "12px system-ui"; x.textAlign = "center";
+    x.save(); x.translate(plateX + (W - plateX) / 2, H - 12); x.fillText(metalName + " metal", 0, 0); x.restore();
+
+    // spawn photons ~ intensity
+    spawnAcc += intensity * 0.06;
+    while (spawnAcc >= 1) { spawnAcc--; photons.push({ x: 0, y: 40 + Math.random() * (H - 80), v: 3.2 }); }
+
+    // photons
+    x.lineWidth = 2;
+    for (var i = photons.length - 1; i >= 0; i--) {
+      var p = photons[i]; p.x += p.v;
+      x.strokeStyle = col; x.beginPath();
+      for (var w = 0; w < 16; w += 2) x.lineTo(p.x - w, p.y + Math.sin((p.x - w) / 3) * 3);
+      x.stroke();
+      if (p.x >= plateX) {
+        if (ejects) {
+          var sp = 1.5 + Math.sqrt(KE) * 2.2, ang = Math.PI * (0.75 + Math.random() * 0.5); // fly back up-left
+          electrons.push({ x: plateX, y: p.y, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp });
+        }
+        photons.splice(i, 1);
+      }
+    }
+    // electrons
+    x.fillStyle = "#6db4ff";
+    for (var j = electrons.length - 1; j >= 0; j--) {
+      var e = electrons[j]; e.x += e.vx; e.y += e.vy;
+      x.beginPath(); x.arc(e.x, e.y, 4, 0, 7); x.fill();
+      x.fillStyle = "#0b1220"; x.font = "9px system-ui"; x.textAlign = "center"; x.fillText("−", e.x, e.y + 3); x.fillStyle = "#6db4ff";
+      if (e.x < -10 || e.y < -10 || e.y > H + 10) electrons.splice(j, 1);
+    }
+    requestAnimationFrame(loop);
+  }
+
+  function updateStats() {
+    var ejects = E >= phi, KE = Math.max(0, E - phi);
+    document.getElementById("m-e").textContent = E.toFixed(2) + " eV";
+    document.getElementById("m-ke").textContent = ejects ? KE.toFixed(2) + " eV" : "—";
+    document.getElementById("m-stat").textContent = ejects ? "Ejecting ✓" : "None ✗";
+    document.getElementById("m-stat").style.color = ejects ? "var(--good)" : "var(--bad)";
+    document.getElementById("hint").innerHTML = ejects
+      ? "⚡ Each photon carries E = " + E.toFixed(2) + " eV ≥ φ = " + phi + " eV, so it frees an electron with KE = E − φ = <b>" + KE.toFixed(2) + " eV</b>. Raise the <b>frequency</b> for faster electrons; raise the <b>intensity</b> for more of them (same speed)."
+      : "⚡ Photon energy E = " + E.toFixed(2) + " eV is <b>below the work function</b> φ = " + phi + " eV. No electron escapes — and cranking the intensity to max still does nothing, because no single photon is energetic enough. Raise the frequency past the threshold to switch it on.";
+  }
+
+  document.getElementById("E").addEventListener("input", function () { E = +this.value / 100; document.getElementById("ev").textContent = E.toFixed(2) + " eV"; updateStats(); });
+  document.getElementById("I").addEventListener("input", function () {
+    intensity = +this.value; document.getElementById("iv").textContent = intensity < 4 ? "dim" : intensity < 8 ? "medium" : "bright";
+  });
+  updateStats(); loop();
+})();
+</script>
