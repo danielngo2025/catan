@@ -22,6 +22,8 @@ window.SITE = {
       blurb: "Learn anything by explaining it simply. A guided 4-step workflow with a live clarity meter." },
     { path: "newton.html",  title: "Newton's Gravity",  emoji: "🌍", group: "Classical Physics",
       blurb: "Feel the inverse-square law and fling planets into orbit with a real gravity simulator." },
+    { path: "secondlaw.html", title: "Newton's Second Law", emoji: "🛷", group: "Classical Physics",
+      blurb: "F = ma — push a mass across frictionless ice and watch acceleration equal force divided by mass, with friction to show net force." },
     { path: "conway.html",  title: "Conway's Law",      emoji: "🔀", group: "Productivity",
       blurb: "Why software ends up shaped like your org chart — rewire the teams and watch the architecture follow." },
     { path: "kaizen.html",  title: "Kaizen",            emoji: "📈", group: "Productivity",

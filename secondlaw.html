@@ -1,0 +1,168 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Newton's Second Law · Visual Learn Lab</title>
+<meta name="description" content="Newton's second law of motion, made visual — push a mass across frictionless ice and watch acceleration equal force divided by mass, F = ma, in real time.">
+<link rel="stylesheet" href="assets/site.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🛷</text></svg>">
+<style>
+  canvas{width:100%;background:linear-gradient(180deg,#0c1830,#0a1220);border:1px solid var(--line);border-radius:12px;display:block}
+  .formula{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:16px;text-align:center;
+    font-size:26px;font-weight:800;letter-spacing:.5px;margin-bottom:14px}
+  .formula small{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-top:4px;letter-spacing:0}
+  .metrics{display:flex;gap:14px;flex-wrap:wrap;margin:14px 0 0}
+  .metric{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 14px;min-width:110px}
+  .metric .v{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
+  .metric .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-top:14px}
+  .fld{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
+  .fld input[type=range]{width:100%;accent-color:var(--accent)}
+  .fld b{color:var(--ink);font-variant-numeric:tabular-nums}
+  .btnrow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}
+  .hintbox{background:linear-gradient(180deg,#1a2c49,#16233a);border:1px solid var(--accent);border-radius:10px;padding:12px 14px;margin-top:14px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-top:4px}
+  .qc{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .qc b{color:var(--ink)} .qc p{margin:4px 0 0;color:var(--muted);font-size:13px}
+</style>
+
+<div id="site-nav"></div>
+
+<main class="page">
+  <h1>🛷 Newton's Second Law — F = ma</h1>
+  <p class="lede">Newton's first law says things keep doing what they're doing unless pushed. The <b>second
+    law</b> says exactly <em>how much</em> a push changes their motion: force equals mass times acceleration.
+    A force doesn't set an object's <b>speed</b> — it sets its <b>acceleration</b>, and heavier objects
+    (more mass, more inertia) accelerate less for the same push. Shove the block below and watch a = F/m.</p>
+
+  <div class="formula">F = m · a<small>force (newtons) = mass (kg) × acceleration (m/s²)</small></div>
+
+  <div class="card">
+    <canvas id="stage" width="720" height="260"></canvas>
+    <div class="metrics">
+      <div class="metric"><div class="v" id="m-a">0.0</div><div class="k">Acceleration m/s²</div></div>
+      <div class="metric"><div class="v" id="m-v">0.0</div><div class="k">Velocity m/s</div></div>
+      <div class="metric"><div class="v" id="m-net">0</div><div class="k">Net force N</div></div>
+    </div>
+    <div class="controls">
+      <label class="fld">Applied force  F = <b id="Fv">40 N</b><input type="range" id="F" min="0" max="100" step="1" value="40"></label>
+      <label class="fld">Mass  m = <b id="mv">5 kg</b><input type="range" id="m" min="1" max="20" step="1" value="5"></label>
+      <label class="fld">Friction = <b id="ffv">0 N</b><input type="range" id="ff" min="0" max="40" step="1" value="0"></label>
+    </div>
+    <div class="btnrow">
+      <button class="primary" id="push">▶ Apply force</button>
+      <button id="reset">Reset</button>
+      <span class="muted" style="font-size:12px">Ice is frictionless by default — set friction &gt; 0 to add an opposing force.</span>
+    </div>
+    <div class="hintbox" id="hint"></div>
+  </div>
+
+  <h2>The ideas</h2>
+  <div class="card">
+    <div class="cards">
+      <div class="qc"><b>Force → acceleration, not speed</b><p>A steady force doesn't hold a steady speed — it steadily <em>changes</em> speed. Keep pushing on frictionless ice and the block keeps speeding up. Remove the force and it coasts (First Law).</p></div>
+      <div class="qc"><b>Mass is inertia</b><p>The same push on a heavier block produces less acceleration — a = F/m. Double the mass, halve the acceleration. That resistance to being sped up <em>is</em> what mass measures.</p></div>
+      <div class="qc"><b>Only the net force matters</b><p>Add up every force — your push, friction, gravity — as vectors. It's the leftover <em>net</em> force that accelerates the object. If pushes cancel, a = 0 and velocity holds steady.</p></div>
+      <div class="qc"><b>F = dp/dt</b><p>Newton really wrote force as the rate of change of momentum (p = mv). That's why a rocket losing mass, or a longer collision time (crumple zones, airbags), changes the forces you feel.</p></div>
+    </div>
+    <p class="muted" style="margin:12px 0 0">This one equation runs the everyday mechanical world: why a loaded truck needs more road to stop, why a
+      lighter bat swings faster, why rockets need enormous thrust to accelerate their huge mass. Pair it with the first law
+      (inertia) and the third (equal and opposite reactions) and you can predict the motion of almost anything at human scale.</p>
+  </div>
+
+  <footer class="site-foot">
+    <span class="views" data-count-path="self" style="visibility:hidden"></span>
+  </footer>
+</main>
+
+<script src="assets/config.js"></script>
+<script src="assets/site.js"></script>
+<script>
+(function () {
+  var c = document.getElementById("stage"), x = c.getContext("2d"), W = c.width, H = c.height;
+  var groundY = H - 46;
+  var F = 40, m = 5, Ff = 0, pushing = false;
+  var pos = 60, v = 0;                                   // pos = block left (px), v in m/s
+  var PXM = 26, dt = 0.03;                                // pixels per metre, timestep (s)
+
+  function blockW() { return 44 + m * 2.4; }
+  function netForce() {
+    var applied = pushing ? F : 0, fr = 0;
+    if (Math.abs(v) > 1e-4) fr = -Math.sign(v) * Ff;      // kinetic friction opposes motion
+    else if (applied !== 0) { if (Math.abs(applied) > Ff) fr = -Math.sign(applied) * Ff; else return 0; }
+    return applied + fr;
+  }
+
+  function step() {
+    var net = netForce(), a = net / m;
+    var vNew = v + a * dt;
+    if (!pushing && Ff > 0 && v !== 0 && Math.sign(vNew) !== Math.sign(v)) vNew = 0;  // friction can't reverse it
+    v = vNew;
+    pos += v * PXM * dt;
+    var bw = blockW();
+    if (pos > W - bw) pos -= (W - bw - 4);                 // wrap around the (infinite) ice
+    else if (pos < 4) pos += (W - bw - 4);
+  }
+
+  function arrow(x0, y0, len, color, label) {
+    if (Math.abs(len) < 1) return;
+    var dir = len > 0 ? 1 : -1, L = Math.min(Math.abs(len), 240);
+    x.strokeStyle = color; x.fillStyle = color; x.lineWidth = 3;
+    x.beginPath(); x.moveTo(x0, y0); x.lineTo(x0 + dir * L, y0); x.stroke();
+    x.beginPath(); x.moveTo(x0 + dir * L, y0); x.lineTo(x0 + dir * (L - 9), y0 - 5);
+    x.lineTo(x0 + dir * (L - 9), y0 + 5); x.closePath(); x.fill();
+    if (label) { x.font = "12px system-ui"; x.textAlign = "center"; x.fillText(label, x0 + dir * L / 2, y0 - 9); }
+  }
+
+  function render() {
+    x.clearRect(0, 0, W, H);
+    // ice + surface sheen
+    x.strokeStyle = "#22406e"; x.lineWidth = 2; x.beginPath(); x.moveTo(0, groundY); x.lineTo(W, groundY); x.stroke();
+    for (var gx = 0; gx < W; gx += 40) { x.strokeStyle = "rgba(120,170,230,.08)"; x.lineWidth = 1; x.beginPath(); x.moveTo(gx, groundY); x.lineTo(gx - 16, H); x.stroke(); }
+    var bw = blockW(), bh = bw * 0.7, bx = pos, by = groundY - bh;
+    // block
+    x.fillStyle = "#1d2f4d"; x.strokeStyle = "#6db4ff"; x.lineWidth = 2;
+    x.fillRect(bx, by, bw, bh); x.strokeRect(bx, by, bw, bh);
+    x.fillStyle = "#9cc4ff"; x.font = "bold 13px system-ui"; x.textAlign = "center";
+    x.fillText(m + " kg", bx + bw / 2, by + bh / 2 + 4);
+    // velocity arrow (blue, above block)
+    arrow(bx + bw / 2, by - 22, v * 10, "#6db4ff", v ? "v" : "");
+    // applied force arrow (amber, at block mid-height, from the left face)
+    if (pushing && F > 0) arrow(bx + bw, by + bh / 2, F * 1.6, "#f4b942", "F");
+    // friction arrow (red, opposing motion, near the ground)
+    if (Ff > 0 && Math.abs(v) > 1e-4) arrow(bx + bw / 2, groundY + 16, -Math.sign(v) * Ff * 1.6, "#ff6b6b", "friction");
+  }
+
+  var frame = 0;
+  function updateStats() {
+    var net = netForce(), a = net / m;
+    document.getElementById("m-a").textContent = a.toFixed(1);
+    document.getElementById("m-v").textContent = v.toFixed(1);
+    document.getElementById("m-net").textContent = Math.round(net);
+    var h;
+    if (pushing && Ff === 0) h = "🛷 Constant force on frictionless ice → <b>constant acceleration a = F/m = " + a.toFixed(1) + " m/s²</b>. The velocity just keeps climbing — nothing opposes it.";
+    else if (pushing && F <= Ff && Math.abs(v) < 1e-4) h = "🛷 Your push (" + F + " N) can't overcome friction (" + Ff + " N), so the net force is zero and the block stays put.";
+    else if (pushing && Ff > 0) h = "🛷 Net force = push − friction = " + Math.round(net) + " N, so a = net/m = <b>" + a.toFixed(1) + " m/s²</b>. Set friction equal to your push and acceleration drops to zero — constant velocity.";
+    else if (!pushing && Math.abs(v) > 1e-4 && Ff === 0) h = "🛷 No force now, yet it glides on at constant velocity — that's <b>inertia</b> (Newton's First Law). Force changes motion; it isn't needed to maintain it.";
+    else if (!pushing && Math.abs(v) > 1e-4) h = "🛷 With the push gone, friction is the only force — a steady deceleration until the block stops.";
+    else h = "🛷 Press <b>Apply force</b> to push the block. Try doubling the force, then doubling the mass, and watch the acceleration.";
+    document.getElementById("hint").innerHTML = h;
+  }
+
+  function loop() { step(); render(); if (frame++ % 5 === 0) updateStats(); requestAnimationFrame(loop); }
+
+  document.getElementById("push").onclick = function () {
+    pushing = !pushing; this.textContent = pushing ? "⏸ Stop pushing" : "▶ Apply force";
+    this.classList.toggle("primary", !pushing); updateStats();
+  };
+  document.getElementById("reset").onclick = function () {
+    pos = 60; v = 0; pushing = false;
+    document.getElementById("push").textContent = "▶ Apply force";
+    document.getElementById("push").classList.add("primary"); updateStats();
+  };
+  document.getElementById("F").addEventListener("input", function () { F = +this.value; document.getElementById("Fv").textContent = F + " N"; updateStats(); });
+  document.getElementById("m").addEventListener("input", function () { m = +this.value; document.getElementById("mv").textContent = m + " kg"; updateStats(); });
+  document.getElementById("ff").addEventListener("input", function () { Ff = +this.value; document.getElementById("ffv").textContent = Ff + " N"; updateStats(); });
+
+  updateStats(); loop();
+})();
+</script>
