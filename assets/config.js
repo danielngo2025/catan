@@ -50,6 +50,8 @@ window.SITE = {
       blurb: "Antimatter from pure logic — unite quantum mechanics with relativity, get spin for free, and fire photons to tear electron–positron pairs from the Dirac sea." },
     { path: "statmech.html", title: "Statistical Mechanics", emoji: "🎲", group: "Classical Physics",
       blurb: "Order from molecular chaos — start every particle at one speed and watch collisions thermalize the gas into the Maxwell–Boltzmann distribution." },
+    { path: "entropy.html", title: "Law of Entropy", emoji: "⏳", group: "Classical Physics",
+      blurb: "Why disorder always wins — Boltzmann's S = k log W and the Ehrenfest urns: a reversible rule that drifts irreversibly to equilibrium and never comes back." },
     { path: "gametheory.html", title: "Game Theory", emoji: "🤝", group: "Economics & Finance",
       blurb: "The Prisoner's Dilemma — play against classic strategies, then run Axelrod's tournament and watch the ruthless defector win every duel yet lose the war." },
     { path: "infotheory.html", title: "Information Theory", emoji: "📡", group: "Math & CS",
