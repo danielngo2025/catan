@@ -1,0 +1,142 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Diffusion Models · Visual Learn Lab</title>
+<meta name="description" content="Diffusion models, made visual — how AI image generators like DALL·E and Stable Diffusion create pictures by starting from pure noise and repeatedly denoising it into an image.">
+<link rel="stylesheet" href="assets/site.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🎨</text></svg>">
+<style>
+  canvas{width:100%;max-width:360px;display:block;margin:0 auto;background:#0a1220;border:1px solid var(--line);border-radius:12px;image-rendering:pixelated}
+  .metrics{display:flex;gap:14px;flex-wrap:wrap;margin:14px 0 0;justify-content:center}
+  .metric{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 14px;min-width:120px;text-align:center}
+  .metric .v{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums}
+  .metric .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .btnrow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px;justify-content:center}
+  .field input[type=range]{width:min(340px,64vw)}
+  .presets{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;justify-content:center}
+  .presets button.on{background:var(--accent);color:#241a00;border-color:var(--accent)}
+  .hintbox{background:linear-gradient(180deg,#1a2c49,#16233a);border:1px solid var(--accent);border-radius:10px;padding:12px 14px;margin-top:14px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-top:4px}
+  .qc{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .qc b{color:var(--ink)} .qc p{margin:4px 0 0;color:var(--muted);font-size:13px}
+</style>
+
+<div id="site-nav"></div>
+
+<main class="page">
+  <h1>🎨 Diffusion Models — pictures from noise</h1>
+  <p class="lede">AI image generators — DALL·E, Stable Diffusion, Midjourney — don't paint. They <b>denoise</b>.
+    In training they take real images and progressively add random noise until nothing's left, learning to
+    undo each step. To <b>generate</b>, they start from a screen of <em>pure static</em> and run that learned
+    "un-noising" over and over, and a coherent image emerges from the chaos — steered by your text prompt.
+    Press <b>Generate</b> to watch noise resolve into a picture, or drag the slider to scrub the timeline.</p>
+
+  <div class="card">
+    <canvas id="stage" width="176" height="176"></canvas>
+    <div class="metrics">
+      <div class="metric"><div class="v" id="m-noise">100%</div><div class="k">Noise level</div></div>
+      <div class="metric"><div class="v" id="m-stat">pure noise</div><div class="k">State</div></div>
+    </div>
+    <div class="btnrow">
+      <button class="primary" id="gen">✨ Generate (denoise)</button>
+      <label class="field">Noise timeline <input type="range" id="noise" min="0" max="100" step="1" value="100"></label>
+    </div>
+    <div class="presets" id="presets"></div>
+    <div class="hintbox" id="hint"></div>
+  </div>
+
+  <h2>How it actually works</h2>
+  <div class="card">
+    <div class="cards">
+      <div class="qc"><b>Forward: add noise</b><p>Take a real image and add a little Gaussian noise, again and again, until it's indistinguishable from static. This "forward process" is easy — and it creates the training data for the hard part.</p></div>
+      <div class="qc"><b>Reverse: learn to undo it</b><p>A neural network (a U-Net) is trained to look at a noisy image and predict the noise to remove. Run it repeatedly and you walk backwards from static to a clean image — the "reverse process" you see above.</p></div>
+      <div class="qc"><b>Generate from nothing</b><p>Since the model can denoise <em>any</em> static, you can hand it fresh random noise and it will hallucinate a brand-new, never-seen image out of it. Different noise ⇒ different picture.</p></div>
+      <div class="qc"><b>Steered by the prompt</b><p>Your text is turned into vectors that nudge every denoising step toward images matching the words. That's how "an astronaut riding a horse" pulls the noise toward exactly that — guidance, not painting.</p></div>
+    </div>
+    <p class="muted" style="margin:12px 0 0">This demo fakes the denoiser — it simply blends a fixed target picture back in as the noise fades, so the
+      reveal <em>looks</em> like real diffusion. A true model has no target; it predicts the noise from scratch at every step using
+      billions of learned parameters. But the core idea — <b>generation = repeated denoising from random static</b> — is exactly right.</p>
+  </div>
+
+  <footer class="site-foot">
+    <span class="views" data-count-path="self" style="visibility:hidden"></span>
+  </footer>
+</main>
+
+<script src="assets/config.js"></script>
+<script src="assets/site.js"></script>
+<script>
+(function () {
+  var c = document.getElementById("stage"), x = c.getContext("2d");
+  var G = 44; c.width = G * 4; c.height = G * 4; var cell = 4;
+  var sigma = 1, target = [], noise = [], generating = false, preset = "smiley";
+
+  function dist(u, v, cx, cy) { return Math.hypot(u - cx, v - cy); }
+  function TARGETS(name, u, v) {
+    var sky = [96, 150, 224], dark = [14, 22, 38];
+    if (name === "smiley") {
+      if (dist(u, v, 0.5, 0.5) > 0.42) return dark;
+      if (dist(u, v, 0.37, 0.42) < 0.06 || dist(u, v, 0.63, 0.42) < 0.06) return [30, 25, 15];
+      var my = 0.58 + 0.08 * (1 - Math.pow((u - 0.5) / 0.2, 2));
+      if (Math.abs(u - 0.5) < 0.2 && Math.abs(v - my) < 0.035) return [30, 25, 15];
+      return [245, 200, 60];
+    }
+    if (name === "heart") {
+      var X = (u - 0.5) * 2.6, Y = (0.46 - v) * 2.6;
+      return (Math.pow(X * X + Y * Y - 1, 3) - X * X * Y * Y * Y <= 0) ? [230, 60, 80] : dark;
+    }
+    if (name === "house") {
+      if (v > 0.82) return [80, 170, 90];
+      if (Math.abs(u - 0.5) < 0.55 && v >= 0.35 && v <= 0.5 && Math.abs(u - 0.5) < 0.28 * (v - 0.35) / 0.15) return [205, 80, 70];
+      if (u > 0.3 && u < 0.7 && v > 0.5 && v <= 0.82) { if (u > 0.45 && u < 0.55 && v > 0.64) return [110, 70, 40]; return [212, 182, 140]; }
+      return sky;
+    }
+    // tree
+    if (v > 0.86) return [80, 165, 88];
+    if (u > 0.46 && u < 0.54 && v > 0.52 && v <= 0.86) return [120, 80, 45];
+    if (dist(u, v, 0.5, 0.4) < 0.28) return [70, 160, 82];
+    return sky;
+  }
+  function buildTarget() { target = []; for (var gy = 0; gy < G; gy++) for (var gx = 0; gx < G; gx++) target.push(TARGETS(preset, gx / (G - 1), gy / (G - 1))); }
+  function reNoise() { noise = []; for (var i = 0; i < G * G; i++) noise.push([Math.random() * 255, Math.random() * 255, Math.random() * 255]); }
+
+  function draw() {
+    for (var gy = 0; gy < G; gy++) for (var gx = 0; gx < G; gx++) {
+      var i = gy * G + gx, t = target[i], n = noise[i];
+      var r = t[0] * (1 - sigma) + n[0] * sigma, g = t[1] * (1 - sigma) + n[1] * sigma, bl = t[2] * (1 - sigma) + n[2] * sigma;
+      x.fillStyle = "rgb(" + (r | 0) + "," + (g | 0) + "," + (bl | 0) + ")";
+      x.fillRect(gx * cell, gy * cell, cell, cell);
+    }
+    document.getElementById("m-noise").textContent = Math.round(sigma * 100) + "%";
+    document.getElementById("m-stat").textContent = sigma > 0.85 ? "pure noise" : sigma > 0.15 ? "denoising…" : "image!";
+    document.getElementById("noise").value = Math.round(sigma * 100);
+    document.getElementById("hint").innerHTML = sigma > 0.85
+      ? "🎨 This is <b>pure random static</b> — no image at all, just like the seed a real model starts from. Press <b>Generate</b> to denoise it step by step."
+      : sigma > 0.15 ? "🎨 <b>Denoising in progress.</b> Each step removes a little noise, and structure emerges from the chaos. The model is 'seeing' an image in the static and pulling it out."
+        : "🎨 <b>Done.</b> Repeated denoising turned random static into a clean picture. Feed different starting noise (or a different prompt) and a different image appears.";
+  }
+
+  function loop() {
+    if (generating) { reNoise(); sigma -= 0.013; if (sigma <= 0) { sigma = 0; generating = false; document.getElementById("gen").textContent = "✨ Generate (denoise)"; document.getElementById("gen").classList.add("primary"); } draw(); }
+    requestAnimationFrame(loop);
+  }
+
+  document.getElementById("gen").onclick = function () {
+    if (generating) { generating = false; this.textContent = "✨ Generate (denoise)"; this.classList.add("primary"); return; }
+    reNoise(); sigma = 1; generating = true; this.textContent = "⏸ Stop"; this.classList.remove("primary");
+  };
+  document.getElementById("noise").addEventListener("input", function () { generating = false; document.getElementById("gen").textContent = "✨ Generate (denoise)"; document.getElementById("gen").classList.add("primary"); sigma = +this.value / 100; draw(); });
+
+  var PS = [["smiley", "🙂 Smiley"], ["heart", "❤️ Heart"], ["house", "🏠 House"], ["tree", "🌳 Tree"]];
+  document.getElementById("presets").innerHTML = PS.map(function (p, i) { return '<button data-p="' + p[0] + (i === 0 ? '" class="on"' : '"') + '>' + p[1] + "</button>"; }).join("");
+  document.querySelectorAll("#presets button").forEach(function (b) {
+    b.onclick = function () {
+      preset = b.dataset.p; buildTarget();
+      document.querySelectorAll("#presets button").forEach(function (o) { o.classList.toggle("on", o === b); });
+      generating = false; sigma = 1; reNoise(); document.getElementById("gen").textContent = "✨ Generate (denoise)"; document.getElementById("gen").classList.add("primary"); draw();
+    };
+  });
+
+  buildTarget(); reNoise(); draw(); loop();
+})();
+</script>

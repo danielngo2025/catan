@@ -1,0 +1,124 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tokenization · Visual Learn Lab</title>
+<meta name="description" content="Tokenization, made visual — how an LLM chops text into subword tokens before it can read it. Common words become one token, rare words shatter into pieces, and spaces belong to the tokens.">
+<link rel="stylesheet" href="assets/site.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>✂️</text></svg>">
+<style>
+  textarea{width:100%;background:#0a1220;border:1px solid var(--line);border-radius:12px;color:var(--ink);
+    padding:12px 14px;font:inherit;font-size:16px;resize:vertical;min-height:70px}
+  textarea:focus{outline:none;border-color:var(--accent)}
+  .toks{display:flex;flex-wrap:wrap;gap:4px;margin-top:14px;min-height:40px}
+  .tk{padding:5px 7px;border-radius:6px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:15px;
+    border:1px solid rgba(255,255,255,.12)}
+  .metrics{display:flex;gap:14px;flex-wrap:wrap;margin:14px 0 0}
+  .metric{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 14px;min-width:110px}
+  .metric .v{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
+  .metric .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .presets{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+  .presets button{font-size:12px;padding:6px 10px}
+  .hintbox{background:linear-gradient(180deg,#1a2c49,#16233a);border:1px solid var(--accent);border-radius:10px;padding:12px 14px;margin-top:14px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-top:4px}
+  .qc{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .qc b{color:var(--ink)} .qc p{margin:4px 0 0;color:var(--muted);font-size:13px}
+</style>
+
+<div id="site-nav"></div>
+
+<main class="page">
+  <h1>✂️ Tokenization — how an LLM reads text</h1>
+  <p class="lede">A language model doesn't see letters or words — it sees <b>tokens</b>: chunks of text, each
+    mapped to a number. Common words are usually a single token; rarer or longer words get chopped into
+    pieces; and — surprisingly — the <b>space belongs to the token</b> (" the" is different from "the"). This
+    is why models "think" in ~4-character pieces, why they miscount letters, and why some languages cost more
+    to process. Type below and watch your text get sliced.</p>
+
+  <div class="card">
+    <textarea id="in" spellcheck="false">The cat sat on the mat and looked at the twinkling stars.</textarea>
+    <div class="metrics">
+      <div class="metric"><div class="v" id="m-tok">0</div><div class="k">Tokens</div></div>
+      <div class="metric"><div class="v" id="m-chr">0</div><div class="k">Characters</div></div>
+      <div class="metric"><div class="v" id="m-rat">0</div><div class="k">Chars / token</div></div>
+    </div>
+    <p class="muted" style="font-size:12px;margin:12px 2px 4px">Tokens (each coloured chip is one; <b>␣</b> marks a leading space):</p>
+    <div class="toks" id="toks"></div>
+    <div class="presets">
+      <button data-t="The cat sat on the mat and looked at the twinkling stars.">Common words</button>
+      <button data-t="Antidisestablishmentarianism is an unquestionably supercalifragilistic word.">Rare long words</button>
+      <button data-t="for (let i = 0; i < 10; i++) { print(i); }">Code</button>
+      <button data-t="In 2024 the model scored 99.7% 🎉🔥">Numbers &amp; emoji</button>
+    </div>
+    <div class="hintbox" id="hint"></div>
+  </div>
+
+  <h2>Why tokens matter</h2>
+  <div class="card">
+    <div class="cards">
+      <div class="qc"><b>Not words, not letters</b><p>The vocabulary (~100k tokens for GPT-4) is learned so common text is compact. "the" is one token; "twinkling" might be "tw"+"ink"+"ling". The model only ever sees these pieces, never the raw characters inside them.</p></div>
+      <div class="qc"><b>Spaces travel with words</b><p>Most tokens start with their leading space, so "cat" mid-sentence (" cat") and "cat" at the start are different tokens. It's a quirk of byte-pair encoding that trips up people expecting clean word splits.</p></div>
+      <div class="qc"><b>Why models miscount letters</b><p>Ask an LLM how many "r"s are in "strawberry" and it may fumble — it sees a couple of tokens, not the individual letters. The information is literally hidden inside the token.</p></div>
+      <div class="qc"><b>Tokens = cost &amp; limits</b><p>Context windows and API bills are measured in tokens. Rare words, code, and many non-English scripts use more tokens per character — so they're slower and pricier to process.</p></div>
+    </div>
+    <p class="muted" style="margin:12px 0 0">The dominant scheme is <b>byte-pair encoding (BPE)</b>: start from single bytes and repeatedly merge the most
+      frequent adjacent pair into a new token, until you have a fixed-size vocabulary. This demo uses a small hand-built vocabulary
+      with greedy longest-match — the real thing has a far larger, learned vocabulary, but the behaviour you see here is the same.</p>
+  </div>
+
+  <footer class="site-foot">
+    <span class="views" data-count-path="self" style="visibility:hidden"></span>
+  </footer>
+</main>
+
+<script src="assets/config.js"></script>
+<script src="assets/site.js"></script>
+<script>
+(function () {
+  var WORDS = ("the a an and or but to of in on at for with as by from is it be was are were been has have had do does did not this that these those he she they we you i him her them his their your our its my me us who what which when where why how if then than so up out down no yes can will would could should may might must one two three four time year day way man woman child people world life hand part place case week month company system number group problem fact water fire earth air light dark sound star moon cat dog house tree car book model data code word text learn train think write read make see go get come know take give find tell ask work call try need feel become leave put mean keep let begin seem help talk turn start show hear play run move like live love believe bring happen provide sit stand lose pay meet include continue set change lead understand watch follow stop create speak spend grow open walk win teach offer remember consider appear buy serve build stay fall cut reach look at over into about after before again very just more most some many much little big small good new old high low long short quick slow").split(" ");
+  var SUF = ["ing", "ed", "es", "s", "ly", "er", "est", "ers", "ion", "tion", "sion", "ment", "ness", "ful", "less", "able", "ible", "ity", "ize", "ise", "ation", "ical", "ous", "al", "ry", "ling", "ink", "kl", "'s", "n't", "'re", "'ve", "'ll", "'d", "'m"];
+  var VOC = {}, maxLen = 1;
+  function add(t) { VOC[t] = 1; if (t.length > maxLen) maxLen = t.length; }
+  WORDS.forEach(function (w) { add(w); add(" " + w); });
+  SUF.forEach(add);
+  "0123456789".split("").forEach(add);
+  " .,!?;:()[]{}\"'-=<>+/*".split("").forEach(add);
+
+  function tokenize(s) {
+    var out = [], i = 0;
+    while (i < s.length) {
+      var found = null;
+      for (var len = Math.min(maxLen, s.length - i); len >= 1; len--) {
+        var sub = s.substr(i, len);
+        if (VOC[sub.toLowerCase()]) { found = sub; break; }
+      }
+      if (found) { out.push(found); i += found.length; }
+      else { out.push(s[i]); i++; }
+    }
+    return out;
+  }
+  function hue(t) { var h = 0; for (var i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) % 360; return h; }
+
+  function render() {
+    var s = document.getElementById("in").value;
+    var toks = tokenize(s);
+    var box = document.getElementById("toks");
+    box.innerHTML = toks.map(function (t) {
+      var disp = t.replace(/ /g, "␣").replace(/</g, "&lt;").replace(/>/g, "&gt;") || "␣";
+      var h = hue(t);
+      return '<span class="tk" style="background:hsl(' + h + ',55%,22%);color:hsl(' + h + ',80%,80%)">' + disp + "</span>";
+    }).join("");
+    document.getElementById("m-tok").textContent = toks.length;
+    document.getElementById("m-chr").textContent = s.length;
+    document.getElementById("m-rat").textContent = toks.length ? (s.length / toks.length).toFixed(1) : "0";
+    document.getElementById("hint").innerHTML = /[\uD800-\uDFFF]/.test(s)
+      ? "✂️ Notice the emoji and odd characters explode into several tokens each — they're rare byte sequences, so they're expensive. Numbers often split digit-by-digit too, which is partly why LLMs struggle with arithmetic."
+      : "✂️ " + toks.length + " tokens for " + s.length + " characters (~" + (s.length / Math.max(1, toks.length)).toFixed(1) + " chars/token). Common words are single chips; longer/rarer words split into subword pieces. See how each token carries its leading space (␣).";
+  }
+
+  document.getElementById("in").addEventListener("input", render);
+  document.querySelectorAll(".presets button").forEach(function (b) {
+    b.onclick = function () { document.getElementById("in").value = b.dataset.t; render(); };
+  });
+  render();
+})();
+</script>
