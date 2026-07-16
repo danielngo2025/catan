@@ -1,0 +1,239 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Game Theory · Visual Learn Lab</title>
+<meta name="description" content="Game theory, made playable — face off in the Prisoner's Dilemma against classic strategies, then run Axelrod's tournament and watch the ruthless defector win every duel yet lose the war.">
+<link rel="stylesheet" href="assets/site.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🤝</text></svg>">
+<style>
+  .cols{display:grid;grid-template-columns:1fr;gap:16px}
+  @media(min-width:820px){.cols{grid-template-columns:minmax(0,300px) 1fr}}
+  .matrix{border-collapse:collapse;width:100%;font-size:13px}
+  .matrix th,.matrix td{border:1px solid var(--line);padding:8px;text-align:center}
+  .matrix th{color:var(--muted);font-weight:700;font-size:12px}
+  .matrix .cell{font-weight:800;font-variant-numeric:tabular-nums}
+  .matrix .cell.hot{background:var(--panel2);box-shadow:inset 0 0 0 2px var(--accent)}
+  .matrix .you{color:#6db4ff} .matrix .them{color:#f4b942}
+  .opp{display:flex;gap:6px;flex-wrap:wrap;margin:2px 0 0}
+  .opp button{font-size:12px;padding:6px 10px}
+  .opp button.sel{background:var(--accent);color:#241a00;border-color:var(--accent)}
+  .scores{display:flex;gap:12px;margin:12px 0}
+  .score{flex:1;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center}
+  .score b{display:block;font-size:26px;font-variant-numeric:tabular-nums}
+  .score.you b{color:#6db4ff} .score.them b{color:#f4b942}
+  .score span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .play{display:flex;gap:10px;margin:6px 0 0}
+  .play button{flex:1;font-size:15px;padding:12px}
+  .coop{background:rgba(63,206,143,.18);border-color:var(--good);color:#bff2d8}
+  .defect{background:rgba(255,107,107,.16);border-color:var(--bad);color:#ffd0d0}
+  .hist{display:flex;gap:3px;flex-wrap:wrap;margin-top:12px;min-height:22px}
+  .rnd{display:flex;flex-direction:column;font-size:11px;line-height:1.1;text-align:center;
+    border:1px solid var(--line);border-radius:6px;padding:2px 4px;background:var(--panel2)}
+  .rnd .c{color:var(--good)} .rnd .d{color:var(--bad)}
+  .hintbox{background:linear-gradient(180deg,#1a2c49,#16233a);border:1px solid var(--accent);border-radius:10px;padding:12px 14px;margin-top:14px}
+  .lead{width:100%;border-collapse:collapse;margin-top:4px;font-size:13px}
+  .lead th,.lead td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left}
+  .lead th{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+  .lead td.n{text-align:right;font-variant-numeric:tabular-nums}
+  .lead tr.win td{color:var(--good);font-weight:800}
+  .lead tr.lose td{color:var(--bad)}
+  .bar{height:8px;border-radius:5px;background:var(--panel2);overflow:hidden;margin-top:3px}
+  .bar i{display:block;height:100%;background:linear-gradient(90deg,#3fce8f,#f4b942)}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-top:4px}
+  .qc{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .qc b{color:var(--ink)} .qc p{margin:4px 0 0;color:var(--muted);font-size:13px}
+</style>
+
+<div id="site-nav"></div>
+
+<main class="page">
+  <h1>🤝 Game Theory — the Prisoner's Dilemma</h1>
+  <p class="lede">Game theory is the math of decisions that depend on <em>other people's</em> decisions.
+    Its most famous puzzle is the <b>Prisoner's Dilemma</b>: two players each choose to <b>cooperate</b> or
+    <b>defect</b>. Whatever the other does, defecting always scores you more points — so cold logic says
+    <em>defect</em>. Yet if both defect, both do worse than if both had cooperated. Play it below, then run a
+    tournament and watch a surprising truth emerge.</p>
+
+  <div class="card">
+    <div class="cols">
+      <div>
+        <table class="matrix" id="matrix">
+          <tr><th></th><th>They cooperate</th><th>They defect</th></tr>
+          <tr><th>You cooperate</th>
+            <td class="cell" data-k="CC"><span class="you">3</span> / <span class="them">3</span></td>
+            <td class="cell" data-k="CD"><span class="you">0</span> / <span class="them">5</span></td></tr>
+          <tr><th>You defect</th>
+            <td class="cell" data-k="DC"><span class="you">5</span> / <span class="them">0</span></td>
+            <td class="cell" data-k="DD"><span class="you">1</span> / <span class="them">1</span></td></tr>
+        </table>
+        <p class="muted" style="font-size:12px;margin:8px 0 4px">Your points / their points. Opponent strategy:</p>
+        <div class="opp" id="opp"></div>
+      </div>
+      <div>
+        <div class="scores">
+          <div class="score you"><b id="s-you">0</b><span>You</span></div>
+          <div class="score them"><b id="s-them">0</b><span id="opp-name">Tit-for-Tat</span></div>
+          <div class="score"><b id="s-round">0</b><span>Rounds</span></div>
+        </div>
+        <div class="play">
+          <button class="coop" id="coop">🤝 Cooperate</button>
+          <button class="defect" id="defect">😈 Defect</button>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">
+          <span class="muted" style="font-size:12px">Recent rounds (you / them):</span>
+          <button id="newmatch" style="font-size:12px;padding:5px 10px">New match</button>
+        </div>
+        <div class="hist" id="hist"></div>
+      </div>
+    </div>
+    <div class="hintbox" id="hint"></div>
+  </div>
+
+  <h2>Axelrod's tournament — do nice guys finish last?</h2>
+  <div class="card">
+    <p class="muted" style="margin:0 0 10px">In 1980 Robert Axelrod had game-theory experts submit strategies and
+      pitted them against each other in a round-robin of repeated Prisoner's Dilemmas. Run it below: each strategy
+      plays every other for 150 rounds. Watch <b>Always Defect</b> — it never loses a single duel, yet look where it lands.</p>
+    <button class="primary" id="run">▶ Run the tournament</button>
+    <div id="leadwrap" style="margin-top:14px"></div>
+  </div>
+
+  <h2>The ideas behind it</h2>
+  <div class="card">
+    <div class="cards">
+      <div class="qc"><b>Dominant strategy &amp; Nash equilibrium</b><p>Defecting beats cooperating no matter what the other does, so it's <em>dominant</em>. Both reason that way and both defect — a Nash equilibrium nobody can improve alone, even though it's worse for both than mutual cooperation.</p></div>
+      <div class="qc"><b>Non-zero-sum</b><p>Unlike chess, this isn't win-lose. Both can gain (3,3) or both lose (1,1). Cooperation <em>creates</em> value; the dilemma is that self-interest destroys it.</p></div>
+      <div class="qc"><b>The shadow of the future</b><p>Play once and defection rules. But when the game <em>repeats</em> and you'll meet again, reciprocity pays: cooperate, but punish defection. That's why Tit-for-Tat thrives.</p></div>
+      <div class="qc"><b>Axelrod's winner</b><p>The champions were <em>nice</em> (never defect first), <em>retaliating</em>, <em>forgiving</em>, and <em>clear</em>. Always Defect wins every head-to-head but finishes near the bottom — it can never build the cooperation that racks up points.</p></div>
+    </div>
+    <p class="muted" style="margin:12px 0 0">This one little game explains an astonishing amount of the world: arms races,
+      overfishing, price wars, climate negotiations, vaccination, and even how cooperation evolved among selfish genes.
+      Whenever short-term self-interest clashes with collective good, you're looking at a Prisoner's Dilemma.</p>
+  </div>
+
+  <footer class="site-foot">
+    <span class="views" data-count-path="self" style="visibility:hidden"></span>
+  </footer>
+</main>
+
+<script src="assets/config.js"></script>
+<script src="assets/site.js"></script>
+<script>
+(function () {
+  var PAY = { CC: [3, 3], CD: [0, 5], DC: [5, 0], DD: [1, 1] };   // keyed by [you/A, them/B]
+  function frac(n) { var s = Math.sin(n * 12.9898) * 43758.5453; return s - Math.floor(s); }
+  var rngK = 0; function rng() { return frac(++rngK); }
+
+  // strategy: decide my next move from my own past moves and the opponent's past moves
+  function decide(id, mine, opp) {
+    switch (id) {
+      case "tft": return opp.length ? opp[opp.length - 1] : "C";
+      case "allc": return "C";
+      case "alld": return "D";
+      case "grudger": return opp.indexOf("D") >= 0 ? "D" : "C";
+      case "tf2t": return (opp.length >= 2 && opp[opp.length - 1] === "D" && opp[opp.length - 2] === "D") ? "D" : "C";
+      case "pavlov": return mine.length ? (mine[mine.length - 1] === opp[opp.length - 1] ? "C" : "D") : "C";
+      case "random": return rng() < 0.5 ? "C" : "D";
+    }
+    return "C";
+  }
+  var NAME = { tft: "Tit-for-Tat", allc: "Always Cooperate", alld: "Always Defect", grudger: "Grudger",
+               tf2t: "Tit-for-Two-Tats", pavlov: "Pavlov", random: "Random" };
+
+  // ---------- interactive match (you vs one strategy) ----------
+  var oppId = "tft", youMoves = [], oppMoves = [], youPts = 0, oppPts = 0;
+  var choices = ["tft", "allc", "alld", "grudger", "random"];
+  var oppBox = document.getElementById("opp");
+  oppBox.innerHTML = choices.map(function (id) {
+    return '<button data-id="' + id + '"' + (id === oppId ? ' class="sel"' : '') + '>' + NAME[id] + '</button>';
+  }).join("");
+  oppBox.querySelectorAll("button").forEach(function (b) {
+    b.onclick = function () { oppId = b.dataset.id; newMatch(); syncOpp(); };
+  });
+  function syncOpp() {
+    oppBox.querySelectorAll("button").forEach(function (b) { b.classList.toggle("sel", b.dataset.id === oppId); });
+    document.getElementById("opp-name").textContent = NAME[oppId];
+  }
+
+  function play(you) {
+    var them = decide(oppId, oppMoves, youMoves);      // opponent reacts to history, not your current move
+    youMoves.push(you); oppMoves.push(them);
+    var p = PAY[you + them]; youPts += p[0]; oppPts += p[1];
+    render();
+  }
+  function newMatch() { youMoves = []; oppMoves = []; youPts = 0; oppPts = 0; render(); }
+
+  function render() {
+    document.getElementById("s-you").textContent = youPts;
+    document.getElementById("s-them").textContent = oppPts;
+    document.getElementById("s-round").textContent = youMoves.length;
+    // highlight last outcome on the matrix
+    document.querySelectorAll("#matrix .cell").forEach(function (c) { c.classList.remove("hot"); });
+    if (youMoves.length) {
+      var k = youMoves[youMoves.length - 1] + oppMoves[oppMoves.length - 1];
+      var cell = document.querySelector('#matrix .cell[data-k="' + k + '"]');
+      if (cell) cell.classList.add("hot");
+    }
+    // recent history (last 14)
+    var h = "", start = Math.max(0, youMoves.length - 14);
+    for (var i = start; i < youMoves.length; i++) {
+      h += '<span class="rnd"><span class="' + (youMoves[i] === "C" ? "c" : "d") + '">' + youMoves[i] +
+           '</span><span class="' + (oppMoves[i] === "C" ? "c" : "d") + '">' + oppMoves[i] + '</span></span>';
+    }
+    document.getElementById("hist").innerHTML = h;
+    // hint
+    var hint;
+    if (!youMoves.length) hint = "🤝 Pick Cooperate or Defect. Your opponent chooses at the same time, using the strategy on the left.";
+    else {
+      var last = youMoves[youMoves.length - 1] + oppMoves[oppMoves.length - 1];
+      var msg = { CC: "Mutual cooperation — the best sustainable outcome (3 each).",
+                  DD: "Mutual defection — the trap. Only 1 each, though neither can safely switch alone.",
+                  DC: "You exploited their trust (+5!). But watch how the strategy responds next round.",
+                  CD: "You got suckered (0). Cooperating against a defector is costly." }[last];
+      hint = "🤝 " + msg + (youPts > oppPts ? " You're ahead." : youPts < oppPts ? " You're behind — note you can never <em>beat</em> Tit-for-Tat, only tie or lose." : " Dead even.");
+    }
+    document.getElementById("hint").innerHTML = hint;
+  }
+
+  document.getElementById("coop").onclick = function () { play("C"); };
+  document.getElementById("defect").onclick = function () { play("D"); };
+  document.getElementById("newmatch").onclick = newMatch;
+
+  // ---------- Axelrod round-robin tournament ----------
+  function match(a, b, rounds) {
+    var am = [], bm = [], as = 0, bs = 0;
+    for (var r = 0; r < rounds; r++) {
+      var ma = decide(a, am, bm), mb = decide(b, bm, am), p = PAY[ma + mb];
+      as += p[0]; bs += p[1]; am.push(ma); bm.push(mb);
+    }
+    return [as, bs];
+  }
+  document.getElementById("run").onclick = function () {
+    rngK = 0;                                          // reset PRNG so the tournament is reproducible
+    var field = ["tft", "grudger", "tf2t", "pavlov", "allc", "alld", "random"];
+    var total = {}; field.forEach(function (f) { total[f] = 0; });
+    for (var i = 0; i < field.length; i++)
+      for (var j = i + 1; j < field.length; j++) {
+        var res = match(field[i], field[j], 150);
+        total[field[i]] += res[0]; total[field[j]] += res[1];
+      }
+    var rows = field.map(function (f) { return { id: f, pts: total[f] }; })
+                    .sort(function (a, b) { return b.pts - a.pts; });
+    var max = rows[0].pts;
+    var html = '<table class="lead"><tr><th>#</th><th>Strategy</th><th>Total points</th></tr>';
+    rows.forEach(function (row, idx) {
+      var cls = idx === 0 ? " class=\"win\"" : (row.id === "alld" ? " class=\"lose\"" : "");
+      html += "<tr" + cls + "><td>" + (idx + 1) + "</td><td>" + NAME[row.id] +
+        (idx === 0 ? " 🏆" : "") + '</td><td class="n">' + row.pts.toLocaleString() +
+        '<div class="bar"><i style="width:' + (row.pts / max * 100).toFixed(0) + '%"></i></div></td></tr>';
+    });
+    html += "</table>";
+    var allrank = rows.findIndex(function (r) { return r.id === "alld"; }) + 1;
+    html += '<p class="muted" style="margin:12px 0 0">🏆 <b>' + NAME[rows[0].id] + '</b> wins. <b>Always Defect</b> finished <b>#' +
+      allrank + " of " + rows.length + "</b> — it won or tied every individual duel, but by never cooperating it could never build the big mutual-cooperation scores. Reciprocity beats ruthlessness over the long run.</p>";
+    document.getElementById("leadwrap").innerHTML = html;
+  };
+
+  syncOpp(); newMatch();
+})();
+</script>

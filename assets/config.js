@@ -46,5 +46,7 @@ window.SITE = {
       blurb: "Particles are ripples in fields — poke excitations into a quantum field, annihilate matter with antimatter, and watch the vacuum bubble with virtual pairs." },
     { path: "statmech.html", title: "Statistical Mechanics", emoji: "🎲", group: "Classical Physics",
       blurb: "Order from molecular chaos — start every particle at one speed and watch collisions thermalize the gas into the Maxwell–Boltzmann distribution." },
+    { path: "gametheory.html", title: "Game Theory", emoji: "🤝", group: "Productivity",
+      blurb: "The Prisoner's Dilemma — play against classic strategies, then run Axelrod's tournament and watch the ruthless defector win every duel yet lose the war." },
   ],
 };
