@@ -39,18 +39,21 @@
         '<div class="spacer"></div>' +
       "</nav>";
 
-    // click a group to toggle its menu; click elsewhere (or another group) closes it
+    // Mouse users get hover-to-open (CSS). Touch devices (no hover) fall back to tap-to-open.
     var navgroups = host.querySelectorAll(".navgroup");
-    function closeAll() { navgroups.forEach(function (n) { n.classList.remove("open"); }); }
-    navgroups.forEach(function (n) {
-      n.querySelector(".navbtn").addEventListener("click", function (e) {
-        e.stopPropagation();
-        var wasOpen = n.classList.contains("open");
-        closeAll();
-        if (!wasOpen) n.classList.add("open");
+    var hoverable = window.matchMedia && window.matchMedia("(hover: hover)").matches;
+    if (!hoverable) {
+      var closeAll = function () { navgroups.forEach(function (n) { n.classList.remove("open"); }); };
+      navgroups.forEach(function (n) {
+        n.querySelector(".navbtn").addEventListener("click", function (e) {
+          e.stopPropagation();
+          var wasOpen = n.classList.contains("open");
+          closeAll();
+          if (!wasOpen) n.classList.add("open");
+        });
       });
-    });
-    document.addEventListener("click", closeAll);
+      document.addEventListener("click", closeAll);
+    }
   }
 
   // --- GoatCounter ---

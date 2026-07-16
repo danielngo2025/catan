@@ -37,6 +37,12 @@ a:hover{text-decoration:underline}
   border-radius:12px;box-shadow:0 14px 34px rgba(0,0,0,.45)}
 .navgroup.open .navmenu{display:flex}
 .navmenu a.navlink{display:block;padding:8px 11px;border-radius:8px;font-size:13px}
+/* open on hover for mouse users; the ::after bridges the gap so the menu stays open */
+@media (hover:hover){
+  .navgroup:hover .navmenu{display:flex}
+  .navgroup:hover .navbtn .caret{transform:rotate(180deg)}
+  .navgroup::after{content:"";position:absolute;left:0;top:100%;width:100%;height:9px}
+}
 
 /* --- generic page container (topic pages that aren't full-bleed) --- */
 main.page{max-width:1080px;margin:0 auto;padding:26px 20px 60px}
