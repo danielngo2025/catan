@@ -1,0 +1,145 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chaos Theory · Visual Learn Lab</title>
+<meta name="description" content="Chaos theory, made visual — slide through the logistic map's bifurcation diagram from order into chaos, and watch two nearly identical starts diverge in the butterfly effect.">
+<link rel="stylesheet" href="assets/site.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🦋</text></svg>">
+<style>
+  canvas{width:100%;background:#0a1220;border:1px solid var(--line);border-radius:12px;display:block}
+  .metrics{display:flex;gap:14px;flex-wrap:wrap;margin:14px 0 0}
+  .metric{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 14px;min-width:130px}
+  .metric .v{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums}
+  .metric .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .btnrow{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:14px}
+  .field input[type=range]{width:min(440px,72vw)}
+  .caption{font-size:12px;color:var(--muted);margin:6px 2px 0}
+  .hintbox{background:linear-gradient(180deg,#1a2c49,#16233a);border:1px solid var(--accent);border-radius:10px;padding:12px 14px;margin-top:14px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-top:4px}
+  .qc{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .qc b{color:var(--ink)} .qc p{margin:4px 0 0;color:var(--muted);font-size:13px}
+</style>
+
+<div id="site-nav"></div>
+
+<main class="page">
+  <h1>🦋 Chaos Theory — order, then the butterfly effect</h1>
+  <p class="lede">Chaos isn't randomness — it's <b>deterministic unpredictability</b>. Simple rules with no luck
+    involved can still produce behavior no one can forecast, because the tiniest change in the starting point
+    grows exponentially. The classic example is the <b>logistic map</b> <em>xₙ₊₁ = r·xₙ·(1−xₙ)</em>, a toy model
+    of a population. Slide the growth rate <b>r</b> and watch a single stable value split into 2, then 4, then 8…
+    and collapse into chaos — the famous <b>bifurcation diagram</b>.</p>
+
+  <div class="card">
+    <canvas id="bif" width="720" height="300"></canvas>
+    <div class="caption">Bifurcation diagram: for each growth rate <b>r</b> (left→right, 2.5 → 4.0), the dots show the long-term values the population settles into. The gold line marks your current r.</div>
+    <div class="btnrow">
+      <label class="field">Growth rate r = <b id="rv">3.700</b>
+        <input type="range" id="r" min="2500" max="4000" step="1" value="3700"></label>
+    </div>
+    <div class="metrics">
+      <div class="metric"><div class="v" id="m-regime">Chaos</div><div class="k">Behavior</div></div>
+      <div class="metric"><div class="v" id="m-diverge">—</div><div class="k">Two starts (Δ = 0.001)</div></div>
+    </div>
+
+    <canvas id="ts" width="720" height="200" style="margin-top:14px"></canvas>
+    <div class="caption">The butterfly effect: two populations started almost identically — <span style="color:#6db4ff">0.400</span> and <span style="color:#f4b942">0.401</span> — iterated at your chosen r. Watch whether they stay together or fly apart.</div>
+    <div class="hintbox" id="hint"></div>
+  </div>
+
+  <h2>What chaos teaches</h2>
+  <div class="card">
+    <div class="cards">
+      <div class="qc"><b>Deterministic ≠ predictable</b><p>Every step here is fixed by an exact rule — no randomness at all. Yet past a threshold the outcome becomes impossible to predict long-term. Determinism doesn't guarantee predictability.</p></div>
+      <div class="qc"><b>Sensitive dependence</b><p>Two starting points a hair apart diverge exponentially. Edward Lorenz found this in weather: a butterfly's wingbeat could, in principle, change whether a storm forms weeks later.</p></div>
+      <div class="qc"><b>The period-doubling road</b><p>Order gives way to chaos in a precise cascade — 1 → 2 → 4 → 8 → … — and the ratio of those steps approaches a universal constant (≈ 4.669, Feigenbaum's number) for a huge class of systems.</p></div>
+      <div class="qc"><b>Order inside chaos</b><p>Look near r ≈ 3.83 — a sudden white gap where period-3 order returns, then re-shatters. Chaos is laced with windows of structure; it's intricate, not featureless noise.</p></div>
+    </div>
+    <p class="muted" style="margin:12px 0 0">The same math governs weather, turbulence, heartbeats, ecosystems, dripping taps, and markets —
+      which is why long-range weather forecasts hit a hard wall around two weeks. Chaos is also why <em>attractors</em> (like Lorenz's
+      butterfly-shaped one) can be bounded yet never repeat. Small causes, disproportionate effects: that's the signature of a chaotic world.</p>
+  </div>
+
+  <footer class="site-foot">
+    <span class="views" data-count-path="self" style="visibility:hidden"></span>
+  </footer>
+</main>
+
+<script src="assets/config.js"></script>
+<script src="assets/site.js"></script>
+<script>
+(function () {
+  var rMin = 2.5, rMax = 4.0, r = 3.7;
+  var bif = document.getElementById("bif"), bx = bif.getContext("2d");
+  var W = bif.width, H = bif.height;
+
+  // Render the bifurcation diagram once into an offscreen canvas.
+  var off = document.createElement("canvas"); off.width = W; off.height = H;
+  (function build() {
+    var g = off.getContext("2d");
+    g.fillStyle = "#0a1220"; g.fillRect(0, 0, W, H);
+    g.fillStyle = "rgba(120,195,255,.32)";
+    for (var px = 0; px < W; px++) {
+      var rr = rMin + (px / W) * (rMax - rMin), x = 0.5;
+      for (var i = 0; i < 430; i++) { x = rr * x * (1 - x); if (i >= 190) g.fillRect(px, H - x * H, 1, 1); }
+    }
+  })();
+
+  function regime(r) {
+    if (r < 3.0) return "Fixed point";
+    if (r < 3.449) return "Period 2";
+    if (r < 3.5441) return "Period 4";
+    if (r < 3.5699) return "Doubling cascade";
+    if (r >= 3.828 && r <= 3.857) return "Period-3 window";
+    return "Chaos";
+  }
+
+  function drawTS() {
+    var c = document.getElementById("ts"), g = c.getContext("2d"), w = c.width, h = c.height, Nn = 70;
+    g.clearRect(0, 0, w, h);
+    g.strokeStyle = "#182742"; g.lineWidth = 1;                    // faint 0 / 1 guides
+    g.beginPath(); g.moveTo(0, h - 1); g.lineTo(w, h - 1); g.moveTo(0, 1); g.lineTo(w, 1); g.stroke();
+    var starts = [0.400, 0.401], cols = ["#6db4ff", "#f4b942"], finals = [];
+    for (var s = 0; s < 2; s++) {
+      var x = starts[s]; g.strokeStyle = cols[s]; g.lineWidth = 1.8; g.beginPath();
+      for (var i = 0; i <= Nn; i++) {
+        var pxp = i / Nn * w, pyp = h - x * (h - 2) - 1;
+        if (i === 0) g.moveTo(pxp, pyp); else g.lineTo(pxp, pyp);
+        x = r * x * (1 - x);
+      }
+      g.stroke(); finals.push(x);
+    }
+    return Math.abs(finals[0] - finals[1]);
+  }
+
+  function render() {
+    bx.clearRect(0, 0, W, H); bx.drawImage(off, 0, 0);
+    var mx = (r - rMin) / (rMax - rMin) * W;
+    bx.strokeStyle = "#f4b942"; bx.lineWidth = 1.5;
+    bx.beginPath(); bx.moveTo(mx, 0); bx.lineTo(mx, H); bx.stroke();
+    // r-axis ticks
+    bx.fillStyle = "#93a4bf"; bx.font = "11px system-ui";
+    [2.5, 3.0, 3.5, 4.0].forEach(function (t) {
+      var px = (t - rMin) / (rMax - rMin) * W;
+      bx.textAlign = px < 12 ? "left" : px > W - 12 ? "right" : "center";
+      bx.fillText(t.toFixed(1), Math.min(Math.max(px, 2), W - 2), H - 4);
+    });
+
+    var div = drawTS();
+    document.getElementById("m-regime").textContent = regime(r);
+    var diverged = div > 0.05;
+    document.getElementById("m-diverge").textContent = diverged ? "Diverged 🦋" : "Locked together";
+    var reg = regime(r);
+    document.getElementById("hint").innerHTML = (reg === "Chaos" || reg === "Doubling cascade")
+      ? "🦋 <b>" + reg + ".</b> The two nearly-identical populations have flown apart — after a few dozen steps their futures are unrelated. That's <b>sensitive dependence</b>: prediction becomes impossible even though the rule is fixed."
+      : reg === "Period-3 window"
+        ? "🦋 <b>Order returns!</b> Inside the chaos, at r ≈ 3.83, the system snaps back to repeating every 3 steps — and the two starts lock together again. Nudge r slightly and chaos resumes."
+        : "🦋 <b>" + reg + ".</b> The population settles into a stable, repeating pattern, so the two near-identical starts stay locked together — fully predictable. Push r higher toward 3.57+ to enter chaos.";
+  }
+
+  document.getElementById("r").addEventListener("input", function () {
+    r = +this.value / 1000; document.getElementById("rv").textContent = r.toFixed(3); render();
+  });
+  render();
+})();
+</script>

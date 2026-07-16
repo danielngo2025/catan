@@ -50,5 +50,9 @@ window.SITE = {
       blurb: "The Prisoner's Dilemma — play against classic strategies, then run Axelrod's tournament and watch the ruthless defector win every duel yet lose the war." },
     { path: "infotheory.html", title: "Information Theory", emoji: "📡", group: "Math & CS",
       blurb: "Information measured in bits — tune a message source and watch Shannon entropy, per-symbol surprise, and compression savings respond." },
+    { path: "chaos.html", title: "Chaos Theory", emoji: "🦋", group: "Math & CS",
+      blurb: "Deterministic unpredictability — slide through the logistic map's bifurcation diagram from order into chaos, and watch two near-identical starts diverge." },
+    { path: "blackscholes.html", title: "Black-Scholes", emoji: "💹", group: "Math & CS",
+      blurb: "Pricing a stock option — drag spot, strike, volatility, time and rate to see the fair price and watch time value melt into the payoff as expiry nears." },
   ],
 };
