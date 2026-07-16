@@ -1,0 +1,159 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Word Embeddings · Visual Learn Lab</title>
+<meta name="description" content="Word embeddings, made visual — words become points in space, meaning becomes direction, and analogies become arithmetic: king − man + woman ≈ queen.">
+<link rel="stylesheet" href="assets/site.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🗺️</text></svg>">
+<style>
+  canvas{width:100%;background:#0a1220;border:1px solid var(--line);border-radius:12px;display:block;cursor:pointer}
+  .btnrow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}
+  .btnrow .an{display:flex;gap:6px;flex-wrap:wrap}
+  .btnrow .an button{font-size:12px;padding:6px 10px}
+  .eqbox{font-size:16px;font-weight:700;margin-top:12px;min-height:22px}
+  .eqbox b{color:var(--accent)}
+  .hintbox{background:linear-gradient(180deg,#1a2c49,#16233a);border:1px solid var(--accent);border-radius:10px;padding:12px 14px;margin-top:14px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-top:4px}
+  .qc{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .qc b{color:var(--ink)} .qc p{margin:4px 0 0;color:var(--muted);font-size:13px}
+</style>
+
+<div id="site-nav"></div>
+
+<main class="page">
+  <h1>🗺️ Word Embeddings — meaning as geometry</h1>
+  <p class="lede">Before a model can compute with language, it turns each word into a list of numbers — a point
+    in space, called an <b>embedding</b>. Words used in similar ways end up <b>near each other</b>, so meaning
+    becomes <em>location</em>. Even more striking: <b>directions carry meaning too</b>. The step from "man" to
+    "woman" is the same step as "king" to "queen" — so you can literally do arithmetic on meaning:
+    <b>king − man + woman ≈ queen</b>. Explore the map below, or run an analogy.</p>
+
+  <div class="card">
+    <canvas id="stage" width="720" height="420"></canvas>
+    <div class="btnrow">
+      <span class="muted" style="font-size:12px;align-self:center">Analogies:</span>
+      <div class="an" id="an"></div>
+      <button id="clear">Clear (explore mode)</button>
+    </div>
+    <div class="eqbox" id="eq"></div>
+    <div class="hintbox" id="hint"></div>
+  </div>
+
+  <h2>Why this is powerful</h2>
+  <div class="card">
+    <div class="cards">
+      <div class="qc"><b>Similarity = closeness</b><p>Click any word: its nearest neighbours are its most related words. "cat" sits by "dog" and "lion"; "paris" by other capitals. Distance in this space <em>is</em> semantic similarity.</p></div>
+      <div class="qc"><b>Meaning = direction</b><p>Consistent relationships become consistent vectors. "Gender," "capital-of," "plural," even "past tense" each point a fixed way — which is why the analogy arrows come out parallel.</p></div>
+      <div class="qc"><b>Learned, not programmed</b><p>Nobody hand-places these; models learn them from raw text, on the principle that a word is defined by the company it keeps. Similar contexts ⇒ similar vectors.</p></div>
+      <div class="qc"><b>The input to everything</b><p>Embeddings are the first layer of an LLM: text → vectors it can add, compare, and attend over. Good embeddings are why models grasp that "king" and "monarch" are close but "king" and "kangaroo" are not.</p></div>
+    </div>
+    <p class="muted" style="margin:12px 0 0">Real embeddings live in hundreds or thousands of dimensions (not 2), so far more relationships fit without
+      collisions — this map is a hand-placed 2-D cartoon to make the idea tangible. But word2vec and every modern LLM really do
+      solve "king − man + woman" and land on "queen."</p>
+  </div>
+
+  <footer class="site-foot">
+    <span class="views" data-count-path="self" style="visibility:hidden"></span>
+  </footer>
+</main>
+
+<script src="assets/config.js"></script>
+<script src="assets/site.js"></script>
+<script>
+(function () {
+  var c = document.getElementById("stage"), x = c.getContext("2d"), W = c.width, H = c.height;
+  var CC = { royal: "#b07cff", place: "#6db4ff", animal: "#3fce8f", food: "#f4b942", tech: "#4dd0e1", emo: "#ff6b6b" };
+  var D = [
+    ["man", 2, 6, "royal"], ["woman", 4, 6, "royal"], ["king", 2, 9, "royal"], ["queen", 4, 9, "royal"],
+    ["prince", 2, 8, "royal"], ["princess", 4, 8, "royal"], ["boy", 2, 5, "royal"], ["girl", 4, 5, "royal"],
+    ["france", 9, 2, "place"], ["paris", 9, 4, "place"], ["italy", 11, 2, "place"], ["rome", 11, 4, "place"],
+    ["japan", 13, 2, "place"], ["tokyo", 13, 4, "place"], ["spain", 15, 2, "place"], ["madrid", 15, 4, "place"],
+    ["germany", 17, 2, "place"], ["berlin", 17, 4, "place"],
+    ["cat", 2, 14, "animal"], ["dog", 3.2, 14.6, "animal"], ["lion", 2.6, 15.4, "animal"], ["tiger", 3.8, 15, "animal"], ["horse", 1.6, 15, "animal"], ["mouse", 4.2, 14.2, "animal"],
+    ["pizza", 15, 14, "food"], ["apple", 16.2, 15, "food"], ["bread", 14.4, 15, "food"], ["coffee", 16.6, 14, "food"], ["cake", 15.4, 15.6, "food"],
+    ["computer", 8, 14, "tech"], ["robot", 9.2, 15, "tech"], ["code", 7.4, 15, "tech"], ["data", 9.6, 14, "tech"], ["model", 8.6, 15.6, "tech"], ["algorithm", 7, 14.2, "tech"],
+    ["happy", 8, -2, "emo"], ["sad", 9.2, -2.6, "emo"], ["angry", 9.6, -1.4, "emo"], ["calm", 7.4, -1, "emo"], ["love", 8.6, -3.2, "emo"]
+  ];
+  var idx = {}; D.forEach(function (d, i) { idx[d[0]] = i; });
+  var minX = 1.6, maxX = 17, minY = -3.2, maxY = 15.6, PAD = 30;
+  function sx(vx) { return PAD + (vx - minX) / (maxX - minX) * (W - 2 * PAD); }
+  function sy(vy) { return H - PAD - (vy - minY) / (maxY - minY) * (H - 2 * PAD); }
+
+  var ANALOGIES = [["king", "man", "woman"], ["paris", "france", "italy"], ["berlin", "germany", "japan"], ["princess", "girl", "boy"]];
+  document.getElementById("an").innerHTML = ANALOGIES.map(function (a, i) { return '<button data-i="' + i + '">' + a[0] + " − " + a[1] + " + " + a[2] + "</button>"; }).join("");
+
+  var mode = "explore", sel = "cat", ana = null;
+
+  function nearest(px, py, exclude) {
+    var best = 1e9, bi = -1;
+    for (var i = 0; i < D.length; i++) { if (exclude && exclude.indexOf(D[i][0]) >= 0) continue; var dx = D[i][1] - px, dy = D[i][2] - py, d = dx * dx + dy * dy; if (d < best) { best = d; bi = i; } }
+    return D[bi][0];
+  }
+  function neighbors(word, n) {
+    var w = D[idx[word]]; return D.filter(function (d) { return d[0] !== word; })
+      .map(function (d) { return [d[0], (d[1] - w[1]) * (d[1] - w[1]) + (d[2] - w[2]) * (d[2] - w[2])]; })
+      .sort(function (a, b) { return a[1] - b[1]; }).slice(0, n).map(function (e) { return e[0]; });
+  }
+
+  function render() {
+    x.clearRect(0, 0, W, H);
+    var hi = {};                                           // highlight set
+    if (mode === "explore") { hi[sel] = "#fff"; neighbors(sel, 4).forEach(function (w) { hi[w] = "#f4b942"; }); }
+    if (mode === "analogy" && ana) { hi[ana.A] = "#6db4ff"; hi[ana.B] = "#ff6b6b"; hi[ana.C] = "#3fce8f"; hi[ana.ans] = "#f4b942"; }
+
+    // explore neighbour lines
+    if (mode === "explore") { var s = D[idx[sel]]; x.strokeStyle = "rgba(244,185,66,.35)"; x.lineWidth = 1; neighbors(sel, 4).forEach(function (w) { var t = D[idx[w]]; x.beginPath(); x.moveTo(sx(s[1]), sy(s[2])); x.lineTo(sx(t[1]), sy(t[2])); x.stroke(); }); }
+
+    // analogy arrows: B→A and C→answer (parallel = same relationship)
+    if (mode === "analogy" && ana) {
+      arrow(D[idx[ana.B]], D[idx[ana.A]], "#8aa0c0");
+      arrow(D[idx[ana.C]], D[idx[ana.ans]], "#f4b942");
+    }
+
+    // points
+    x.textAlign = "center"; x.font = "12px system-ui";
+    for (var i = 0; i < D.length; i++) {
+      var d = D[i], px = sx(d[1]), py = sy(d[2]), on = hi[d[0]];
+      x.fillStyle = CC[d[3]]; x.globalAlpha = on || mode === "explore" && false ? 1 : 0.9;
+      x.beginPath(); x.arc(px, py, on ? 6 : 4, 0, 7); x.fill();
+      if (on) { x.strokeStyle = on; x.lineWidth = 2; x.beginPath(); x.arc(px, py, 9, 0, 7); x.stroke(); }
+      x.globalAlpha = 1;
+      x.fillStyle = on ? "#fff" : "rgba(200,214,230,.7)"; x.fillText(d[0], px, py - 10);
+    }
+  }
+  function arrow(from, to, col) {
+    var x0 = sx(from[1]), y0 = sy(from[2]), x1 = sx(to[1]), y1 = sy(to[2]);
+    x.strokeStyle = col; x.fillStyle = col; x.lineWidth = 2.4;
+    x.beginPath(); x.moveTo(x0, y0); x.lineTo(x1, y1); x.stroke();
+    var a = Math.atan2(y1 - y0, x1 - x0);
+    x.beginPath(); x.moveTo(x1, y1); x.lineTo(x1 - Math.cos(a - 0.4) * 11, y1 - Math.sin(a - 0.4) * 11); x.lineTo(x1 - Math.cos(a + 0.4) * 11, y1 - Math.sin(a + 0.4) * 11); x.closePath(); x.fill();
+  }
+
+  function setAnalogy(i) {
+    var a = ANALOGIES[i], A = a[0], B = a[1], C = a[2];
+    var tx = D[idx[A]][1] - D[idx[B]][1] + D[idx[C]][1], ty = D[idx[A]][2] - D[idx[B]][2] + D[idx[C]][2];
+    var ans = nearest(tx, ty, [A, B, C]);
+    mode = "analogy"; ana = { A: A, B: B, C: C, ans: ans };
+    document.getElementById("eq").innerHTML = A + " − " + B + " + " + C + " ≈ <b>" + ans + "</b>";
+    document.getElementById("hint").innerHTML = "🗺️ The step <b>" + B + " → " + A + "</b> (grey) is the same direction as <b>" + C + " → " + ans + "</b> (gold) — that shared direction <em>is</em> the relationship. Adding it to \"" + C + "\" lands right on <b>" + ans + "</b>.";
+    render();
+  }
+  function setExplore(word) {
+    mode = "explore"; sel = word; ana = null;
+    document.getElementById("eq").innerHTML = '<span class="muted" style="font-weight:400;font-size:13px">Nearest to <b style="color:var(--ink)">' + word + '</b>: ' + neighbors(word, 4).join(", ") + "</span>";
+    document.getElementById("hint").innerHTML = "🗺️ <b>" + word + "</b> and its nearest neighbours (gold) are the words used in the most similar ways. Click any point to explore, or run an analogy below.";
+    render();
+  }
+
+  document.querySelectorAll("#an button").forEach(function (b) { b.onclick = function () { setAnalogy(+b.dataset.i); }; });
+  document.getElementById("clear").onclick = function () { setExplore(sel); };
+  c.addEventListener("click", function (ev) {
+    var rect = c.getBoundingClientRect(), mx = (ev.clientX - rect.left) * (c.width / rect.width), my = (ev.clientY - rect.top) * (c.height / rect.height);
+    var best = 1e9, bw = null;
+    for (var i = 0; i < D.length; i++) { var dx = sx(D[i][1]) - mx, dy = sy(D[i][2]) - my, d = dx * dx + dy * dy; if (d < best) { best = d; bw = D[i][0]; } }
+    if (best < 900) setExplore(bw);
+  });
+
+  setExplore("cat");
+})();
+</script>

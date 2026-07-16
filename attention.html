@@ -1,0 +1,127 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Attention · Visual Learn Lab</title>
+<meta name="description" content="The attention mechanism behind transformers and LLMs, made visual — click a word and watch which earlier words it 'looks at', including how a model figures out what 'it' refers to.">
+<link rel="stylesheet" href="assets/site.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🔗</text></svg>">
+<style>
+  canvas{width:100%;background:#0a1220;border:1px solid var(--line);border-radius:12px;display:block;cursor:pointer}
+  .toplist{display:flex;flex-direction:column;gap:6px;margin-top:14px}
+  .arow{display:grid;grid-template-columns:120px 1fr 44px;gap:10px;align-items:center;font-size:13px}
+  .arow .k{color:var(--ink);font-weight:700;text-align:right}
+  .arow .t{height:16px;background:var(--panel2);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+  .arow .t i{display:block;height:100%;background:linear-gradient(90deg,#f4b942,#ff9d3f)}
+  .arow .p{color:var(--muted);font-variant-numeric:tabular-nums}
+  .hintbox{background:linear-gradient(180deg,#1a2c49,#16233a);border:1px solid var(--accent);border-radius:10px;padding:12px 14px;margin-top:14px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-top:4px}
+  .qc{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .qc b{color:var(--ink)} .qc p{margin:4px 0 0;color:var(--muted);font-size:13px}
+</style>
+
+<div id="site-nav"></div>
+
+<main class="page">
+  <h1>🔗 Attention — how a transformer connects words</h1>
+  <p class="lede">Before transformers, models read text strictly one word after another and quickly forgot the
+    start of a long sentence. <b>Attention</b> changed everything: to understand each word, the model looks
+    <em>back at every other word at once</em> and decides how much each one matters — how much to "attend" to
+    it. That's how it resolves what a pronoun refers to, or links a verb to its subject. <b>Click any word
+    below</b> to see where its attention goes. (Start with <b>"it"</b>.)</p>
+
+  <div class="card">
+    <canvas id="stage" width="720" height="260"></canvas>
+    <p class="muted" id="lead" style="font-size:13px;margin:12px 2px 0"></p>
+    <div class="toplist" id="toplist"></div>
+    <div class="hintbox" id="hint"></div>
+  </div>
+
+  <h2>Why attention was the breakthrough</h2>
+  <div class="card">
+    <div class="cards">
+      <div class="qc"><b>Look at everything at once</b><p>Each word forms a "query" and compares it against a "key" from every other word; the match scores become attention weights. Nothing is out of reach, so meaning can flow directly between distant words.</p></div>
+      <div class="qc"><b>Resolving reference</b><p>Click <em>"it"</em>: its attention lands hard on <em>"cat"</em>. The model has learned that "it" here means the cat — the kind of context-tracking that makes generated text coherent.</p></div>
+      <div class="qc"><b>Parallel, not sequential</b><p>Because every word attends to every other simultaneously, the whole sentence is processed in parallel. That's what let transformers scale to enormous size on modern hardware — the "T" in GPT.</p></div>
+      <div class="qc"><b>Many heads</b><p>Real models run dozens of attention "heads" at once, each learning a different relationship — grammar, reference, topic. Stacked over many layers, they build the rich understanding an LLM draws on.</p></div>
+    </div>
+    <p class="muted" style="margin:12px 0 0">The 2017 paper that introduced this was literally titled "Attention Is All You Need," and it underpins essentially
+      every modern LLM. The weights shown here are illustrative (hand-set to mirror what a trained model does); a real transformer
+      computes them from learned query/key vectors for a vocabulary of tens of thousands of tokens.</p>
+  </div>
+
+  <footer class="site-foot">
+    <span class="views" data-count-path="self" style="visibility:hidden"></span>
+  </footer>
+</main>
+
+<script src="assets/config.js"></script>
+<script src="assets/site.js"></script>
+<script>
+(function () {
+  var c = document.getElementById("stage"), x = c.getContext("2d"), W = c.width, H = c.height;
+  var TOK = ["The", "tired", "cat", "sat", "on", "the", "mat", "because", "it", "was", "sleepy"];
+  var OVER = { 2: { 1: 1.2 }, 3: { 2: 1.8 }, 6: { 4: 0.8, 3: 0.8, 5: 0.4 }, 7: { 3: 0.8 }, 8: { 2: 2.2, 1: 0.6 }, 9: { 8: 1.5, 2: 0.5 }, 10: { 8: 1.0, 2: 1.2, 1: 1.4, 9: 0.6 } };
+  var sel = 8, boxes = [], rowY = 190;
+
+  function weights(q) {                                    // causal attention weights for query q, normalized
+    var w = {}; for (var k = 0; k <= q; k++) w[k] = 0.06; w[q] += 0.5; if (q > 0) w[q - 1] += 0.15;
+    var ov = OVER[q]; if (ov) for (var key in ov) w[key] = (w[key] || 0) + ov[key];
+    var s = 0, kk; for (kk in w) s += w[kk]; for (kk in w) w[kk] /= s; return w;
+  }
+
+  function layout() {
+    x.font = "15px system-ui"; boxes = []; var gap = 6, total = 0, ws = [];
+    for (var i = 0; i < TOK.length; i++) { var tw = x.measureText(TOK[i]).width + 18; ws.push(tw); total += tw + gap; }
+    var sx = (W - (total - gap)) / 2;
+    for (var j = 0; j < TOK.length; j++) { boxes.push({ x: sx, w: ws[j] }); sx += ws[j] + gap; }
+  }
+
+  function render() {
+    x.clearRect(0, 0, W, H);
+    var w = weights(sel);
+    // attention arcs from selected query to keys
+    for (var k = 0; k <= sel; k++) {
+      if (k === sel || !w[k] || w[k] < 0.02) continue;
+      var qx = boxes[sel].x + boxes[sel].w / 2, kx = boxes[k].x + boxes[k].w / 2;
+      var midY = rowY - 30 - Math.abs(qx - kx) * 0.28;
+      x.strokeStyle = "rgba(244,185,66," + Math.min(1, w[k] * 1.6).toFixed(2) + ")";
+      x.lineWidth = 1 + w[k] * 12;
+      x.beginPath(); x.moveTo(qx, rowY - 14); x.quadraticCurveTo((qx + kx) / 2, midY, kx, rowY - 14); x.stroke();
+    }
+    // token boxes
+    x.font = "15px system-ui"; x.textAlign = "center"; x.textBaseline = "middle";
+    for (var i = 0; i < TOK.length; i++) {
+      var b = boxes[i], isSel = i === sel, att = w[i] || 0;
+      x.fillStyle = isSel ? "#1d3a5f" : "rgba(244,185,66," + (att * 0.9).toFixed(2) + ")";
+      x.strokeStyle = isSel ? "#6db4ff" : i <= sel ? "rgba(244,185,66,.5)" : "#28406a";
+      x.lineWidth = isSel ? 2.5 : 1;
+      roundRect(b.x, rowY, b.w, 30, 7); x.fill(); x.stroke();
+      x.fillStyle = isSel ? "#cfe3ff" : (i > sel ? "#5b7099" : "#e8eef7");
+      x.fillText(TOK[i], b.x + b.w / 2, rowY + 15);
+    }
+    x.fillStyle = "#93a4bf"; x.font = "12px system-ui"; x.textAlign = "left"; x.textBaseline = "alphabetic";
+    x.fillText("query word (click to change) — thicker/brighter = more attention · words after it are greyed (a model only looks back)", 12, rowY + 58);
+
+    // top attended list
+    var arr = []; for (var kk = 0; kk <= sel; kk++) if (kk !== sel) arr.push([kk, w[kk]]);
+    arr.sort(function (a, b2) { return b2[1] - a[1]; });
+    document.getElementById("lead").innerHTML = '<b>"' + TOK[sel] + '"</b> attends most to:';
+    document.getElementById("toplist").innerHTML = arr.slice(0, 4).map(function (e) {
+      return '<div class="arow"><div class="k">' + TOK[e[0]] + '</div><div class="t"><i style="width:' + (e[1] * 100).toFixed(0) + '%"></i></div><div class="p">' + (e[1] * 100).toFixed(0) + "%</div></div>";
+    }).join("");
+
+    var top = arr[0];
+    document.getElementById("hint").innerHTML = sel === 8
+      ? "🔗 <b>\"it\" attends " + (top ? (top[1] * 100).toFixed(0) : "0") + "% to \"cat\"</b> — the model has worked out the pronoun's referent purely from context. That's attention resolving meaning."
+      : "🔗 <b>\"" + TOK[sel] + "\"</b> looks back at earlier words and weights them by relevance — e.g. a verb leaning on its subject, or an adjective on its noun. Click other words to explore; try <b>\"it\"</b>.";
+  }
+  function roundRect(x0, y0, w0, h0, r) { x.beginPath(); x.moveTo(x0 + r, y0); x.arcTo(x0 + w0, y0, x0 + w0, y0 + h0, r); x.arcTo(x0 + w0, y0 + h0, x0, y0 + h0, r); x.arcTo(x0, y0 + h0, x0, y0, r); x.arcTo(x0, y0, x0 + w0, y0, r); x.closePath(); }
+
+  c.addEventListener("click", function (ev) {
+    var rect = c.getBoundingClientRect(), mx = (ev.clientX - rect.left) * (c.width / rect.width);
+    for (var i = 0; i < boxes.length; i++) if (mx >= boxes[i].x && mx <= boxes[i].x + boxes[i].w) { sel = i; render(); return; }
+  });
+
+  layout(); render();
+})();
+</script>

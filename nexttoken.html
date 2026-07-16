@@ -1,0 +1,179 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Next-Token Prediction · Visual Learn Lab</title>
+<meta name="description" content="How an LLM writes, made visual — it predicts one token at a time from a probability distribution. Tune the temperature to go from greedy and repetitive to wild and creative, and sample word by word.">
+<link rel="stylesheet" href="assets/site.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🔮</text></svg>">
+<style>
+  .out{min-height:64px;background:#0a1220;border:1px solid var(--line);border-radius:12px;padding:14px 16px;
+    font-size:20px;line-height:1.5}
+  .out .tok{color:var(--ink)} .out .new{background:var(--accent);color:#241a00;border-radius:5px;padding:0 3px}
+  .out .cursor{color:var(--accent)}
+  .bars{margin-top:14px;display:flex;flex-direction:column;gap:6px}
+  .bar{display:grid;grid-template-columns:90px 1fr 54px;gap:10px;align-items:center;font-size:13px}
+  .bar .w{text-align:right;color:var(--ink);font-weight:700}
+  .bar .track{height:18px;background:var(--panel2);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+  .bar .track i{display:block;height:100%;background:linear-gradient(90deg,#3fce8f,#6db4ff);transition:width .15s}
+  .bar.pick .track i{background:linear-gradient(90deg,#f4b942,#ff9d3f)}
+  .bar .p{color:var(--muted);font-variant-numeric:tabular-nums}
+  .btnrow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px}
+  .field input[type=range]{width:min(360px,64vw)}
+  .hintbox{background:linear-gradient(180deg,#1a2c49,#16233a);border:1px solid var(--accent);border-radius:10px;padding:12px 14px;margin-top:14px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-top:4px}
+  .qc{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .qc b{color:var(--ink)} .qc p{margin:4px 0 0;color:var(--muted);font-size:13px}
+</style>
+
+<div id="site-nav"></div>
+
+<main class="page">
+  <h1>🔮 Next-Token Prediction — how an LLM writes</h1>
+  <p class="lede">A large language model does one thing, over and over: given the text so far, it produces a
+    <b>probability for every possible next token</b> (word-piece), picks one, appends it, and repeats. That's
+    it — no plan, just a very good guess of what comes next. The dial that changes its personality is
+    <b>temperature</b>: low makes it pick the likeliest token every time (accurate but repetitive); high
+    flattens the odds so unlikely words sneak in (creative, or unhinged). Generate a sentence and watch the
+    odds shift.</p>
+
+  <div class="card">
+    <div class="out" id="out"><span class="cursor">▚</span></div>
+    <div class="btnrow">
+      <button class="primary" id="next">▸ Next token</button>
+      <button id="auto">⏩ Auto-write</button>
+      <button id="reset">Reset</button>
+      <label class="field">Temperature = <b id="tv">0.80</b><input type="range" id="temp" min="10" max="200" step="1" value="80"></label>
+    </div>
+    <p class="muted" style="font-size:12px;margin:10px 2px 0">Probabilities for the <b>next</b> token (given the text so far), after temperature:</p>
+    <div class="bars" id="bars"></div>
+    <div class="hintbox" id="hint"></div>
+  </div>
+
+  <h2>What's really going on</h2>
+  <div class="card">
+    <div class="cards">
+      <div class="qc"><b>Just next-token guessing</b><p>Everything an LLM says — essays, code, poems — is this loop: predict the next token, sample it, feed it back. Fluency emerges from a model trained on trillions of tokens to make that guess extremely well.</p></div>
+      <div class="qc"><b>Temperature = creativity dial</b><p>It rescales the odds before sampling. T→0 is "greedy": always the top token (deterministic, safe, repetitive). T=1 uses the raw odds. T&gt;1 flattens them, letting rare tokens win — more surprising, but more error-prone.</p></div>
+      <div class="qc"><b>Sampling, not truth</b><p>The model outputs <em>probabilities</em>, then rolls the dice. High temperature is where "hallucinations" thrive: an unlikely-but-not-impossible token gets chosen and the model confidently continues as if it were right.</p></div>
+      <div class="qc"><b>Context is everything</b><p>The distribution depends on <em>all</em> the preceding text. Each new token you accept changes the odds for the next — which is why the same prompt can wander to wildly different places.</p></div>
+    </div>
+    <p class="muted" style="margin:12px 0 0">This demo uses a tiny hand-built toy model so it runs in your browser with no server — real LLMs have a vocabulary
+      of ~100,000 tokens and billions of parameters computing each distribution. But the core loop, and the temperature knob, are
+      exactly the same ones behind ChatGPT and Claude.</p>
+  </div>
+
+  <footer class="site-foot">
+    <span class="views" data-count-path="self" style="visibility:hidden"></span>
+  </footer>
+</main>
+
+<script src="assets/config.js"></script>
+<script src="assets/site.js"></script>
+<script>
+(function () {
+  // Tiny toy "language model": last token → weighted next tokens. Illustrative, not trained.
+  var M = {
+    "START": [["the",3],["a",2],["our",1],["when",1]],
+    "the": [["cat",2],["robot",2],["sun",1.5],["city",1.5],["scientist",1.5],["dog",1],["forest",1],["old",1]],
+    "a": [["small",2],["curious",1.5],["giant",1.5],["quiet",1],["clever",1.5]],
+    "our": [["model",1.5],["team",1],["story",1]],
+    "when": [["the",2],["night",1],["morning",1]],
+    "old": [["king",1.5],["house",1],["machine",1]],
+    "cat": [["sat",2],["slept",1.5],["jumped",1.5],["purred",1],["stared",1]],
+    "robot": [["learned",2],["calculated",1.5],["whirred",1],["decided",1.5],["dreamed",1]],
+    "sun": [["rose",2],["set",1.5],["glowed",1]],
+    "city": [["slept",1.5],["buzzed",1.5],["glowed",1]],
+    "scientist": [["smiled",1.5],["wondered",1.5],["measured",1],["wrote",1]],
+    "dog": [["barked",2],["ran",1.5],["wagged",1]],
+    "forest": [["whispered",1.5],["grew",1],["waited",1]],
+    "small": [["cat",1.5],["robot",1.5],["light",1]],
+    "curious": [["mind",1],["cat",1.5],["child",1]],
+    "giant": [["wave",1.5],["robot",1],["leap",1]],
+    "quiet": [["night",1.5],["room",1]],
+    "clever": [["robot",1.5],["fox",1],["trick",1]],
+    "king": [["ruled",1.5],["waited",1],["smiled",1]],
+    "model": [["learned",2],["predicted",1.5],["improved",1]],
+    "sat": [["on",2],["quietly",1],["still",1]],
+    "slept": [["soundly",1.5],["through",1],[".",1]],
+    "jumped": [["over",2],["onto",1.5],["high",1]],
+    "learned": [["to",2],["quickly",1.5],["everything",1]],
+    "calculated": [["the",1.5],["quickly",1],["everything",1]],
+    "decided": [["to",2]],
+    "dreamed": [["of",2]],
+    "predicted": [["the",2]],
+    "rose": [["slowly",1.5],["over",1.5]],
+    "barked": [["loudly",1.5],["once",1],[".",1]],
+    "ran": [["away",1.5],["fast",1],["home",1]],
+    "smiled": [["softly",1.5],[".",1.5]],
+    "wondered": [["why",1.5],["aloud",1]],
+    "on": [["the",3],["a",1.5]],
+    "over": [["the",3],["a",1]],
+    "to": [["read",1],["fly",1],["think",1],["dream",1],["learn",1],["win",1]],
+    "of": [["the",2],["a",1],["dreams",1]],
+    "why": [["the",2],["it",1.5]],
+    "it": [["worked",1.5],["was",1.5],["rained",1]],
+    "was": [["sleepy",1],["quiet",1],["bright",1],["done",1]],
+    "night": [["fell",1.5],["was",1],[".",1]],
+    "and": [["the",2],["it",1.5],["we",1],["a",1]],
+    "then": [["the",2],["it",1.5],["everything",1]]
+  };
+  var FB = [[".",2.5],["and",1.5],["then",1],["again",1],["slowly",1],["softly",0.8]];
+
+  var toks = [], temp = 0.80, auto = null, lastPick = null;
+
+  function ctx() { return toks.length ? toks[toks.length - 1] : "START"; }
+  function dist() {
+    var raw = M[ctx()] || FB, s = 0; raw.forEach(function (e) { s += e[1]; });
+    var z = 0, q = raw.map(function (e) { var v = Math.pow(e[1] / s, 1 / temp); z += v; return [e[0], v]; });
+    q.forEach(function (e) { e[1] /= z; });
+    return q.sort(function (a, b) { return b[1] - a[1]; });
+  }
+  function pick(q) { var r = Math.random(), c = 0; for (var i = 0; i < q.length; i++) { c += q[i][1]; if (r <= c) return q[i][0]; } return q[0][0]; }
+
+  function renderOut() {
+    var s = "";
+    for (var i = 0; i < toks.length; i++) s += (toks[i] === "." ? "" : (i ? " " : "")) + toks[i];
+    s = s.replace(/(^|\. )([a-z])/g, function (m, p, ch) { return p + ch.toUpperCase(); });
+    var html = toks.map(function (t, i) {
+      var cls = i === toks.length - 1 && t === lastPick ? "new" : "tok";
+      return '<span class="' + cls + '">' + (t === "." ? "." : (i ? " " : "") + t) + "</span>";
+    }).join("");
+    html = html.replace(/>(\s?)([a-z])/, function (m, sp, ch) { return ">" + sp + ch.toUpperCase(); });
+    document.getElementById("out").innerHTML = (html || "") + '<span class="cursor"> ▚</span>';
+  }
+  function renderBars() {
+    var q = dist().slice(0, 6);
+    document.getElementById("bars").innerHTML = q.map(function (e) {
+      var isPick = e[0] === lastPick && toks.length && toks[toks.length - 1] === lastPick;
+      return '<div class="bar' + (isPick ? " pick" : "") + '"><div class="w">' + (e[0] === "." ? "· (end)" : e[0]) +
+        '</div><div class="track"><i style="width:' + (e[1] * 100).toFixed(0) + '%"></i></div><div class="p">' + (e[1] * 100).toFixed(0) + "%</div></div>";
+    }).join("");
+  }
+  function renderHint() {
+    var msg = temp < 0.35 ? "🔮 <b>Low temperature</b> (greedy): the model almost always grabs the single most likely token. Accurate and consistent, but it can get stuck repeating itself."
+      : temp > 1.3 ? "🔮 <b>High temperature</b>: the odds are flattened, so unlikely tokens often win. Creative and surprising — and exactly where confident nonsense (hallucination) creeps in."
+      : "🔮 <b>Moderate temperature</b>: mostly likely tokens, with room for variety. Press <b>Next token</b> to sample the highlighted word, or <b>Auto-write</b> to let it run.";
+    document.getElementById("hint").innerHTML = msg;
+  }
+  function draw() { renderOut(); renderBars(); renderHint(); }
+
+  function step() {
+    if (toks.length >= 16 && ctx() !== "START") { toks.push("."); }
+    else { lastPick = pick(dist()); toks.push(lastPick); }
+    draw();
+    if (toks[toks.length - 1] === ".") stopAuto();
+  }
+  function stopAuto() { if (auto) { clearInterval(auto); auto = null; document.getElementById("auto").textContent = "⏩ Auto-write"; } }
+
+  document.getElementById("next").onclick = function () { if (toks.length && toks[toks.length - 1] === ".") { toks = []; lastPick = null; } step(); };
+  document.getElementById("auto").onclick = function () {
+    if (auto) { stopAuto(); return; }
+    if (toks.length && toks[toks.length - 1] === ".") { toks = []; lastPick = null; }
+    this.textContent = "⏸ Stop"; auto = setInterval(step, 520);
+  };
+  document.getElementById("reset").onclick = function () { stopAuto(); toks = []; lastPick = null; draw(); };
+  document.getElementById("temp").addEventListener("input", function () { temp = +this.value / 100; document.getElementById("tv").textContent = temp.toFixed(2); draw(); });
+
+  draw();
+})();
+</script>

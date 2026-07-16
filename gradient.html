@@ -1,0 +1,152 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gradient Descent · Visual Learn Lab</title>
+<meta name="description" content="Gradient descent, made visual — the algorithm that trains every neural network. Roll a ball downhill on a loss landscape, tune the learning rate, and watch it converge, get stuck in a local minimum, or overshoot.">
+<link rel="stylesheet" href="assets/site.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>⛰️</text></svg>">
+<style>
+  canvas{width:100%;background:#0a1220;border:1px solid var(--line);border-radius:12px;display:block;cursor:pointer}
+  .metrics{display:flex;gap:14px;flex-wrap:wrap;margin:14px 0 0}
+  .metric{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 14px;min-width:110px}
+  .metric .v{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums}
+  .metric .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .btnrow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}
+  .btnrow .grp{display:flex;gap:6px;flex-wrap:wrap}
+  .field input[type=range]{width:220px}
+  .hintbox{background:linear-gradient(180deg,#1a2c49,#16233a);border:1px solid var(--accent);border-radius:10px;padding:12px 14px;margin-top:14px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-top:4px}
+  .qc{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .qc b{color:var(--ink)} .qc p{margin:4px 0 0;color:var(--muted);font-size:13px}
+</style>
+
+<div id="site-nav"></div>
+
+<main class="page">
+  <h1>⛰️ Gradient Descent — how machines learn</h1>
+  <p class="lede">Training a neural network means finding the settings that make its <b>error (loss)</b> as small
+    as possible. With billions of knobs you can't just try combinations — so instead you feel the <b>slope</b>
+    of the loss and step downhill, over and over. That's <b>gradient descent</b>. The single most important
+    setting is the <b>learning rate</b> — the step size. Too small and training crawls; too big and it
+    overshoots and blows up; and a bumpy landscape can trap you in a <b>local minimum</b>. Drop the ball and see.</p>
+
+  <div class="card">
+    <canvas id="stage" width="720" height="320"></canvas>
+    <div class="metrics">
+      <div class="metric"><div class="v" id="m-w">—</div><div class="k">Parameter w</div></div>
+      <div class="metric"><div class="v" id="m-loss">—</div><div class="k">Loss</div></div>
+      <div class="metric"><div class="v" id="m-grad">—</div><div class="k">Gradient (slope)</div></div>
+      <div class="metric"><div class="v" id="m-step">0</div><div class="k">Steps</div></div>
+    </div>
+    <div class="btnrow">
+      <div class="grp">
+        <button class="primary" id="run">▶ Descend</button>
+        <button id="step">Step</button>
+        <button id="left">↙ Start left</button>
+        <button id="right">↘ Start right</button>
+      </div>
+      <label class="field">Learning rate = <b id="lrv">0.08</b><input type="range" id="lr" min="1" max="100" step="1" value="8"></label>
+    </div>
+    <div class="hintbox" id="hint"></div>
+  </div>
+
+  <h2>The core of all training</h2>
+  <div class="card">
+    <div class="cards">
+      <div class="qc"><b>Follow the slope</b><p>The gradient points in the direction the loss <em>rises</em> fastest, so stepping the opposite way lowers it. Repeat and you slide toward a valley — a minimum of the loss. No search, just downhill.</p></div>
+      <div class="qc"><b>The learning-rate knob</b><p>Too small (crawls, needs forever) or too big (leaps over the valley and bounces or diverges). Getting it right is the central art of training; real systems even schedule it to shrink over time.</p></div>
+      <div class="qc"><b>Local minima</b><p>A wiggly landscape has valleys that aren't the deepest. Start on the right and you settle into a shallow <em>local</em> minimum; start on the left and you find the deeper <em>global</em> one. Where you begin matters.</p></div>
+      <div class="qc"><b>Billions of dimensions</b><p>Here w is one number; a real network has billions, and "downhill" is computed for all of them at once by <em>backpropagation</em>. Astonishingly, in very high dimensions bad local minima become rare — part of why deep learning works.</p></div>
+    </div>
+    <p class="muted" style="margin:12px 0 0">This one loop — compute the gradient, take a small step downhill, repeat — trains virtually every modern AI, from
+      image classifiers to the LLMs behind ChatGPT and Claude. The magic isn't the algorithm (it's 200 years old); it's doing it across
+      billions of parameters and oceans of data.</p>
+  </div>
+
+  <footer class="site-foot">
+    <span class="views" data-count-path="self" style="visibility:hidden"></span>
+  </footer>
+</main>
+
+<script src="assets/config.js"></script>
+<script src="assets/site.js"></script>
+<script>
+(function () {
+  var c = document.getElementById("stage"), x = c.getContext("2d"), W = c.width, H = c.height;
+  var wMin = -6, wMax = 6, Lclip = 14, Lmin = -2;
+  var PADL = 40, PADR = 14, PADT = 14, PADB = 26;
+  var w = -4.5, lr = 0.08, steps = 0, running = false, status = "idle";
+
+  function L(v) { return 0.02 * Math.pow(v * v - 9, 2) + 0.3 * v; }
+  function grad(v) { return 0.08 * v * (v * v - 9) + 0.3; }
+
+  function X(v) { return PADL + (v - wMin) / (wMax - wMin) * (W - PADL - PADR); }
+  function Y(l) { return PADT + (H - PADT - PADB) * (1 - (Math.min(l, Lclip) - Lmin) / (Lclip - Lmin)); }
+
+  function render() {
+    x.clearRect(0, 0, W, H);
+    // loss curve
+    x.strokeStyle = "#3a5686"; x.lineWidth = 2.4; x.beginPath();
+    for (var i = 0; i <= 360; i++) { var v = wMin + i / 360 * (wMax - wMin), px = X(v), py = Y(L(v)); if (i === 0) x.moveTo(px, py); else x.lineTo(px, py); }
+    x.stroke();
+    // axis labels
+    x.fillStyle = "#93a4bf"; x.font = "11px system-ui"; x.textAlign = "center";
+    x.fillText("parameter w →", W / 2, H - 8);
+    x.save(); x.translate(12, H / 2); x.rotate(-Math.PI / 2); x.fillText("loss", 0, 0); x.restore();
+    // mark the two minima
+    x.fillStyle = "#5b7099"; x.textAlign = "center";
+    x.fillText("local min", X(2.72), Y(L(2.72)) - 12); x.fillText("global min", X(-3.11), Y(L(-3.11)) + 20);
+    // ball
+    var bx = X(w), by = Y(L(w));
+    x.fillStyle = status === "diverged" ? "#ff6b6b" : "#f4b942"; x.strokeStyle = "#241a00"; x.lineWidth = 1;
+    x.beginPath(); x.arc(bx, by, 9, 0, 7); x.fill(); x.stroke();
+    // gradient / step-direction arrow (downhill)
+    var g = grad(w), dir = -Math.sign(g), len = Math.min(60, Math.abs(lr * g) * 40 + 14);
+    if (Math.abs(g) > 0.03 && status !== "diverged") {
+      x.strokeStyle = "#6db4ff"; x.fillStyle = "#6db4ff"; x.lineWidth = 2;
+      x.beginPath(); x.moveTo(bx, by - 16); x.lineTo(bx + dir * len, by - 16); x.stroke();
+      x.beginPath(); x.moveTo(bx + dir * len, by - 16); x.lineTo(bx + dir * len - dir * 8, by - 21); x.lineTo(bx + dir * len - dir * 8, by - 11); x.closePath(); x.fill();
+      x.fillStyle = "#6db4ff"; x.font = "11px system-ui"; x.fillText("downhill", bx + dir * len / 2, by - 24);
+    }
+  }
+
+  function updateStats() {
+    document.getElementById("m-w").textContent = w.toFixed(2);
+    document.getElementById("m-loss").textContent = L(w).toFixed(2);
+    document.getElementById("m-grad").textContent = grad(w).toFixed(2);
+    document.getElementById("m-step").textContent = steps;
+    var g = grad(w), h;
+    if (status === "diverged") h = "⛰️ <b>Diverged!</b> The learning rate is so large that each step overshoots the valley and lands somewhere steeper, so the ball flies off to infinity. Lower the learning rate.";
+    else if (Math.abs(g) < 0.03 && steps > 0) h = w < 0 ? "⛰️ <b>Reached the global minimum</b> (w ≈ −3.1) — the deepest valley, the best solution."
+      : "⛰️ <b>Stuck in a local minimum</b> (w ≈ 2.7). It's a valley, so the slope is zero and descent stops — but a deeper one exists on the left. Press <b>Start left</b> to find it.";
+    else if (steps === 0) h = "⛰️ Press <b>Descend</b> to roll the ball downhill (or click the curve to place it). The blue arrow shows the step direction; its length grows with the learning rate.";
+    else h = "⛰️ Descending: each step moves w against the slope by learning-rate × gradient. " + (lr > 0.5 ? "That's a big step — watch it overshoot." : "Small steps are stable but slow.");
+    document.getElementById("hint").innerHTML = h;
+  }
+
+  function doStep() {
+    if (status === "diverged") return;
+    var g = grad(w);
+    if (Math.abs(g) < 0.03) { status = "converged"; running = false; document.getElementById("run").textContent = "▶ Descend"; document.getElementById("run").classList.add("primary"); updateStats(); return; }
+    w -= lr * g; steps++;
+    if (w < -7.2 || w > 7.2 || !isFinite(w)) { w = Math.max(-6.4, Math.min(6.4, w || 0)); status = "diverged"; running = false; document.getElementById("run").textContent = "▶ Descend"; document.getElementById("run").classList.add("primary"); }
+    updateStats();
+  }
+
+  var fc = 0;
+  function loop() { if (running && fc++ % 3 === 0) doStep(); render(); requestAnimationFrame(loop); }
+
+  function place(v) { w = v; steps = 0; status = "idle"; running = false; document.getElementById("run").textContent = "▶ Descend"; document.getElementById("run").classList.add("primary"); updateStats(); }
+  document.getElementById("run").onclick = function () { if (status === "converged" || status === "diverged") { status = "idle"; steps = 0; } running = !running; this.textContent = running ? "⏸ Pause" : "▶ Descend"; this.classList.toggle("primary", !running); };
+  document.getElementById("step").onclick = function () { if (status === "converged" || status === "diverged") status = "idle"; doStep(); };
+  document.getElementById("left").onclick = function () { place(-4.8); };
+  document.getElementById("right").onclick = function () { place(4.8); };
+  document.getElementById("lr").addEventListener("input", function () { lr = +this.value / 100; document.getElementById("lrv").textContent = lr.toFixed(2); });
+  c.addEventListener("click", function (ev) {
+    var rect = c.getBoundingClientRect(), mx = (ev.clientX - rect.left) * (c.width / rect.width);
+    var v = wMin + (mx - PADL) / (W - PADL - PADR) * (wMax - wMin); place(Math.max(wMin, Math.min(wMax, v)));
+  });
+
+  place(-4.5); loop();
+})();
+</script>
