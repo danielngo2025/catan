@@ -14,6 +14,7 @@
 </header>
 
 <main>
+  <div class="searchwrap"><input id="search" class="search" type="search" autocomplete="off" placeholder="Search topics…"></div>
   <div class="topics" id="topics"></div>
 </main>
 
@@ -30,19 +31,30 @@
 <script src="assets/config.js"></script>
 <script src="assets/site.js"></script>
 <script>
-  // Build the topic grid from config.
+  // Build the topic grid from config, with live search.
   (function () {
-    // Base dir the site is served from, e.g. "/catan/" — GoatCounter records full paths.
-    var base = location.pathname.replace(/[^\/]*$/, "");
+    var base = location.pathname.replace(/[^\/]*$/, "");   // dir the site is served from (for GoatCounter paths)
     var grid = document.getElementById("topics");
-    grid.innerHTML = SITE.topics.map(function (t) {
-      var p = base + t.path;
+    function esc(s) { return s.replace(/[&<>"]/g, function (m) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[m]; }); }
+    function card(t) {
       return '<a class="topic" href="' + t.path + '">' +
         '<span class="emoji">' + t.emoji + '</span>' +
         '<h3>' + t.title + '</h3>' +
         '<p>' + t.blurb + '</p>' +
+        '<span class="grouptag">' + t.group + '</span>' +
       '</a>';
-    }).join("");
+    }
+    function renderGrid(q) {
+      q = (q || "").trim().toLowerCase();
+      var list = SITE.topics.filter(function (t) {
+        return !q || (t.title + " " + t.blurb + " " + (t.group || "")).toLowerCase().indexOf(q) >= 0;
+      });
+      grid.innerHTML = list.length ? list.map(card).join("")
+        : '<p class="noresults">No topics match "<b>' + esc(q) + '</b>". Try another word — e.g. quantum, entropy, or AI.</p>';
+    }
+    document.getElementById("search").placeholder = "Search " + SITE.topics.length + " topics…  (e.g. quantum, entropy, AI)";
+    document.getElementById("search").addEventListener("input", function () { renderGrid(this.value); });
+    renderGrid("");
     document.getElementById("stat-count").textContent = SITE.topics.length;
 
     // Engagement strip: total visits + most-explored topic (best effort; needs public counters).
