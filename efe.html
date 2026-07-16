@@ -1,0 +1,182 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Einstein Field Equations · Visual Learn Lab</title>
+<meta name="description" content="The Einstein field equations, made visual — geometry equals matter-energy. Tune the matter density and the cosmological constant (dark energy) and watch the universe recollapse, coast, or accelerate.">
+<link rel="stylesheet" href="assets/site.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>📐</text></svg>">
+<style>
+  canvas{width:100%;background:radial-gradient(circle at 30% 20%,#0e1c36,#070d18);border:1px solid var(--line);border-radius:12px;display:block}
+  .formula{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:16px;text-align:center;
+    font-size:24px;font-weight:800;margin-bottom:14px}
+  .formula .g{color:#6db4ff} .formula .m{color:#f4b942}
+  .formula small{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-top:6px}
+  .metrics{display:flex;gap:14px;flex-wrap:wrap;margin:14px 0 0}
+  .metric{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 14px;min-width:120px}
+  .metric .v{font-size:19px;font-weight:800;font-variant-numeric:tabular-nums}
+  .metric .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:14px}
+  .fld{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
+  .fld input[type=range]{width:100%;accent-color:var(--accent)}
+  .fld b{color:var(--ink);font-variant-numeric:tabular-nums}
+  .presets{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+  .presets button{font-size:12px;padding:6px 10px}
+  .hintbox{background:linear-gradient(180deg,#1a2c49,#16233a);border:1px solid var(--accent);border-radius:10px;padding:12px 14px;margin-top:14px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-top:4px}
+  .qc{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .qc b{color:var(--ink)} .qc p{margin:4px 0 0;color:var(--muted);font-size:13px}
+</style>
+
+<div id="site-nav"></div>
+
+<main class="page">
+  <h1>📐 The Einstein Field Equations — geometry = matter</h1>
+  <p class="lede">General relativity's whole content sits in one line. The left side describes the <b>curvature of
+    spacetime</b> (geometry); the right side is the <b>matter and energy</b> in it. They're set equal — so, as
+    John Wheeler put it, "matter tells spacetime how to curve; spacetime tells matter how to move." Applied to
+    the entire universe, the equations become the <b>Friedmann equation</b>, and the balance of ordinary matter
+    against the <b>cosmological constant Λ</b> (dark energy) decides the fate of everything. Tune them below.</p>
+
+  <div class="formula"><span class="g">G<sub>μν</sub> + Λg<sub>μν</sub></span> = <span class="m">(8πG ⁄ c⁴) T<sub>μν</sub></span>
+    <small><span class="g">spacetime curvature + cosmological constant</span> = <span class="m">energy, momentum &amp; pressure</span></small></div>
+
+  <div class="card">
+    <canvas id="stage" width="720" height="320"></canvas>
+    <div class="metrics">
+      <div class="metric"><div class="v" id="m-geo">Flat</div><div class="k">Spatial geometry</div></div>
+      <div class="metric"><div class="v" id="m-fate">—</div><div class="k">Fate</div></div>
+      <div class="metric"><div class="v" id="m-omt">1.00</div><div class="k">Ω total (Ω_m + Ω_Λ)</div></div>
+      <div class="metric"><div class="v" id="m-age">—</div><div class="k">Age of universe</div></div>
+    </div>
+    <div class="controls">
+      <label class="fld">Matter density  Ω<sub>m</sub> = <b id="omv">0.30</b><input type="range" id="om" min="0" max="300" step="5" value="30"></label>
+      <label class="fld">Dark energy  Ω<sub>Λ</sub> = <b id="olv">0.70</b><input type="range" id="ol" min="0" max="150" step="5" value="70"></label>
+    </div>
+    <div class="presets">
+      <button data-p="30,70">Our universe (flat, accelerating)</button>
+      <button data-p="250,0">Big Crunch (closed)</button>
+      <button data-p="100,0">Matter only (flat, coasting)</button>
+      <button data-p="20,0">Low density (open)</button>
+    </div>
+    <div class="hintbox" id="hint"></div>
+  </div>
+
+  <h2>Inside the equation</h2>
+  <div class="card">
+    <div class="cards">
+      <div class="qc"><b>Two sides, one balance</b><p>Left (blue): the curvature tensor built from the metric — the shape of spacetime. Right (amber): the stress-energy tensor — density, momentum, and pressure. It's really ten coupled equations, and the coupling 8πG/c⁴ is tiny, so it takes a planet's worth of mass to bend space noticeably.</p></div>
+      <div class="qc"><b>The cosmological constant Λ</b><p>Einstein added Λ to force a static universe, then called it his "biggest blunder" once expansion was discovered. It returned in 1998 as <em>dark energy</em> — ~68% of the cosmos — the accelerator you feel when Ω_Λ dominates above.</p></div>
+      <div class="qc"><b>Its solutions are reality</b><p>Solve it and out come <em>black holes</em> (Schwarzschild), the <em>expanding universe</em> (Friedmann–Lemaître, plotted here), and <em>gravitational waves</em> — ripples confirmed by LIGO in 2015, a century after the prediction.</p></div>
+      <div class="qc"><b>The cosmic tug-of-war</b><p>Gravity from matter pulls the expansion to a halt (and maybe a Big Crunch); dark energy pushes it to accelerate. If they balance and Ω total = 1, space is flat. Our universe sits almost exactly there.</p></div>
+    </div>
+    <p class="muted" style="margin:12px 0 0">The equations are famously hard to solve — nonlinear, because spacetime's own curvature carries energy that curves
+      spacetime further. Yet every precision test, from Mercury's orbit to GPS to black-hole mergers, has confirmed them. One elegant
+      line, written in 1915, still sets the destiny of the entire universe.</p>
+  </div>
+
+  <footer class="site-foot">
+    <span class="views" data-count-path="self" style="visibility:hidden"></span>
+  </footer>
+</main>
+
+<script src="assets/config.js"></script>
+<script src="assets/site.js"></script>
+<script>
+(function () {
+  var c = document.getElementById("stage"), x = c.getContext("2d"), W = c.width, H = c.height;
+  var Om = 0.30, OL = 0.70, HUBBLE_GYR = 14.4;
+
+  // Friedmann acceleration: ä = -Ω_m/(2a²) + Ω_Λ·a  (units H0 = 1, a_today = 1, ȧ_today = 1)
+  function trajectory() {
+    function acc(a) { return -Om / (2 * a * a) + OL * a; }
+    var dt = 0.004, aMax = 3.4, guard = 60000;
+    var fwd = [], back = [], crunch = false;
+    // forward from today
+    var a = 1, v = 1, t = 0, g = 0;
+    while (a > 1e-3 && a < aMax && g++ < guard) {
+      v += acc(a) * dt / 2; a += v * dt; v += acc(a) * dt / 2; t += dt;
+      fwd.push([t, a]);
+      if (a <= 1e-3) { crunch = true; break; }
+    }
+    // backward into the past (Big Bang) — mirror the expansion
+    a = 1; v = 1; t = 0; g = 0;
+    while (a > 1e-3 && g++ < guard) {
+      v -= acc(a) * dt / 2; a -= v * dt; v -= acc(a) * dt / 2; t -= dt;
+      back.push([t, a]);
+    }
+    back.reverse();
+    return { pts: back.concat([[0, 1]], fwd), crunch: crunch, tBB: back.length ? back[0][0] : -1 };
+  }
+
+  function render() {
+    var Ok = 1 - Om - OL, tr = trajectory(), pts = tr.pts;
+    var tMin = pts[0][0], tMax = pts[pts.length - 1][0], aMax = 3.4;
+    var PADL = 40, PADB = 28, PADT = 12, PADR = 12;
+    var pw = W - PADL - PADR, ph = H - PADB - PADT;
+    function X(t) { return PADL + (t - tMin) / (tMax - tMin) * pw; }
+    function Y(a) { return PADT + ph - Math.min(a, aMax) / aMax * ph; }
+
+    x.clearRect(0, 0, W, H);
+    // a = 1 (today's size) guide + now line
+    x.strokeStyle = "#28406a"; x.setLineDash([4, 4]); x.lineWidth = 1;
+    x.beginPath(); x.moveTo(PADL, Y(1)); x.lineTo(W - PADR, Y(1)); x.stroke();
+    x.beginPath(); x.moveTo(X(0), PADT); x.lineTo(X(0), PADT + ph); x.stroke(); x.setLineDash([]);
+    x.fillStyle = "#93a4bf"; x.font = "11px system-ui"; x.textAlign = "left";
+    x.fillText("today (size = 1)", PADL + 4, Y(1) - 5);
+    x.textAlign = "center"; x.fillText("now", X(0), PADT + ph + 16);
+    x.textAlign = "left"; x.fillText("← past", PADL + 2, PADT + ph + 16);
+    x.textAlign = "right"; x.fillText("future →", W - PADR - 2, PADT + ph + 16);
+    x.save(); x.translate(12, PADT + ph / 2); x.rotate(-Math.PI / 2); x.textAlign = "center"; x.fillText("scale factor  a(t)", 0, 0); x.restore();
+
+    // the scale-factor curve: past dim, future bright
+    for (var seg = 0; seg < 2; seg++) {
+      x.beginPath();
+      var started = false;
+      for (var i = 0; i < pts.length; i++) {
+        var t = pts[i][0], a = pts[i][1];
+        if (seg === 0 && t > 0) break;
+        if (seg === 1 && t < 0) continue;
+        var px = X(t), py = Y(a);
+        if (!started) { x.moveTo(px, py); started = true; } else x.lineTo(px, py);
+      }
+      x.strokeStyle = seg === 0 ? "rgba(147,164,191,.6)" : "#f4b942";
+      x.lineWidth = seg === 0 ? 2 : 2.6; x.stroke();
+    }
+    // Big Bang marker + now dot
+    x.fillStyle = "#ff6b6b"; x.beginPath(); x.arc(X(tMin), Y(0), 4, 0, 7); x.fill();
+    x.fillStyle = "#93a4bf"; x.textAlign = "left"; x.fillText("Big Bang", X(tMin) + 6, Y(0) - 6);
+    x.fillStyle = "#fff"; x.beginPath(); x.arc(X(0), Y(1), 4.5, 0, 7); x.fill();
+    if (tr.crunch) { x.fillStyle = "#ff6b6b"; x.beginPath(); x.arc(X(tMax), Y(0), 4, 0, 7); x.fill();
+      x.textAlign = "right"; x.fillText("Big Crunch", X(tMax) - 6, Y(0) - 6); }
+
+    updateStats(Ok, tr);
+  }
+
+  function updateStats(Ok, tr) {
+    var omt = Om + OL;
+    var geo = Ok < -0.02 ? "Closed (sphere)" : Ok > 0.02 ? "Open (saddle)" : "Flat";
+    var fate = tr.crunch ? "Big Crunch" : OL > Om / 2 ? "Accelerating forever" : "Expands forever";
+    document.getElementById("m-geo").textContent = geo;
+    document.getElementById("m-fate").textContent = fate;
+    document.getElementById("m-omt").textContent = omt.toFixed(2);
+    document.getElementById("m-age").textContent = (Math.abs(tr.tBB) * HUBBLE_GYR).toFixed(1) + " Gyr";
+    document.getElementById("hint").innerHTML = tr.crunch
+      ? "📐 <b>Big Crunch.</b> Matter's gravity (Ω_m) overwhelms dark energy, halts the expansion, and pulls everything back to a point. With Ω total > 1, space is <b>closed</b> — a finite universe that curves back on itself."
+      : fate === "Accelerating forever"
+        ? "📐 <b>Accelerating expansion.</b> Dark energy (Ω_Λ) dominates and pushes space apart ever faster — our universe's actual fate. The curve sweeps upward without bound."
+        : "📐 <b>Expands forever, ever slowing.</b> Gravity decelerates the expansion but never stops it. With no dark energy and Ω total ≤ 1, space is flat or open and coasts outward.";
+  }
+
+  function sync() {
+    document.getElementById("om").value = Om * 100; document.getElementById("ol").value = OL * 100;
+    document.getElementById("omv").textContent = Om.toFixed(2); document.getElementById("olv").textContent = OL.toFixed(2);
+  }
+  document.getElementById("om").addEventListener("input", function () { Om = +this.value / 100; document.getElementById("omv").textContent = Om.toFixed(2); render(); });
+  document.getElementById("ol").addEventListener("input", function () { OL = +this.value / 100; document.getElementById("olv").textContent = OL.toFixed(2); render(); });
+  document.querySelectorAll(".presets button").forEach(function (b) {
+    b.onclick = function () { var a = b.dataset.p.split(",").map(Number); Om = a[0] / 100; OL = a[1] / 100; sync(); render(); };
+  });
+
+  sync(); render();
+})();
+</script>
