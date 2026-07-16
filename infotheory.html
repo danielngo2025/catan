@@ -1,0 +1,167 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Information Theory · Visual Learn Lab</title>
+<meta name="description" content="Information theory, made visual — tune a message source and watch Shannon entropy, per-symbol surprise, ideal code lengths, and compression savings respond in real time.">
+<link rel="stylesheet" href="assets/site.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>📡</text></svg>">
+<style>
+  .sym{display:grid;grid-template-columns:34px 1fr auto;gap:12px;align-items:center;margin:10px 0}
+  .chip{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800;color:#0b1220}
+  .sym .track{display:flex;flex-direction:column;gap:5px}
+  .sym input[type=range]{width:100%}
+  .pbar{height:12px;border-radius:6px;background:var(--panel2);overflow:hidden}
+  .pbar i{display:block;height:100%}
+  .sym .meta{font-size:12px;color:var(--muted);text-align:right;min-width:150px;font-variant-numeric:tabular-nums}
+  .sym .meta b{color:var(--ink)}
+  .entropy{display:flex;align-items:center;gap:16px;margin:18px 0 6px;flex-wrap:wrap}
+  .entropy .big{font-size:40px;font-weight:800;font-variant-numeric:tabular-nums}
+  .entropy .big span{font-size:18px;color:var(--muted);font-weight:600}
+  .meter{flex:1;min-width:220px}
+  .meter .lbl{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:4px}
+  .meter .bar{height:14px;border-radius:8px;background:var(--panel2);border:1px solid var(--line);overflow:hidden}
+  .meter .bar i{display:block;height:100%;background:linear-gradient(90deg,#3fce8f,#f4b942,#ff6b6b);transition:width .12s}
+  .msg{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:18px;letter-spacing:2px;word-break:break-all;
+    background:#0a1220;border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:6px}
+  .btnrow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}
+  .btnrow .presets{display:flex;gap:6px;flex-wrap:wrap}
+  .btnrow .presets button{font-size:12px;padding:6px 10px}
+  .hintbox{background:linear-gradient(180deg,#1a2c49,#16233a);border:1px solid var(--accent);border-radius:10px;padding:12px 14px;margin-top:14px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-top:4px}
+  .qc{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .qc b{color:var(--ink)} .qc p{margin:4px 0 0;color:var(--muted);font-size:13px}
+</style>
+
+<div id="site-nav"></div>
+
+<main class="page">
+  <h1>📡 Information Theory — measuring information in bits</h1>
+  <p class="lede">In 1948 Claude Shannon asked a strange question: <em>how do you measure information?</em> His
+    answer founded the digital age. Information is the <b>reduction of uncertainty</b>, and its natural unit is
+    the <b>bit</b> — one yes/no answer. A message is <em>surprising</em> (carries lots of information) when it's
+    unlikely, and <em>boring</em> (carries little) when it's predictable. The average surprise of a source is
+    its <b>entropy</b>. Tune the source below and watch it move.</p>
+
+  <div class="card">
+    <p class="muted" style="margin:0 0 4px;font-size:13px">A message source that emits four symbols. Drag to change how often each appears:</p>
+    <div id="syms"></div>
+
+    <div class="entropy">
+      <div class="big"><span>H =</span> <span id="h-val">—</span> <span>bits / symbol</span></div>
+      <div class="meter">
+        <div class="lbl"><span>0 — no uncertainty</span><span>2 bits — maximum</span></div>
+        <div class="bar"><i id="h-fill" style="width:0%"></i></div>
+      </div>
+    </div>
+    <p class="muted" id="compress" style="margin:6px 0 0;font-size:13px"></p>
+
+    <div class="btnrow">
+      <div class="presets">
+        <button data-p="25,25,25,25">Uniform (max)</button>
+        <button data-p="70,18,8,4">Skewed</button>
+        <button data-p="94,3,2,1">Almost certain</button>
+      </div>
+      <button id="sample">🎲 Sample a message</button>
+    </div>
+    <div class="msg" id="msg"></div>
+    <div class="hintbox" id="hint"></div>
+  </div>
+
+  <h2>The big ideas</h2>
+  <div class="card">
+    <div class="cards">
+      <div class="qc"><b>Entropy = average surprise</b><p>A symbol with probability p carries −log₂(p) bits of "surprise." Rare events surprise you more. Entropy averages that surprise — it's the minimum bits/symbol you can't beat.</p></div>
+      <div class="qc"><b>A bit is one question</b><p>Each yes/no question can at best halve the possibilities, so identifying one of N equally likely things takes log₂N bits. 20 questions ⇒ ~1 million options.</p></div>
+      <div class="qc"><b>Compression = removing redundancy</b><p>Shannon's source-coding theorem: you can pack a source down to its entropy, no further. Give frequent symbols short codes (like Morse's "E") and you win. That's ZIP, MP3, JPEG.</p></div>
+      <div class="qc"><b>Noise, capacity &amp; error-correction</b><p>Every channel has a maximum reliable rate — its capacity. Astonishingly, Shannon proved you can transmit <em>error-free up to that limit</em> by adding cleverly redundant codes. That's why deep-space photos and QR codes survive noise.</p></div>
+    </div>
+    <p class="muted" style="margin:12px 0 0">The redundancy is everywhere: written English runs at only about <b>1 bit per letter</b> despite 26 letters
+      (log₂26 ≈ 4.7), because "q" is almost always followed by "u" and you can often guess the next letter. That slack is
+      exactly what compression exploits — and what makes languages robust to typos. One equation, H = −Σ p log₂ p, underlies
+      all of it: phones, the internet, DNA, and every file you've ever saved.</p>
+  </div>
+
+  <footer class="site-foot">
+    <span class="views" data-count-path="self" style="visibility:hidden"></span>
+  </footer>
+</main>
+
+<script src="assets/config.js"></script>
+<script src="assets/site.js"></script>
+<script>
+(function () {
+  var LABELS = ["A", "B", "C", "D"];
+  var COLORS = ["#6db4ff", "#3fce8f", "#f4b942", "#ff6b6b"];
+  var w = [25, 25, 25, 25];
+  var N = LABELS.length, MAXH = Math.log2(N);
+
+  var box = document.getElementById("syms");
+  box.innerHTML = LABELS.map(function (L, i) {
+    return '<div class="sym">' +
+      '<div class="chip" style="background:' + COLORS[i] + '">' + L + '</div>' +
+      '<div class="track">' +
+        '<input type="range" min="0" max="100" step="1" value="' + w[i] + '" data-i="' + i + '">' +
+        '<div class="pbar"><i id="pb-' + i + '" style="background:' + COLORS[i] + '"></i></div>' +
+      '</div>' +
+      '<div class="meta" id="meta-' + i + '"></div>' +
+    '</div>';
+  }).join("");
+  box.querySelectorAll("input").forEach(function (inp) {
+    inp.addEventListener("input", function () { w[+this.dataset.i] = +this.value; render(); });
+  });
+
+  function probs() {
+    var sum = w.reduce(function (a, b) { return a + b; }, 0);
+    if (sum <= 0) return w.map(function () { return 1 / N; });
+    return w.map(function (x) { return x / sum; });
+  }
+
+  function render() {
+    var p = probs(), H = 0;
+    p.forEach(function (pi) { if (pi > 0) H -= pi * Math.log2(pi); });
+    for (var i = 0; i < N; i++) {
+      document.getElementById("pb-" + i).style.width = (p[i] * 100).toFixed(1) + "%";
+      var surprise = p[i] > 0 ? (-Math.log2(p[i])).toFixed(1) : "∞";
+      document.getElementById("meta-" + i).innerHTML =
+        "<b>" + (p[i] * 100).toFixed(0) + "%</b> · surprise <b>" + surprise + "</b> bits";
+    }
+    document.getElementById("h-val").textContent = H.toFixed(2);
+    document.getElementById("h-fill").style.width = (H / MAXH * 100).toFixed(0) + "%";
+
+    var naive = Math.ceil(MAXH);                       // fixed-length code (2 bits for 4 symbols)
+    var saving = Math.max(0, (naive - H) / naive * 100);
+    document.getElementById("compress").innerHTML =
+      "A naive fixed code uses <b>" + naive + " bits/symbol</b>. This source needs only <b>" + H.toFixed(2) +
+      "</b> — so an ideal compressor shrinks it by about <b>" + saving.toFixed(0) + "%</b>.";
+
+    var hint;
+    if (H < 0.05) hint = "📡 <b>Zero entropy.</b> One symbol is certain, so each new symbol tells you nothing — no information, and it compresses to almost nothing.";
+    else if (H < 1.3) hint = "📡 <b>Low entropy.</b> The source is predictable, so it's highly compressible — give the common symbol a short code.";
+    else if (H < 1.9) hint = "📡 <b>High entropy.</b> Fairly unpredictable, so there's little redundancy left to squeeze out.";
+    else hint = "📡 <b>Maximum entropy.</b> All four symbols are equally likely, so every one is maximally surprising — you truly need the full 2 bits each and it can't be compressed.";
+    document.getElementById("hint").innerHTML = hint;
+  }
+
+  function sample() {
+    var p = probs(), out = "", cum = [];
+    var acc = 0; p.forEach(function (pi) { acc += pi; cum.push(acc); });
+    for (var k = 0; k < 48; k++) {
+      var r = Math.random(), idx = cum.findIndex(function (c) { return r <= c; });
+      if (idx < 0) idx = N - 1;
+      out += '<span style="color:' + COLORS[idx] + '">' + LABELS[idx] + "</span>";
+    }
+    document.getElementById("msg").innerHTML = out;
+  }
+
+  document.querySelectorAll(".presets button").forEach(function (b) {
+    b.onclick = function () {
+      w = b.dataset.p.split(",").map(Number);
+      box.querySelectorAll("input").forEach(function (inp, i) { inp.value = w[i]; });
+      render(); sample();
+    };
+  });
+  document.getElementById("sample").onclick = sample;
+
+  render(); sample();
+})();
+</script>

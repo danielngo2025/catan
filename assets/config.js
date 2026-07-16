@@ -48,5 +48,7 @@ window.SITE = {
       blurb: "Order from molecular chaos — start every particle at one speed and watch collisions thermalize the gas into the Maxwell–Boltzmann distribution." },
     { path: "gametheory.html", title: "Game Theory", emoji: "🤝", group: "Productivity",
       blurb: "The Prisoner's Dilemma — play against classic strategies, then run Axelrod's tournament and watch the ruthless defector win every duel yet lose the war." },
+    { path: "infotheory.html", title: "Information Theory", emoji: "📡", group: "Productivity",
+      blurb: "Information measured in bits — tune a message source and watch Shannon entropy, per-symbol surprise, and compression savings respond." },
   ],
 };
