@@ -1,0 +1,152 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rotating Magnetic Field · Visual Learn Lab</title>
+<meta name="description" content="Tesla's rotating magnetic field, made visual — three AC currents out of phase create a magnetic field that spins on its own and drags a rotor around: the AC induction motor.">
+<link rel="stylesheet" href="assets/site.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🔄</text></svg>">
+<style>
+  canvas{width:100%;background:#0a1220;border:1px solid var(--line);border-radius:12px;display:block}
+  .metrics{display:flex;gap:14px;flex-wrap:wrap;margin:14px 0 0}
+  .metric{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 14px;min-width:120px}
+  .metric .v{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums}
+  .metric .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .btnrow{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:12px}
+  .field input[type=range]{width:200px}
+  .hintbox{background:linear-gradient(180deg,#1a2c49,#16233a);border:1px solid var(--accent);border-radius:10px;padding:12px 14px;margin-top:14px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-top:4px}
+  .qc{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .qc b{color:var(--ink)} .qc p{margin:4px 0 0;color:var(--muted);font-size:13px}
+</style>
+
+<div id="site-nav"></div>
+
+<main class="page">
+  <h1>🔄 The Rotating Magnetic Field — Tesla's AC Motor</h1>
+  <p class="lede">In 1882 Nikola Tesla had a flash of insight that runs half the machines on Earth. Feed three
+    AC currents that peak one after another (each a third of a cycle apart) into three sets of coils, and their
+    combined magnetic field doesn't just wobble — it <b>rotates smoothly on its own</b>, with no moving parts.
+    Drop a metal rotor inside and the spinning field drags it along. That's the <b>AC induction motor</b>: rugged,
+    brushless, and everywhere from fans to factories to EVs. Watch the field spin below.</p>
+
+  <div class="card">
+    <canvas id="stage" width="720" height="360"></canvas>
+    <div class="metrics">
+      <div class="metric"><div class="v" id="m-f">3.0 Hz</div><div class="k">Line frequency</div></div>
+      <div class="metric"><div class="v" id="m-rpm">180</div><div class="k">Field speed (RPM)</div></div>
+      <div class="metric"><div class="v" id="m-dir">↺ CCW</div><div class="k">Direction</div></div>
+    </div>
+    <div class="btnrow">
+      <button class="primary" id="play">⏸ Pause</button>
+      <button id="rev">⇄ Reverse (swap 2 phases)</button>
+      <label class="field">Frequency <input type="range" id="f" min="5" max="60" step="1" value="30"></label>
+    </div>
+    <div class="hintbox" id="hint"></div>
+  </div>
+
+  <h2>Why it was revolutionary</h2>
+  <div class="card">
+    <div class="cards">
+      <div class="qc"><b>Three phases, one spin</b><p>The three currents peak in turn, so the "strongest" coil hands off to the next around the ring. Their vector sum is a constant-strength field that sweeps around at the line frequency — motion conjured from stationary coils.</p></div>
+      <div class="qc"><b>No brushes, no contacts</b><p>Earlier DC motors needed sliding brushes and a commutator that sparked and wore out. Tesla's motor induces current in the rotor <em>wirelessly</em> via the rotating field — almost nothing to break.</p></div>
+      <div class="qc"><b>Slip drives the rotor</b><p>The rotor always spins a touch <em>slower</em> than the field (that lag is "slip"). It has to: only a changing field induces the rotor currents that produce torque. No slip, no pull.</p></div>
+      <div class="qc"><b>Flip two wires, flip the spin</b><p>Swap any two of the three phases and the field reverses direction instantly — how every three-phase machine goes into reverse. Try the button above.</p></div>
+    </div>
+    <p class="muted" style="margin:12px 0 0">This one idea — paired with AC's easy voltage transformation — won the "War of the Currents" and electrified the
+      world. The same rotating field runs in reverse inside every <b>generator</b> at every power plant. Tesla reportedly saw the whole
+      design in his mind, fully formed, while reciting poetry at sunset.</p>
+  </div>
+
+  <footer class="site-foot">
+    <span class="views" data-count-path="self" style="visibility:hidden"></span>
+  </footer>
+</main>
+
+<script src="assets/config.js"></script>
+<script src="assets/site.js"></script>
+<script>
+(function () {
+  var c = document.getElementById("stage"), x = c.getContext("2d"), W = c.width, H = c.height;
+  var cx = 185, cy = 180, ring = 120;
+  var COL = ["#ff6b6b", "#3fce8f", "#6db4ff"], NAME = ["A", "B", "C"];
+  var thetas = [-90, 30, 150];                            // coil axis angles (deg): top, lower-right, lower-left
+  var f = 3.0, phase = 0, rotor = 0, running = true, dir = 1;
+
+  function cur(k) { return Math.sin(phase - dir * k * 2 * Math.PI / 3); }   // three-phase currents
+
+  function field() {                                       // resultant B vector (sum of coil contributions)
+    var bx = 0, by = 0;
+    for (var k = 0; k < 3; k++) { var a = thetas[k] * Math.PI / 180, i = cur(k); bx += i * Math.cos(a); by += i * Math.sin(a); }
+    return { x: bx, y: by, ang: Math.atan2(by, bx), mag: Math.hypot(bx, by) };
+  }
+
+  function render() {
+    x.clearRect(0, 0, W, H);
+    var B = field();
+    // stator ring
+    x.strokeStyle = "#28406a"; x.lineWidth = 2; x.beginPath(); x.arc(cx, cy, ring, 0, 7); x.stroke();
+    // coils, brightness ∝ |current|
+    for (var k = 0; k < 3; k++) {
+      var a = thetas[k] * Math.PI / 180, px = cx + Math.cos(a) * ring, py = cy + Math.sin(a) * ring, i = cur(k);
+      x.globalAlpha = 0.35 + 0.65 * Math.abs(i); x.fillStyle = COL[k];
+      x.beginPath(); x.arc(px, py, 15, 0, 7); x.fill(); x.globalAlpha = 1;
+      x.fillStyle = "#0b1220"; x.font = "bold 13px system-ui"; x.textAlign = "center"; x.fillText(NAME[k], px, py + 4);
+      // little current-direction sign
+      x.fillStyle = COL[k]; x.fillText(i >= 0 ? "＋" : "－", px + Math.cos(a) * 26, py + Math.sin(a) * 26 + 4);
+    }
+    // resultant rotating field arrow
+    var fx = cx + Math.cos(B.ang) * ring * 0.8, fy = cy + Math.sin(B.ang) * ring * 0.8;
+    x.strokeStyle = "#f4b942"; x.lineWidth = 4; x.beginPath(); x.moveTo(cx, cy); x.lineTo(fx, fy); x.stroke();
+    x.fillStyle = "#f4b942"; x.beginPath(); x.moveTo(fx, fy);
+    x.lineTo(fx - Math.cos(B.ang - 0.4) * 14, fy - Math.sin(B.ang - 0.4) * 14);
+    x.lineTo(fx - Math.cos(B.ang + 0.4) * 14, fy - Math.sin(B.ang + 0.4) * 14); x.closePath(); x.fill();
+    // rotor (chases the field, lagging = slip)
+    x.save(); x.translate(cx, cy); x.rotate(rotor);
+    x.fillStyle = "#cdd8e6"; x.fillRect(-8, -46, 16, 92);
+    x.fillStyle = "#8493a8"; x.beginPath(); x.arc(0, 0, 14, 0, 7); x.fill();
+    x.restore();
+    x.fillStyle = "#93a4bf"; x.font = "12px system-ui"; x.textAlign = "center"; x.fillText("rotor", cx, cy + ring + 22);
+    x.fillStyle = "#f4b942"; x.fillText("field", fx + Math.cos(B.ang) * 16, fy + Math.sin(B.ang) * 16 + 4);
+
+    // three-phase waveforms panel
+    var px0 = 360, pw = W - px0 - 14, pmid = cy, pamp = 70;
+    x.strokeStyle = "#1d2f4d"; x.setLineDash([4, 4]); x.beginPath(); x.moveTo(px0, pmid); x.lineTo(W - 14, pmid); x.stroke(); x.setLineDash([]);
+    for (var s = 0; s < 3; s++) {
+      x.strokeStyle = COL[s]; x.lineWidth = 2; x.beginPath();
+      for (var xx = 0; xx <= pw; xx += 3) {
+        var ph = phase - (xx / pw) * 4 * Math.PI, val = Math.sin(ph - dir * s * 2 * Math.PI / 3);
+        var yy = pmid - val * pamp; if (xx === 0) x.moveTo(px0 + xx, yy); else x.lineTo(px0 + xx, yy);
+      }
+      x.stroke();
+      // current dot at "now" (left edge)
+      x.fillStyle = COL[s]; x.beginPath(); x.arc(px0, pmid - cur(s) * pamp, 4, 0, 7); x.fill();
+    }
+    x.fillStyle = "#93a4bf"; x.font = "11px system-ui"; x.textAlign = "left"; x.fillText("three-phase currents (A, B, C) — 120° apart", px0, pmid - pamp - 12);
+    x.textAlign = "right"; x.fillText("now", W - 14, pmid + pamp + 16); x.textAlign = "left"; x.fillText("time →", px0, pmid + pamp + 16);
+  }
+
+  function loop() {
+    if (running) {
+      phase += f * 0.012;
+      var fa = field().ang, d = fa - rotor;               // shortest angular difference
+      while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI;
+      rotor += d * 0.08;                                   // rotor chases field with lag (slip)
+    }
+    render(); requestAnimationFrame(loop);
+  }
+
+  function updateStats() {
+    document.getElementById("m-f").textContent = f.toFixed(0) + " Hz";
+    document.getElementById("m-rpm").textContent = (f * 60).toLocaleString();
+    document.getElementById("m-dir").textContent = dir > 0 ? "↺ CCW" : "↻ CW";
+    document.getElementById("hint").innerHTML = "🔄 The three coils (A red, B green, C blue) peak in turn, so the gold <b>field arrow</b> sweeps around at " +
+      (f * 60).toLocaleString() + " RPM. The steel <b>rotor</b> is dragged along, spinning slightly slower — that lag (<b>slip</b>) is what lets the changing field induce the currents that turn it.";
+  }
+
+  document.getElementById("play").onclick = function () { running = !running; this.textContent = running ? "⏸ Pause" : "▶ Play"; this.classList.toggle("primary", !running); };
+  document.getElementById("rev").onclick = function () { dir = -dir; updateStats(); };
+  document.getElementById("f").addEventListener("input", function () { f = +this.value / 10; updateStats(); });
+
+  updateStats(); loop();
+})();
+</script>
