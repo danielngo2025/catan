@@ -1,0 +1,181 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Planck's Law · Visual Learn Lab</title>
+<meta name="description" content="Planck's equation, made visual — the black-body radiation curve. Slide the temperature to see the spectrum peak shift and colour change, and watch how it slays the classical ultraviolet catastrophe.">
+<link rel="stylesheet" href="assets/site.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🔥</text></svg>">
+<style>
+  canvas{width:100%;background:#0a1220;border:1px solid var(--line);border-radius:12px;display:block}
+  .formula{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px;text-align:center;
+    font-size:21px;font-weight:800;margin-bottom:14px}
+  .formula small{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-top:4px}
+  .metrics{display:flex;gap:14px;flex-wrap:wrap;margin:14px 0 0}
+  .metric{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 14px;min-width:120px}
+  .metric .v{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:8px}
+  .metric .v .sw{width:20px;height:20px;border-radius:5px;border:1px solid var(--line)}
+  .metric .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .btnrow{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:12px}
+  .field input[type=range]{width:min(360px,66vw)}
+  .presets{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+  .presets button{font-size:12px;padding:6px 10px}
+  .hintbox{background:linear-gradient(180deg,#1a2c49,#16233a);border:1px solid var(--accent);border-radius:10px;padding:12px 14px;margin-top:14px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-top:4px}
+  .qc{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .qc b{color:var(--ink)} .qc p{margin:4px 0 0;color:var(--muted);font-size:13px}
+</style>
+
+<div id="site-nav"></div>
+
+<main class="page">
+  <h1>🔥 Planck's Law — the birth of the quantum</h1>
+  <p class="lede">Every warm object glows: embers red, the Sun white, the hottest stars blue. In 1900 Max
+    Planck found the exact equation for that glow — the <b>black-body spectrum</b>. To make it fit, he had to
+    assume energy comes only in discrete <b>quanta</b>, E = hf, an act he called desperate. It worked perfectly,
+    slayed a paradox that had broken classical physics, and <b>accidentally launched quantum mechanics</b>.
+    Slide the temperature and watch the curve — and the colour — move.</p>
+
+  <div class="formula">B(λ,T) = (2hc² ⁄ λ⁵) · 1 ⁄ (e<sup>hc/λk<sub>B</sub>T</sup> − 1)<small>how much light a hot body emits at each wavelength λ and temperature T</small></div>
+
+  <div class="card">
+    <canvas id="stage" width="720" height="330"></canvas>
+    <div class="metrics">
+      <div class="metric"><div class="v" id="m-t">5778 K</div><div class="k">Temperature</div></div>
+      <div class="metric"><div class="v" id="m-peak">501 nm</div><div class="k">Peak wavelength (Wien)</div></div>
+      <div class="metric"><div class="v" id="m-color"><span class="sw" id="sw"></span><span id="m-color-t">white</span></div><div class="k">Glow colour</div></div>
+      <div class="metric"><div class="v" id="m-pow">1.0×</div><div class="k">Total power (vs Sun)</div></div>
+    </div>
+    <div class="btnrow">
+      <label class="field">Temperature = <b id="tv">5778</b> K<input type="range" id="T" min="500" max="12000" step="50" value="5778"></label>
+    </div>
+    <div class="presets">
+      <button data-t="1000">Dying ember (1000 K)</button>
+      <button data-t="2700">Light bulb (2700 K)</button>
+      <button data-t="5778">The Sun (5778 K)</button>
+      <button data-t="10000">Blue star (10000 K)</button>
+    </div>
+    <div class="hintbox" id="hint"></div>
+  </div>
+
+  <h2>Why it mattered</h2>
+  <div class="card">
+    <div class="cards">
+      <div class="qc"><b>The ultraviolet catastrophe</b><p>Classical physics (the dashed red curve) predicted a hot body pours out <em>infinite</em> energy at short wavelengths — obviously wrong. It was one of the great cracks in 19th-century physics.</p></div>
+      <div class="qc"><b>Planck's fix: energy in lumps</b><p>Planck assumed light of frequency f can only carry energy in packets of E = hf. High-frequency (short-λ) packets are too expensive to emit, so the curve <em>turns over</em> instead of exploding. Quantization was born.</p></div>
+      <div class="qc"><b>Wien's law: colour = temperature</b><p>The peak wavelength is inversely proportional to T. That's why you can read a star's temperature from its colour, and why heating metal glows red → orange → white → blue.</p></div>
+      <div class="qc"><b>Stefan–Boltzmann: T⁴</b><p>Total power radiated scales as temperature to the <em>fourth</em> power — double the temperature and you get 16× the energy. A small rise in T makes an object dramatically brighter.</p></div>
+    </div>
+    <p class="muted" style="margin:12px 0 0">Planck thought his energy quanta were just a mathematical trick. Five years later Einstein took them literally to
+      explain the photoelectric effect (that's a real photon), and the quantum revolution was unstoppable. The same curve today gives
+      us the temperature of the Sun, of stars, of a furnace — and of the cosmic microwave background, the Big Bang's leftover glow at a
+      chilly 2.7 K.</p>
+  </div>
+
+  <footer class="site-foot">
+    <span class="views" data-count-path="self" style="visibility:hidden"></span>
+  </footer>
+</main>
+
+<script src="assets/config.js"></script>
+<script src="assets/site.js"></script>
+<script>
+(function () {
+  var cv = document.getElementById("stage"), x = cv.getContext("2d"), W = cv.width, H = cv.height;
+  var h = 6.626e-34, cc = 3e8, kB = 1.381e-23, WIEN = 2.898e-3;
+  var T = 5778, LMIN = 50e-9, LMAX = 2500e-9;
+
+  function planck(l, T) { var e = h * cc / (l * kB * T); return e > 700 ? 0 : (2 * h * cc * cc / Math.pow(l, 5)) / (Math.exp(e) - 1); }
+  function rj(l, T) { return 2 * cc * kB * T / Math.pow(l, 4); }
+
+  function bbRGB(T) {                                     // black-body colour (Tanner Helland approx)
+    var t = T / 100, r, g, b;
+    r = t <= 66 ? 255 : 329.7 * Math.pow(t - 60, -0.1332);
+    g = t <= 66 ? 99.47 * Math.log(t) - 161.1 : 288.1 * Math.pow(t - 60, -0.0755);
+    b = t >= 66 ? 255 : t <= 19 ? 0 : 138.5 * Math.log(t - 10) - 305.0;
+    var cl = function (v) { return Math.max(0, Math.min(255, Math.round(v))); };
+    return "rgb(" + cl(r) + "," + cl(g) + "," + cl(b) + ")";
+  }
+  function specRGB(nm) {                                  // visible spectrum colour for the shaded band
+    var r = 0, g = 0, b = 0;
+    if (nm < 440) { r = -(nm - 440) / 60; b = 1; }
+    else if (nm < 490) { g = (nm - 440) / 50; b = 1; }
+    else if (nm < 510) { g = 1; b = -(nm - 510) / 20; }
+    else if (nm < 580) { r = (nm - 510) / 70; g = 1; }
+    else if (nm < 645) { r = 1; g = -(nm - 645) / 65; }
+    else { r = 1; }
+    return "rgb(" + (r * 255 | 0) + "," + (g * 255 | 0) + "," + (b * 255 | 0) + ")";
+  }
+  function colorName(T) {
+    return T < 1200 ? "dull red" : T < 2000 ? "red-orange" : T < 3200 ? "orange" :
+      T < 4500 ? "yellow-white" : T < 6500 ? "white" : T < 9000 ? "blue-white" : "blue";
+  }
+
+  var PADL = 46, PADB = 30, PADT = 14, PADR = 12;
+  function render() {
+    var pw = W - PADL - PADR, ph = H - PADB - PADT;
+    function X(l) { return PADL + (l - LMIN) / (LMAX - LMIN) * pw; }             // l in metres
+    var Bmax = 1e-30;
+    for (var l = LMIN; l <= LMAX; l += 4e-9) Bmax = Math.max(Bmax, planck(l, T));
+    function Y(B) { return PADT + ph - Math.min(B / Bmax, 1.12) / 1.12 * ph; }
+
+    x.clearRect(0, 0, W, H);
+    // visible band (380–750 nm) rainbow strip along the axis
+    for (var nm = 380; nm <= 750; nm += 3) {
+      x.fillStyle = specRGB(nm); x.globalAlpha = 0.22;
+      x.fillRect(X(nm * 1e-9), PADT, (3e-9) / (LMAX - LMIN) * pw + 1, ph);
+    }
+    x.globalAlpha = 1;
+    // axes
+    x.strokeStyle = "#28406a"; x.lineWidth = 1;
+    x.beginPath(); x.moveTo(PADL, PADT); x.lineTo(PADL, PADT + ph); x.lineTo(PADL + pw, PADT + ph); x.stroke();
+    x.fillStyle = "#93a4bf"; x.font = "11px system-ui"; x.textAlign = "center";
+    for (var t = 0; t <= 2500; t += 500) x.fillText(t + (t === 2500 ? " nm" : ""), X(t * 1e-9), H - 10);
+    x.save(); x.translate(13, PADT + ph / 2); x.rotate(-Math.PI / 2); x.fillText("radiance per wavelength", 0, 0); x.restore();
+
+    // Rayleigh–Jeans (classical) — dashed, blows up at short λ
+    x.strokeStyle = "rgba(255,107,107,.8)"; x.lineWidth = 2; x.setLineDash([6, 4]); x.beginPath();
+    var started = false;
+    for (var l2 = LMAX; l2 >= LMIN; l2 -= 4e-9) {
+      var yr = Y(rj(l2, T));
+      if (yr < PADT) { x.lineTo(X(l2), PADT); break; }    // clip at the top (→ ∞)
+      if (!started) { x.moveTo(X(l2), yr); started = true; } else x.lineTo(X(l2), yr);
+    }
+    x.stroke(); x.setLineDash([]);
+    x.fillStyle = "rgba(255,107,107,.9)"; x.textAlign = "left"; x.fillText("classical → ∞ (UV catastrophe)", PADL + 8, PADT + 12);
+
+    // Planck curve
+    x.strokeStyle = "#f4b942"; x.lineWidth = 2.6; x.beginPath();
+    var first = true;
+    for (var l3 = LMIN; l3 <= LMAX; l3 += 2e-9) { var yy = Y(planck(l3, T)); if (first) { x.moveTo(X(l3), yy); first = false; } else x.lineTo(X(l3), yy); }
+    x.stroke();
+
+    // Wien peak marker
+    var lpk = WIEN / T;
+    if (lpk >= LMIN && lpk <= LMAX) {
+      x.strokeStyle = "#6db4ff"; x.setLineDash([3, 3]); x.beginPath(); x.moveTo(X(lpk), PADT); x.lineTo(X(lpk), PADT + ph); x.stroke(); x.setLineDash([]);
+      x.fillStyle = "#6db4ff"; x.textAlign = "center"; x.fillText("peak", X(lpk), PADT + ph - 6);
+    }
+    updateStats(lpk);
+  }
+
+  function updateStats(lpk) {
+    document.getElementById("m-t").textContent = T + " K";
+    document.getElementById("m-peak").textContent = lpk * 1e9 < 1000 ? Math.round(lpk * 1e9) + " nm" : (lpk * 1e6).toFixed(2) + " µm";
+    document.getElementById("sw").style.background = bbRGB(T);
+    document.getElementById("m-color-t").textContent = colorName(T);
+    document.getElementById("m-pow").textContent = Math.pow(T / 5778, 4).toFixed(T < 5778 ? 3 : 1) + "×";
+    var pknm = lpk * 1e9;
+    document.getElementById("hint").innerHTML = pknm > 750
+      ? "🔥 At " + T + " K the peak sits in the <b>infrared</b> (" + Math.round(pknm) + " nm) — you feel the heat before you see much glow. Only the curve's tail reaches the visible band."
+      : pknm < 380
+        ? "🔥 At " + T + " K the peak is in the <b>ultraviolet</b> — the object burns blue-white, blasting out energy (Stefan–Boltzmann: power ∝ T⁴). The classical curve would predict infinite UV; Planck's turns over."
+        : "🔥 At " + T + " K the peak lands in <b>visible light</b> (" + Math.round(pknm) + " nm), so the glow is " + colorName(T) + ". Note how the classical dashed curve rockets to infinity while Planck's stays finite.";
+  }
+
+  document.getElementById("T").addEventListener("input", function () { T = +this.value; document.getElementById("tv").textContent = T; render(); });
+  document.querySelectorAll(".presets button").forEach(function (b) {
+    b.onclick = function () { T = +b.dataset.t; document.getElementById("T").value = T; document.getElementById("tv").textContent = T; render(); };
+  });
+  render();
+})();
+</script>
