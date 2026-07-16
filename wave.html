@@ -1,0 +1,141 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Wave Equation · Visual Learn Lab</title>
+<meta name="description" content="The wave equation, made visual — pluck a string and watch pulses split, travel at speed c, and reflect off the ends, or excite standing-wave harmonics, all from one equation.">
+<link rel="stylesheet" href="assets/site.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='13'>〰️</text></svg>">
+<style>
+  canvas{width:100%;background:#0a1220;border:1px solid var(--line);border-radius:12px;display:block;cursor:crosshair}
+  .formula{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px;text-align:center;
+    font-size:23px;font-weight:800;margin-bottom:14px}
+  .formula small{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-top:4px}
+  .btnrow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}
+  .btnrow .grp{display:flex;gap:6px;flex-wrap:wrap}
+  .btnrow .grp button{font-size:13px;padding:7px 11px}
+  .field input[type=range]{width:200px}
+  .hintbox{background:linear-gradient(180deg,#1a2c49,#16233a);border:1px solid var(--accent);border-radius:10px;padding:12px 14px;margin-top:14px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-top:4px}
+  .qc{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .qc b{color:var(--ink)} .qc p{margin:4px 0 0;color:var(--muted);font-size:13px}
+</style>
+
+<div id="site-nav"></div>
+
+<main class="page">
+  <h1>〰️ The Wave Equation — one rule for every wave</h1>
+  <p class="lede">Strings, sound, light, water ripples, earthquakes — astonishingly, they all obey the same
+    equation. It says the <b>acceleration</b> of each point is proportional to how <b>curved</b> the wave is
+    there: sharp bends snap back hard. That single rule makes disturbances <b>travel</b> at a fixed speed
+    <em>c</em>, pass through each other, and bounce off boundaries. <b>Click anywhere on the string below to
+    pluck it</b> — or strike a harmonic.</p>
+
+  <div class="formula">∂²u/∂t² = c² · ∂²u/∂x²<small>acceleration of the string = (speed)² × curvature of the string</small></div>
+
+  <div class="card">
+    <canvas id="stage" width="720" height="260"></canvas>
+    <div class="btnrow">
+      <div class="grp">
+        <button id="pulse">▶ Send a pulse</button>
+        <button id="reset">Reset (flat)</button>
+      </div>
+      <div class="grp">
+        <span class="muted" style="font-size:12px;align-self:center">Harmonics:</span>
+        <button data-n="1">1st</button><button data-n="2">2nd</button><button data-n="3">3rd</button><button data-n="4">4th</button>
+      </div>
+      <label class="field">Wave speed c <input type="range" id="c" min="20" max="95" step="1" value="60"></label>
+    </div>
+    <div class="hintbox" id="hint"></div>
+  </div>
+
+  <h2>What the equation tells you</h2>
+  <div class="card">
+    <div class="cards">
+      <div class="qc"><b>One equation, every medium</b><p>Only the speed <em>c</em> changes: it's set by the medium's stiffness and density (tension vs. mass for a string). Sound in air, light in vacuum, ripples on a pond — same maths, different <em>c</em>.</p></div>
+      <div class="qc"><b>A pluck splits in two</b><p>Because the equation is symmetric, any initial shape splits into two half-height copies travelling opposite ways at speed <em>c</em> (d'Alembert's solution). Watch them separate, then recombine after reflecting.</p></div>
+      <div class="qc"><b>Superposition</b><p>The equation is linear, so waves simply <em>add</em> and pass straight through one another unchanged. Two pulses cross and emerge intact — the reason many conversations can share one room of air.</p></div>
+      <div class="qc"><b>Standing waves = music</b><p>Fixed ends permit only whole numbers of half-wavelengths — the harmonics. Their frequencies are the notes of a guitar or piano string; the fundamental plus overtones give an instrument its tone.</p></div>
+    </div>
+    <p class="muted" style="margin:12px 0 0">At a fixed end the wave <b>flips</b> and reflects (you'll see pulses invert). The very fact that light travels
+      at a fixed speed <em>c</em> comes from Maxwell's equations rearranging into exactly this wave equation — which is how physicists
+      first realized light <em>is</em> a wave. From guitars to fibre-optics, it's the same beautiful line of maths.</p>
+  </div>
+
+  <footer class="site-foot">
+    <span class="views" data-count-path="self" style="visibility:hidden"></span>
+  </footer>
+</main>
+
+<script src="assets/config.js"></script>
+<script src="assets/site.js"></script>
+<script>
+(function () {
+  var c = document.getElementById("stage"), x = c.getContext("2d"), W = c.width, H = c.height, mid = H / 2;
+  var N = 240, AMP = 95;
+  var u = new Float64Array(N), uo = new Float64Array(N), un = new Float64Array(N);
+  var r = 0.60, mode = "idle";
+
+  function clear() { u.fill(0); uo.fill(0); un.fill(0); }
+
+  function pluckAt(i0, A) {
+    for (var i = 0; i < N; i++) u[i] = i <= i0 ? A * i / i0 : A * (N - 1 - i) / (N - 1 - i0);
+    u[0] = u[N - 1] = 0; uo.set(u); mode = "pluck";
+  }
+  function harmonic(n) {
+    for (var i = 0; i < N; i++) u[i] = 0.9 * Math.sin(n * Math.PI * i / (N - 1));
+    uo.set(u); mode = "standing " + n;
+  }
+  function pulse() {
+    var ctr = N * 0.22, sig = 10, A = 0.9;
+    for (var i = 0; i < N; i++) {
+      u[i] = A * Math.exp(-((i - ctr) * (i - ctr)) / (2 * sig * sig));
+      uo[i] = A * Math.exp(-((i - (ctr - r * 3)) * (i - (ctr - r * 3))) / (2 * sig * sig)); // shifted → travels right
+    }
+    u[0] = u[N - 1] = uo[0] = uo[N - 1] = 0; mode = "pulse";
+  }
+
+  function step() {
+    var r2 = r * r;
+    for (var i = 1; i < N - 1; i++) un[i] = 2 * u[i] - uo[i] + r2 * (u[i + 1] - 2 * u[i] + u[i - 1]);
+    un[0] = un[N - 1] = 0;
+    uo.set(u); u.set(un);
+  }
+
+  function render() {
+    x.clearRect(0, 0, W, H);
+    x.strokeStyle = "#1d2f4d"; x.setLineDash([4, 4]); x.lineWidth = 1;
+    x.beginPath(); x.moveTo(0, mid); x.lineTo(W, mid); x.stroke(); x.setLineDash([]);
+    // string
+    x.strokeStyle = "#6db4ff"; x.lineWidth = 2.4; x.beginPath();
+    for (var i = 0; i < N; i++) { var px = i / (N - 1) * W, py = mid - u[i] * AMP; if (i === 0) x.moveTo(px, py); else x.lineTo(px, py); }
+    x.stroke();
+    // fixed ends
+    x.fillStyle = "#f4b942"; x.beginPath(); x.arc(2, mid, 5, 0, 7); x.fill(); x.beginPath(); x.arc(W - 2, mid, 5, 0, 7); x.fill();
+  }
+
+  function loop() { for (var s = 0; s < 2; s++) step(); render(); requestAnimationFrame(loop); }
+
+  function updateHint() {
+    document.getElementById("hint").innerHTML = mode === "idle"
+      ? "〰️ <b>Click the string</b> to pluck it, or strike a harmonic. Fixed ends are pinned (gold dots)."
+      : mode === "pluck"
+        ? "〰️ Your pluck instantly <b>split into two pulses</b> racing in opposite directions at speed c. They flip when they hit the fixed ends, then pass through each other on the way back — superposition in action."
+        : mode === "pulse"
+          ? "〰️ A single pulse travels right at speed c and <b>inverts</b> on reflecting off the fixed end. Turn c up or down to change how fast."
+          : "〰️ A pure <b>standing wave</b> (" + mode.split(" ")[1] + " harmonic): the string vibrates in place with fixed nodes. These are the notes a real string plays — the basis of all music.";
+  }
+
+  c.addEventListener("click", function (ev) {
+    var rect = c.getBoundingClientRect(), sx = c.width / rect.width;
+    var i0 = Math.round((ev.clientX - rect.left) * sx / W * (N - 1));
+    i0 = Math.max(6, Math.min(N - 7, i0));
+    pluckAt(i0, 0.9); updateHint();
+  });
+  document.getElementById("pulse").onclick = function () { pulse(); updateHint(); };
+  document.getElementById("reset").onclick = function () { clear(); mode = "idle"; updateHint(); };
+  document.querySelectorAll("[data-n]").forEach(function (b) { b.onclick = function () { harmonic(+b.dataset.n); updateHint(); }; });
+  document.getElementById("c").addEventListener("input", function () { r = +this.value / 100; });
+
+  updateHint(); loop();
+})();
+</script>
