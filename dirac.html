@@ -1,0 +1,205 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dirac Equation · Visual Learn Lab</title>
+<meta name="description" content="The Dirac equation, made visual — unite quantum mechanics with relativity, watch spin-½ appear for free, and fire photons to create electron–positron pairs from the Dirac sea: antimatter predicted from pure logic.">
+<link rel="stylesheet" href="assets/site.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🪞</text></svg>">
+<style>
+  canvas{width:100%;background:linear-gradient(180deg,#0b1428,#0a1220);border:1px solid var(--line);border-radius:12px;display:block}
+  .formula{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px;text-align:center;
+    font-size:22px;font-weight:800;margin-bottom:14px}
+  .formula small{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-top:4px}
+  .metrics{display:flex;gap:14px;flex-wrap:wrap;margin:14px 0 0}
+  .metric{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 14px;min-width:130px}
+  .metric .v{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums}
+  .metric .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .btnrow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}
+  .field input[type=range]{width:min(300px,60vw)}
+  .solset{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+  .sol{display:flex;align-items:center;gap:6px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:13px}
+  .sol .dot{width:14px;height:14px;border-radius:50%}
+  .hintbox{background:linear-gradient(180deg,#1a2c49,#16233a);border:1px solid var(--accent);border-radius:10px;padding:12px 14px;margin-top:14px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-top:4px}
+  .qc{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .qc b{color:var(--ink)} .qc p{margin:4px 0 0;color:var(--muted);font-size:13px}
+</style>
+
+<div id="site-nav"></div>
+
+<main class="page">
+  <h1>🪞 The Dirac Equation — antimatter from pure logic</h1>
+  <p class="lede">Schrödinger's equation isn't compatible with Einstein's relativity. In 1928 Paul Dirac
+    found the one that is — and it paid off spectacularly. To work, it needed <b>four components</b>, and out
+    of them <b>spin-½ dropped out automatically</b> (no longer bolted on by hand). Stranger still, it had
+    <b>negative-energy solutions</b>. Dirac's bold reading: empty space is a filled "sea" of them, and a hole
+    in that sea is a new particle — <b>antimatter</b>. He predicted the positron in 1928; it was found in 1932.
+    Fire photons below to tear pairs out of the vacuum.</p>
+
+  <div class="formula">(iℏγ<sup>μ</sup>∂<sub>μ</sub> − mc)ψ = 0<small>relativistic + quantum ⟹ a 4-component spinor ψ ⟹ spin and antimatter</small></div>
+
+  <div class="card">
+    <canvas id="stage" width="720" height="420"></canvas>
+    <div class="metrics">
+      <div class="metric"><div class="v" id="m-e">2.40 mc²</div><div class="k">Photon energy</div></div>
+      <div class="metric"><div class="v" id="m-thr">2 mc² = 1.022 MeV</div><div class="k">Pair threshold</div></div>
+      <div class="metric"><div class="v" id="m-pairs">0</div><div class="k">Pairs created</div></div>
+    </div>
+    <div class="btnrow">
+      <label class="field">Photon energy = <b id="ev">2.40</b> mc²
+        <input type="range" id="E" min="0" max="300" step="1" value="240"></label>
+      <button class="primary" id="fire">⚡ Fire photon</button>
+      <button id="anni" disabled>💥 Annihilate</button>
+      <button id="reset">Reset</button>
+    </div>
+    <div class="solset">
+      <span class="muted" style="font-size:12px;align-self:center">The equation's four solutions:</span>
+      <div class="sol"><span class="dot" style="background:#6db4ff"></span>electron ↑</div>
+      <div class="sol"><span class="dot" style="background:#6db4ff"></span>electron ↓</div>
+      <div class="sol"><span class="dot" style="background:#f4b942"></span>positron ↑</div>
+      <div class="sol"><span class="dot" style="background:#f4b942"></span>positron ↓</div>
+    </div>
+    <div class="hintbox" id="hint"></div>
+  </div>
+
+  <h2>Why it changed everything</h2>
+  <div class="card">
+    <div class="cards">
+      <div class="qc"><b>Quantum ⋈ relativity</b><p>Schrödinger's equation treats time and space differently, breaking relativity. Dirac's is symmetric in both — the first quantum equation that respects the speed-of-light limit for the electron.</p></div>
+      <div class="qc"><b>Spin comes free</b><p>The maths <em>demands</em> four components. Two are the electron's spin-up/down; the equation even predicts the magnetic strength g ≈ 2, which earlier theory had simply inserted by hand. Spin is a relativistic effect.</p></div>
+      <div class="qc"><b>The negative-energy sea</b><p>Relativity's E = ±√((pc)² + (mc²)²) allows negative energies. Dirac proposed the vacuum is a filled sea of them; a missing electron leaves a hole that looks like a positive-charge particle — the positron.</p></div>
+      <div class="qc"><b>Every particle has a twin</b><p>Antimatter turned out to be universal: antiprotons, antineutrons, and more, all with opposite charge. Matter meeting antimatter annihilates into pure energy — PET scanners image your body with exactly this.</p></div>
+    </div>
+    <p class="muted" style="margin:12px 0 0">Dirac trusted his equation over common sense, and reality obeyed — a landmark case of pure mathematics
+      predicting a whole new form of matter before anyone looked. His work also seeded <b>quantum field theory</b>: the modern view
+      keeps the antimatter and the pair-creation but drops the literal "sea," treating electrons and positrons as excitations of one
+      quantum field. Why the universe ended up mostly matter and almost no antimatter is still an open mystery.</p>
+  </div>
+
+  <footer class="site-foot">
+    <span class="views" data-count-path="self" style="visibility:hidden"></span>
+  </footer>
+</main>
+
+<script src="assets/config.js"></script>
+<script src="assets/site.js"></script>
+<script>
+(function () {
+  var c = document.getElementById("stage"), x = c.getContext("2d"), W = c.width, H = c.height;
+  var posLine = 150, negLine = 268;                       // +mc² and −mc² energy lines
+  var seaTop = 280, dotGap = 44, rows = 4, startX = 60;
+  var holeCol = 4, holeX = startX + holeCol * dotGap, topRowY = seaTop;
+  var Eg = 2.40, THR = 2.0, pairs = 0;
+  var mode = "idle", prog = 0, weak = 0, flash = 0, eY = 90;
+
+  function posY() { return Math.max(46, posLine - 26 - (Eg - THR) * 46); }
+
+  function wavy(x0, y0, x1, col) {                        // simple photon squiggle from x0→x1
+    x.strokeStyle = col; x.lineWidth = 2; x.beginPath();
+    for (var xx = x0; xx <= x1; xx += 3) x.lineTo(xx, y0 + Math.sin((xx - x0) / 5) * 4);
+    x.stroke();
+    x.fillStyle = col; x.beginPath();                     // arrowhead
+    x.moveTo(x1, y0); x.lineTo(x1 - 8, y0 - 5); x.lineTo(x1 - 8, y0 + 5); x.closePath(); x.fill();
+  }
+
+  function drawParticle(px, py, col, sign, spin, label) {
+    x.save(); x.shadowColor = col; x.shadowBlur = 12;
+    if (sign === "+") { x.strokeStyle = col; x.lineWidth = 2.5; x.beginPath(); x.arc(px, py, 8, 0, 7); x.stroke(); }
+    else { x.fillStyle = col; x.beginPath(); x.arc(px, py, 8, 0, 7); x.fill(); }
+    x.restore();
+    x.fillStyle = col; x.font = "bold 12px system-ui"; x.textAlign = "center";
+    x.fillText(sign, px, py + 4);
+    // spin arrow
+    x.strokeStyle = col; x.lineWidth = 1.6; var d = spin === "up" ? -1 : 1;
+    x.beginPath(); x.moveTo(px + 14, py + d * 7); x.lineTo(px + 14, py - d * 7); x.stroke();
+    x.beginPath(); x.moveTo(px + 14, py + d * 7); x.lineTo(px + 11, py + d * 2); x.moveTo(px + 14, py + d * 7); x.lineTo(px + 17, py + d * 2); x.stroke();
+    if (label) { x.fillStyle = col; x.font = "12px system-ui"; x.fillText(label, px, py - 16); }
+  }
+
+  function render() {
+    x.clearRect(0, 0, W, H);
+    // region shading
+    x.fillStyle = "rgba(109,180,255,.05)"; x.fillRect(0, 0, W, posLine);
+    x.fillStyle = flash > 0 || weak > 0 ? "rgba(255,107,107,.10)" : "rgba(255,255,255,.02)"; x.fillRect(0, posLine, W, negLine - posLine);
+    x.fillStyle = "rgba(244,185,66,.05)"; x.fillRect(0, negLine, W, H - negLine);
+    // energy lines + labels
+    x.strokeStyle = "#3a5686"; x.lineWidth = 1; x.setLineDash([5, 4]);
+    x.beginPath(); x.moveTo(0, posLine); x.lineTo(W, posLine); x.moveTo(0, negLine); x.lineTo(W, negLine); x.stroke(); x.setLineDash([]);
+    x.fillStyle = "#93a4bf"; x.font = "12px system-ui"; x.textAlign = "left";
+    x.fillText("+mc²  (positive-energy electrons)", 8, posLine - 8);
+    x.fillText("−mc²  (negative-energy sea, filled)", 8, negLine + 16);
+    x.textAlign = "right"; x.fillStyle = "#f4b942"; x.fillText("forbidden gap = 2mc²", W - 10, (posLine + negLine) / 2);
+
+    // the Dirac sea (filled electrons)
+    for (var r = 0; r < rows; r++) for (var col = 0; col < 15; col++) {
+      var cxp = startX + col * dotGap, cyp = seaTop + r * 24;
+      if (cxp > W - 20) continue;
+      var isHole = (r === 0 && col === holeCol) && (mode === "pair" || (mode === "rising" && prog > 0.12) || mode === "annihilating");
+      if (isHole) continue;
+      x.fillStyle = "rgba(109,180,255,.45)"; x.beginPath(); x.arc(cxp, cyp, 4, 0, 7); x.fill();
+    }
+
+    // incoming photon (left), bright if energetic enough
+    var enough = Eg >= THR;
+    if (mode === "idle") {
+      wavy(12, (posLine + negLine) / 2, holeX - 26, enough ? "#a66bff" : "rgba(166,107,255,.35)");
+      x.fillStyle = enough ? "#a66bff" : "#6a5a8a"; x.font = "12px system-ui"; x.textAlign = "left";
+      x.fillText("γ  " + Eg.toFixed(2) + " mc²", 12, (posLine + negLine) / 2 - 12);
+      if (weak > 0) { x.fillStyle = "#ff6b6b"; x.textAlign = "center"; x.fillText("✗ below 2mc² — no pair", holeX, (posLine + negLine) / 2 - 26); }
+    }
+
+    // the hole = positron
+    if (mode === "pair" || mode === "annihilating" || (mode === "rising" && prog > 0.12))
+      drawParticle(holeX, topRowY, "#f4b942", "+", "down", mode === "pair" ? "positron e⁺" : "");
+
+    // the electron
+    if (mode === "rising") { eY = topRowY + (posY() - topRowY) * prog; drawParticle(holeX, eY, "#6db4ff", "−", "up", ""); }
+    else if (mode === "pair") drawParticle(holeX, posY(), "#6db4ff", "−", "up", "electron e⁻");
+    else if (mode === "annihilating") { eY = posY() + (topRowY - posY()) * prog; drawParticle(holeX, eY, "#6db4ff", "−", "up", ""); }
+
+    // annihilation flash + outgoing photons
+    if (flash > 0) {
+      x.strokeStyle = "rgba(255,255,255," + (flash / 20).toFixed(2) + ")"; x.lineWidth = 2;
+      x.beginPath(); x.arc(holeX, topRowY, (20 - flash) * 3, 0, 7); x.stroke();
+      wavy(holeX + 10, topRowY, holeX + 60, "#a66bff"); wavy(holeX - 60, topRowY, holeX - 10, "#a66bff");
+    }
+  }
+
+  function step() {
+    if (mode === "rising") { prog += 0.045; if (prog >= 1) { mode = "pair"; pairs++; document.getElementById("anni").disabled = false; updateStats(); } }
+    else if (mode === "annihilating") { prog += 0.05; if (prog >= 1) { mode = "idle"; flash = 20; updateStats(); } }
+    if (weak > 0) weak--;
+    if (flash > 0) flash--;
+    render();
+    requestAnimationFrame(step);
+  }
+
+  function updateStats() {
+    document.getElementById("m-e").textContent = Eg.toFixed(2) + " mc²";
+    document.getElementById("m-pairs").textContent = pairs;
+    var h;
+    if (mode === "pair") h = "🪞 <b>Pair created!</b> A photon knocked an electron (blue, −) up to positive energy, and the <b>hole</b> it left in the sea acts as a <b>positron</b> (amber, +) — antimatter. Note each carries spin-½. Hit <b>Annihilate</b> to watch them recombine into light.";
+    else if (weak > 0 || (mode === "idle" && Eg < THR)) h = "🪞 A photon needs at least <b>2mc² (1.022 MeV)</b> to lift an electron across the forbidden gap — that's the energy to build both the electron and its antiparticle. Below it, nothing happens.";
+    else if (mode === "idle") h = "🪞 Your photon carries enough energy (≥ 2mc²). Press <b>Fire photon</b> to rip an electron–positron pair out of the vacuum — creating matter <em>and</em> antimatter from pure energy (E = mc²).";
+    else h = "🪞 Annihilating…";
+    document.getElementById("hint").innerHTML = h;
+  }
+
+  document.getElementById("E").addEventListener("input", function () {
+    Eg = +this.value / 100; document.getElementById("ev").textContent = Eg.toFixed(2); if (mode === "idle") updateStats();
+  });
+  document.getElementById("fire").onclick = function () {
+    if (mode !== "idle") return;
+    if (Eg < THR) { weak = 40; updateStats(); return; }
+    mode = "rising"; prog = 0;
+  };
+  document.getElementById("anni").onclick = function () {
+    if (mode !== "pair") return; mode = "annihilating"; prog = 0; this.disabled = true;
+  };
+  document.getElementById("reset").onclick = function () {
+    mode = "idle"; prog = 0; flash = 0; weak = 0; document.getElementById("anni").disabled = true; updateStats();
+  };
+
+  updateStats(); step();
+})();
+</script>
