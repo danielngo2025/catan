@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI/ML Fundamentals · Visual Learn Lab</title>
+<meta name="description" content="A weekly tech-demo deck introducing the core ideas behind modern AI — each linked to a live interactive demo at learn.danhngo.ca.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>◈</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  /* ===========================================
+     THEME — matches learn.danhngo.ca (Lab Signal)
+     Tweak these to restyle the whole deck.
+     =========================================== */
+  :root{
+    --bg:#0e1726; --panel:#16233a; --panel2:#1d2f4d; --line:#2b3f63;
+    --ink:#e8eef7; --muted:#93a4bf; --accent:#f4b942; --good:#3fce8f; --bad:#ff6b6b;
+    --font-display:'Space Grotesk',sans-serif;
+    --font-mono:'JetBrains Mono',monospace;
+    --ease:cubic-bezier(.16,1,.3,1);
+    --slide-padding:clamp(1.6rem,5vw,4.5rem);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  /* ===========================================
+     VIEWPORT FITTING: MANDATORY BASE STYLES
+     =========================================== */
+  html, body { height:100%; overflow-x:hidden; }
+  html { scroll-snap-type:y mandatory; scroll-behavior:smooth; }
+  .slide {
+    width:100vw; height:100vh; height:100dvh; overflow:hidden;
+    scroll-snap-align:start; display:flex; flex-direction:column; position:relative;
+  }
+  .slide-content { flex:1; display:flex; flex-direction:column; justify-content:center;
+    max-height:100%; overflow:hidden; padding:var(--slide-padding); }
+  .card, .container, .content-box { max-width:min(90vw,1000px); max-height:min(80vh,700px); }
+  img, .image-container { max-width:100%; max-height:min(50vh,400px); object-fit:contain; }
+  @media (max-height:700px){ :root{ --slide-padding:clamp(1rem,3vw,2rem); } }
+  @media (max-height:600px){ :root{ --slide-padding:clamp(.75rem,2.5vw,1.5rem); }
+    .nav-dots,.keyboard-hint,.decorative{ display:none; } }
+  @media (prefers-reduced-motion:reduce){ *,*::before,*::after{ animation-duration:.01ms!important;
+    transition-duration:.2s!important; } html{ scroll-behavior:auto; } }
+
+  /* ===========================================
+     BASE LOOK
+     =========================================== */
+  body{
+    font-family:var(--font-display); color:var(--ink); background:
+      radial-gradient(90% 80% at 15% 0%, #1a2c49 0%, transparent 55%),
+      radial-gradient(70% 70% at 100% 100%, #16233a 0%, transparent 60%),
+      var(--bg);
+  }
+  a{ color:var(--accent); text-decoration:none; }
+  /* faint dot texture (nod to the site's ⬢ motif) */
+  .slide::before{ content:""; position:absolute; inset:0; opacity:.5; pointer-events:none;
+    background-image:radial-gradient(rgba(244,185,66,.09) 1px,transparent 1.4px);
+    background-size:34px 34px; }
+
+  /* top bar shared across content slides */
+  .topbar{ position:absolute; top:clamp(1.3rem,3.5vw,2.6rem);
+    left:var(--slide-padding); right:var(--slide-padding);
+    display:flex; justify-content:space-between; align-items:center; z-index:3;
+    font-family:var(--font-mono); font-size:clamp(.66rem,1vw,.82rem); letter-spacing:.08em; color:var(--muted); }
+  .topbar .brand{ color:var(--ink); font-weight:700; }
+  .topbar .brand b{ color:var(--accent); font-weight:700; }
+
+  /* ===========================================
+     ANIMATIONS — .reveal children fade up when slide is .visible
+     =========================================== */
+  .reveal{ opacity:0; transform:translateY(24px);
+    transition:opacity .6s var(--ease), transform .6s var(--ease); }
+  .slide.visible .reveal{ opacity:1; transform:none; }
+  .slide.visible .reveal:nth-child(1){ transition-delay:.05s; }
+  .slide.visible .reveal:nth-child(2){ transition-delay:.15s; }
+  .slide.visible .reveal:nth-child(3){ transition-delay:.25s; }
+  .slide.visible .reveal:nth-child(4){ transition-delay:.35s; }
+  .slide.visible .reveal:nth-child(5){ transition-delay:.45s; }
+  @keyframes blink{ 50%{ opacity:0; } }
+
+  /* ===========================================
+     TITLE SLIDE
+     =========================================== */
+  .title-slide{ justify-content:center; padding:var(--slide-padding); }
+  .kicker{ font-family:var(--font-mono); color:var(--accent);
+    font-size:clamp(.78rem,1.1vw,1rem); letter-spacing:.12em; margin-bottom:1.1rem; }
+  .kicker .cursor{ display:inline-block; width:.6ch; background:var(--accent);
+    animation:blink 1s steps(1) infinite; margin-left:2px; }
+  .title-slide h1{ font-size:clamp(2.4rem,6.2vw,5.2rem); line-height:1.02; font-weight:700;
+    letter-spacing:-.01em; max-width:18ch; }
+  .title-slide h1 span{ color:inherit; }
+  .title-slide .sub{ margin-top:1.4rem; max-width:46ch; color:var(--muted);
+    font-size:clamp(.95rem,1.5vw,1.28rem); line-height:1.55; }
+  .pill-row{ display:flex; gap:.6rem; flex-wrap:wrap; margin-top:2rem; }
+  .pill{ background:var(--panel2); border:1px solid var(--line); border-radius:999px;
+    padding:.5rem 1rem; font-size:clamp(.75rem,1vw,.92rem); font-weight:500; }
+  .pill .e{ margin-right:.4em; }
+  .title-foot{ position:absolute; bottom:clamp(1.3rem,3.5vw,2.6rem); left:var(--slide-padding);
+    font-family:var(--font-mono); font-size:clamp(.66rem,.95vw,.82rem); color:var(--muted); }
+  .title-foot b{ color:var(--good); }
+
+  /* ===========================================
+     OBJECTIVES SLIDE
+     =========================================== */
+  .obj-wrap{ width:100%; max-width:1000px; margin:0 auto; }
+  .eyebrow{ font-family:var(--font-mono); color:var(--ink); letter-spacing:.14em;
+    font-size:clamp(.72rem,1vw,.9rem); margin-bottom:.7rem; text-transform:uppercase; }
+  .obj-wrap h2{ font-size:clamp(1.8rem,4.6vw,3.4rem); font-weight:700; line-height:1.06;
+    letter-spacing:-.01em; margin-bottom:clamp(1.2rem,3vw,2.2rem); }
+  .obj-wrap h2 span{ color:inherit; }
+  .obj-list{ list-style:none; display:flex; flex-direction:column; gap:clamp(.6rem,1.4vw,1rem); }
+  .obj-list li{ display:flex; gap:1rem; align-items:flex-start;
+    font-size:clamp(1rem,1.7vw,1.4rem); line-height:1.4; }
+  .obj-list .n{ font-family:var(--font-mono); color:var(--ink); font-weight:700;
+    flex:none; width:2.2ch; }
+  .obj-list b{ color:var(--ink); font-weight:600; }
+  .obj-note{ margin-top:clamp(1.2rem,3vw,2rem); color:var(--muted);
+    font-family:var(--font-mono); font-size:clamp(.72rem,1vw,.9rem); }
+  .obj-note b{ color:var(--good); }
+
+  /* ===========================================
+     TOPIC SLIDES (7)
+     =========================================== */
+  .topic-grid{ width:100%; max-width:1160px; margin:0 auto;
+    display:grid; grid-template-columns:1.02fr .98fr; gap:clamp(1.5rem,4.5vw,4rem); align-items:center; }
+  .topic-main .head{ display:flex; align-items:center; gap:.9rem; margin-bottom:1rem; }
+  .topic-main .emoji{ font-size:clamp(2.2rem,4.5vw,3.4rem); line-height:1; }
+  .topic-main .step{ font-family:var(--font-mono); font-size:clamp(.7rem,1vw,.88rem);
+    letter-spacing:.1em; color:var(--ink); }
+  .topic-main .step b{ color:var(--ink); }
+  .topic-main h2{ font-size:clamp(1.9rem,4.2vw,3.2rem); font-weight:700; line-height:1.04;
+    letter-spacing:-.01em; margin-bottom:.9rem; }
+  .topic-main .lead{ color:var(--ink); font-size:clamp(1rem,1.55vw,1.28rem); line-height:1.5;
+    max-width:40ch; margin-bottom:1.1rem; }
+  .topic-main .lead b{ color:var(--ink); font-weight:600; }
+  .points{ list-style:none; display:flex; flex-direction:column; gap:.55rem; margin-bottom:1.4rem; }
+  .points li{ display:flex; gap:.6rem; align-items:flex-start; color:var(--ink);
+    font-size:clamp(.85rem,1.25vw,1.05rem); line-height:1.4; }
+  .points .tag{ color:var(--ink); font-family:var(--font-mono); font-weight:700;
+    font-size:clamp(.62rem,.9vw,.75rem); letter-spacing:.06em; text-transform:uppercase;
+    flex:none; width:6.4ch; padding-top:.15em; }
+  .points b{ color:var(--ink); font-weight:600; }
+  .demo-cta{ display:inline-flex; align-items:center; gap:.6rem; background:var(--accent);
+    color:#241a00; border-radius:999px; padding:.7rem 1.3rem; font-weight:700;
+    font-size:clamp(.85rem,1.2vw,1rem); box-shadow:0 10px 30px rgba(244,185,66,.25);
+    transition:transform .15s var(--ease); }
+  .demo-cta:hover{ transform:translateY(-2px); }
+  .demo-cta .url{ font-family:var(--font-mono); font-weight:500; opacity:.75; font-size:.85em; }
+
+  /* right-hand visual panel */
+  .visual{ background:linear-gradient(180deg,var(--panel),#12203a);
+    border:1px solid var(--line); border-radius:20px; padding:clamp(1.2rem,2.5vw,2rem);
+    box-shadow:0 24px 60px rgba(0,0,0,.4); position:relative; overflow:hidden;
+    display:flex; flex-direction:column; gap:1rem; min-height:min(46vh,360px); justify-content:center; }
+  .visual .vlabel{ position:absolute; top:.9rem; left:1.1rem; font-family:var(--font-mono);
+    font-size:clamp(.6rem,.85vw,.72rem); color:var(--muted); letter-spacing:.08em; }
+  @media (max-width:840px){ .topic-grid{ grid-template-columns:1fr; }
+    .visual{ display:none; } }
+
+  /* --- visual: token chips --- */
+  .chips{ display:flex; flex-wrap:wrap; gap:.5rem; justify-content:center; }
+  .chip{ font-family:var(--font-mono); font-size:clamp(.8rem,1.3vw,1.05rem);
+    padding:.5rem .8rem; border-radius:8px; background:var(--panel2); border:1px solid var(--line); }
+  .chip.hot{ background:rgba(244,185,66,.16); border-color:var(--accent); color:var(--accent); }
+  .chips-cap{ text-align:center; color:var(--muted); font-size:.85rem; margin-top:.4rem; }
+
+  /* --- visual: attention words (opacity = attention weight) --- */
+  .attn{ display:flex; flex-wrap:wrap; gap:.45rem; justify-content:center; line-height:1.8; }
+  .attn span{ font-size:clamp(.95rem,1.5vw,1.2rem); padding:.15rem .45rem; border-radius:6px;
+    background:rgba(244,185,66,.14); }
+  .attn .w0{ background:transparent; color:var(--muted); }
+  .attn .w1{ background:rgba(244,185,66,.10); }
+  .attn .w2{ background:rgba(244,185,66,.28); }
+  .attn .w3{ background:rgba(244,185,66,.55); color:#241a00; font-weight:600; }
+  .attn .focus{ background:var(--accent); color:#241a00; font-weight:700; }
+
+  /* --- visual: next-token probability bars --- */
+  .bars{ display:flex; flex-direction:column; gap:.55rem; }
+  .bar{ display:flex; align-items:center; gap:.7rem; font-family:var(--font-mono);
+    font-size:clamp(.8rem,1.15vw,.98rem); }
+  .bar .tok{ width:6ch; color:var(--ink); }
+  .bar .track{ flex:1; height:14px; background:var(--panel2); border-radius:7px; overflow:hidden; }
+  .bar .fill{ display:block; height:100%; background:var(--accent); border-radius:7px; }
+  .bar .pct{ width:4ch; text-align:right; color:var(--muted); }
+
+  /* --- visual: SVG diagrams sizing --- */
+  .visual svg{ width:100%; height:auto; max-height:min(40vh,320px); display:block; }
+
+  /* --- visual: diffusion tiles --- */
+  .difftiles{ display:flex; align-items:center; gap:.7rem; justify-content:center; }
+  .difftile{ width:clamp(58px,9vw,92px); aspect-ratio:1; border-radius:12px; border:1px solid var(--line); }
+  .difftile.noise{ background:
+    repeating-conic-gradient(from 0deg,#33507e 0deg 6deg,#1d2f4d 6deg 12deg,#3a4f74 12deg 18deg,#12203a 18deg 24deg); }
+  .difftile.mid{ background:radial-gradient(circle at 50% 42%,#f4b942 0%,#b9863a 30%,#33507e 55%,#1d2f4d 100%); filter:blur(3px); }
+  .difftile.clean{ background:radial-gradient(circle at 50% 42%,#ffd772 0%,#f4b942 42%,#1d2f4d 60%); }
+  .diffarrow{ color:var(--muted); font-size:1.4rem; }
+
+  /* ===========================================
+     CLOSING SLIDE
+     =========================================== */
+  .close-wrap{ width:100%; max-width:1000px; margin:0 auto; text-align:left; }
+  .close-wrap h2{ font-size:clamp(2.1rem,5.2vw,4rem); font-weight:700; line-height:1.03; }
+  .close-wrap h2 span{ color:inherit; }
+  .flow{ font-family:var(--font-mono); color:var(--ink); margin:clamp(1.2rem,3vw,2rem) 0;
+    font-size:clamp(.82rem,1.35vw,1.1rem); line-height:1.9; }
+  .flow b{ color:var(--ink); } .flow .ac{ color:var(--ink); }
+  .close-links{ display:flex; flex-wrap:wrap; gap:.55rem; margin-bottom:clamp(1.2rem,3vw,2rem); }
+  .close-links a{ background:var(--panel2); border:1px solid var(--line); border-radius:999px;
+    padding:.5rem .95rem; font-size:clamp(.75rem,1vw,.92rem); color:var(--ink);
+    transition:border-color .15s,transform .15s; }
+  .close-links a:hover{ border-color:var(--accent); transform:translateY(-2px); }
+  .close-big{ font-size:clamp(1.1rem,2vw,1.6rem); }
+  .close-big a{ font-weight:700; }
+  .close-q{ margin-top:clamp(1rem,2.5vw,1.6rem); color:var(--ink); font-family:var(--font-mono);
+    font-size:clamp(.8rem,1.1vw,.95rem); }
+
+  /* ===========================================
+     CHROME: progress bar, nav dots, hint
+     =========================================== */
+  .progress-bar{ position:fixed; top:0; left:0; height:3px; width:0;
+    background:var(--accent); z-index:9999; transition:width .2s var(--ease); }
+  .nav-dots{ position:fixed; right:clamp(.9rem,1.8vw,1.6rem); top:50%; transform:translateY(-50%);
+    display:flex; flex-direction:column; gap:.7rem; z-index:9000; }
+  .nav-dots button{ width:10px; height:10px; border-radius:50%; border:1px solid var(--line);
+    background:transparent; cursor:pointer; padding:0; transition:all .2s var(--ease); }
+  .nav-dots button.active{ background:var(--accent); border-color:var(--accent); transform:scale(1.25); }
+  .keyboard-hint{ position:fixed; bottom:clamp(.9rem,2vw,1.6rem); right:clamp(.9rem,2vw,1.6rem);
+    font-family:var(--font-mono); font-size:.72rem; color:var(--muted); z-index:9000; opacity:.7; }
+
+  /* ===========================================
+     INLINE EDITING (opt-in)
+     =========================================== */
+  .edit-hotzone{ position:fixed; top:0; left:0; width:80px; height:80px; z-index:10000; cursor:pointer; }
+  .edit-toggle{ position:fixed; top:14px; left:14px; z-index:10001; width:42px; height:42px;
+    border-radius:50%; border:1px solid var(--line); background:var(--panel); color:var(--ink);
+    font-size:18px; cursor:pointer; opacity:0; pointer-events:none; transition:opacity .3s ease; }
+  .edit-toggle.show, .edit-toggle.active{ opacity:1; pointer-events:auto; }
+  .edit-toggle.active{ background:var(--accent); color:#241a00; border-color:var(--accent); }
+  body.editing [data-editable]{ outline:1px dashed rgba(244,185,66,.6); outline-offset:4px;
+    border-radius:4px; cursor:text; }
+  body.editing [data-editable]:focus{ outline:2px solid var(--accent); background:rgba(244,185,66,.06); }
+  .edit-banner{ position:fixed; bottom:14px; left:50%; transform:translateX(-50%); z-index:10001;
+    background:var(--panel); border:1px solid var(--accent); color:var(--ink); border-radius:999px;
+    padding:.5rem 1.1rem; font-family:var(--font-mono); font-size:.76rem; display:none; }
+  body.editing .edit-banner{ display:block; }
+  body.editing{ scroll-snap-type:none; }
+</style>
+</head>
+<body>
+<!-- progress + chrome -->
+<div class="progress-bar" id="progressBar"></div>
+<nav class="nav-dots" id="navDots" aria-label="Slide navigation"></nav>
+<div class="keyboard-hint decorative">← → to navigate · E to edit</div>
+
+<!-- inline editing chrome -->
+<div class="edit-hotzone" id="editHotzone" title="Edit mode"></div>
+<button class="edit-toggle" id="editToggle" title="Toggle edit mode (E)">✏️</button>
+<div class="edit-banner">✏️ Edit mode — click any text to edit · <b>Ctrl/⌘+S</b> to export · <b>E</b> to exit</div>
+
+<!-- ============================================================
+     SLIDE 1 — TITLE
+     ============================================================ -->
+<section class="slide title-slide" id="s1">
+  <div class="topbar"><span></span><span>01 / 11</span></div>
+  <div class="slide-content" style="justify-content:center;">
+    <h1 class="reveal" data-editable>The ideas behind <span>modern AI</span></h1>
+    <p class="sub reveal" data-editable>From raw text to generated images — the core machinery of LLMs and diffusion, each one a live demo you can play with mid-talk.</p>
+    <div class="pill-row reveal">
+      <span class="pill" data-editable><span class="e">✂️</span>Tokenization</span>
+      <span class="pill" data-editable><span class="e">🗺️</span>Embeddings</span>
+      <span class="pill" data-editable><span class="e">🔗</span>Attention</span>
+      <span class="pill" data-editable><span class="e">⛰️</span>Gradient Descent</span>
+      <span class="pill" data-editable><span class="e">🎨</span>Diffusion</span>
+    </div>
+  </div>
+  <div class="title-foot" data-editable>live at learn.danhngo.ca · press → to advance</div>
+</section>
+
+<!-- ============================================================
+     SLIDE 2 — OBJECTIVES
+     ============================================================ -->
+<section class="slide" id="s2">
+  <div class="topbar"><span></span><span>02 / 11</span></div>
+  <div class="slide-content">
+    <div class="obj-wrap">
+      <h2 class="reveal" data-editable>By the end of this talk, <span>you'll be able to…</span></h2>
+      <ul class="obj-list reveal">
+        <li><span class="n">01</span><span data-editable>How an LLM <b>reads text</b> — and turns words into meaning.</span></li>
+        <li><span class="n">02</span><span data-editable>How a <b>transformer connects words</b> to understand context.</span></li>
+        <li><span class="n">03</span><span data-editable>How an LLM <b>writes</b> — one token at a time.</span></li>
+        <li><span class="n">04</span><span data-editable>How a <b>neural network</b> works.</span></li>
+        <li><span class="n">05</span><span data-editable>How machines actually <b>learn</b>.</span></li>
+        <li><span class="n">06</span><span data-editable>How AI <b>generates images</b>.</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     SLIDE 3 — TOKENIZATION
+     ============================================================ -->
+<section class="slide" id="s3">
+  <div class="topbar"><span></span><span>03 / 11</span></div>
+  <div class="slide-content">
+    <div class="topic-grid">
+      <div class="topic-main">
+        <div class="head reveal"><span class="step">HOW A MODEL READS</span></div>
+        <h2 class="reveal" data-editable>Tokenization</h2>
+        <p class="lead reveal" data-editable>Before a model can read, it chops your text into <b>tokens</b> — chunks that are often whole words, but rare words shatter into pieces.</p>
+        <ul class="points reveal">
+          <li><span class="tag">Idea</span><span data-editable>Models never see letters or words — only <b>token IDs</b> (numbers).</span></li>
+          <li><span class="tag">Try it</span><span data-editable>Type a sentence and watch it split; see "tokenization" break into subwords.</span></li>
+          <li><span class="tag">Why</span><span data-editable>Token count <b>is</b> your cost and context-window limit.</span></li>
+        </ul>
+        <a class="demo-cta reveal" href="https://learn.danhngo.ca/tokenization.html" target="_blank" rel="noopener">▶ Live demo <span class="url">/tokenization.html</span></a>
+      </div>
+      <div class="visual reveal" aria-hidden="true">
+        <div class="vlabel">text → tokens</div>
+        <div class="chips">
+          <span class="chip">The</span><span class="chip">cat</span><span class="chip">sat</span>
+          <span class="chip hot">token</span><span class="chip hot">ization</span>
+          <span class="chip">is</span><span class="chip hot">un</span><span class="chip hot">believ</span><span class="chip hot">able</span>
+        </div>
+        <div class="chips-cap">common words = 1 token · rare words split apart</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     SLIDE 4 — WORD EMBEDDINGS
+     ============================================================ -->
+<section class="slide" id="s4">
+  <div class="topbar"><span></span><span>04 / 11</span></div>
+  <div class="slide-content">
+    <div class="topic-grid">
+      <div class="topic-main">
+        <div class="head reveal"><span class="step">REPRESENTING MEANING</span></div>
+        <h2 class="reveal" data-editable>Word Embeddings</h2>
+        <p class="lead reveal" data-editable>Each token becomes a <b>point in space</b>, where distance is meaning — similar words sit close together.</p>
+        <ul class="points reveal">
+          <li><span class="tag">Idea</span><span data-editable>Meaning becomes geometry: <b>king − man + woman ≈ queen</b>.</span></li>
+          <li><span class="tag">Try it</span><span data-editable>Explore the map; watch analogies show up as parallel arrows.</span></li>
+          <li><span class="tag">Why</span><span data-editable>This is how a model "knows" <b>cat</b> and <b>dog</b> are related.</span></li>
+        </ul>
+        <a class="demo-cta reveal" href="https://learn.danhngo.ca/embeddings.html" target="_blank" rel="noopener">▶ Live demo <span class="url">/embeddings.html</span></a>
+      </div>
+      <div class="visual reveal" aria-hidden="true">
+        <div class="vlabel">meaning = geometry</div>
+        <svg viewBox="0 0 320 240" role="img">
+          <!-- axes -->
+          <line x1="20" y1="220" x2="300" y2="220" stroke="#2b3f63" stroke-width="1.5"/>
+          <line x1="20" y1="220" x2="20" y2="20" stroke="#2b3f63" stroke-width="1.5"/>
+          <!-- analogy arrows (parallel) -->
+          <line x1="70" y1="170" x2="150" y2="120" stroke="#f4b942" stroke-width="2" stroke-dasharray="4 3"/>
+          <line x1="200" y1="150" x2="280" y2="100" stroke="#f4b942" stroke-width="2" stroke-dasharray="4 3"/>
+          <!-- points -->
+          <circle cx="70" cy="170" r="6" fill="#3fce8f"/><text x="60" y="192" fill="#93a4bf" font-size="13" font-family="monospace">man</text>
+          <circle cx="150" cy="120" r="6" fill="#3fce8f"/><text x="130" y="112" fill="#e8eef7" font-size="13" font-family="monospace">king</text>
+          <circle cx="200" cy="150" r="6" fill="#f4b942"/><text x="180" y="172" fill="#93a4bf" font-size="13" font-family="monospace">woman</text>
+          <circle cx="280" cy="100" r="6" fill="#f4b942"/><text x="252" y="92" fill="#e8eef7" font-size="13" font-family="monospace">queen</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     SLIDE 5 — ATTENTION
+     ============================================================ -->
+<section class="slide" id="s5">
+  <div class="topbar"><span></span><span>05 / 11</span></div>
+  <div class="slide-content">
+    <div class="topic-grid">
+      <div class="topic-main">
+        <div class="head reveal"><span class="step">UNDERSTANDING CONTEXT</span></div>
+        <h2 class="reveal" data-editable>Attention</h2>
+        <p class="lead reveal" data-editable>Attention lets every word <b>look at the other words</b> to figure out what it means in context — the "T" in GPT.</p>
+        <ul class="points reveal">
+          <li><span class="tag">Idea</span><span data-editable>The breakthrough behind <b>transformers</b> — how "it" finds what it refers to.</span></li>
+          <li><span class="tag">Try it</span><span data-editable>Click a word and see which earlier words it attends to.</span></li>
+          <li><span class="tag">Why</span><span data-editable>Context is everything: <b>bank</b> by a river vs a vault.</span></li>
+        </ul>
+        <a class="demo-cta reveal" href="https://learn.danhngo.ca/attention.html" target="_blank" rel="noopener">▶ Live demo <span class="url">/attention.html</span></a>
+      </div>
+      <div class="visual reveal" aria-hidden="true">
+        <div class="vlabel">what does "it" attend to?</div>
+        <div class="attn">
+          <span class="w0">The</span><span class="w3">animal</span><span class="w0">didn't</span><span class="w1">cross</span>
+          <span class="w0">the</span><span class="w2">street</span><span class="w0">because</span>
+          <span class="focus">it</span><span class="w0">was</span><span class="w1">tired</span>
+        </div>
+        <div class="chips-cap">brighter = more attention · "it" → <b style="color:var(--accent)">animal</b></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     SLIDE 6 — NEXT-TOKEN PREDICTION
+     ============================================================ -->
+<section class="slide" id="s6">
+  <div class="topbar"><span></span><span>06 / 11</span></div>
+  <div class="slide-content">
+    <div class="topic-grid">
+      <div class="topic-main">
+        <div class="head reveal"><span class="step">HOW A MODEL WRITES</span></div>
+        <h2 class="reveal" data-editable>Next-Token Prediction</h2>
+        <p class="lead reveal" data-editable>An LLM writes <b>one token at a time</b> — predict the likeliest next token, add it, repeat. That's the whole trick.</p>
+        <ul class="points reveal">
+          <li><span class="tag">Idea</span><span data-editable>It's autocomplete on steroids — <b>no plan</b>, just the next token.</span></li>
+          <li><span class="tag">Try it</span><span data-editable>Slide <b>temperature</b> from greedy to wild and sample a sentence.</span></li>
+          <li><span class="tag">Why</span><span data-editable>Temperature is the "creativity" dial you feel in every chatbot.</span></li>
+        </ul>
+        <a class="demo-cta reveal" href="https://learn.danhngo.ca/nexttoken.html" target="_blank" rel="noopener">▶ Live demo <span class="url">/nexttoken.html</span></a>
+      </div>
+      <div class="visual reveal" aria-hidden="true">
+        <div class="vlabel">"The cat sat on the ___"</div>
+        <div class="bars">
+          <div class="bar"><span class="tok">mat</span><span class="track"><span class="fill" style="width:61%"></span></span><span class="pct">61%</span></div>
+          <div class="bar"><span class="tok">floor</span><span class="track"><span class="fill" style="width:22%"></span></span><span class="pct">22%</span></div>
+          <div class="bar"><span class="tok">sofa</span><span class="track"><span class="fill" style="width:11%"></span></span><span class="pct">11%</span></div>
+          <div class="bar"><span class="tok">roof</span><span class="track"><span class="fill" style="width:6%"></span></span><span class="pct">6%</span></div>
+        </div>
+        <div class="chips-cap">low temp → always "mat" · high temp → sometimes "roof"</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     SLIDE 7 — THE PERCEPTRON
+     ============================================================ -->
+<section class="slide" id="s7">
+  <div class="topbar"><span></span><span>07 / 11</span></div>
+  <div class="slide-content">
+    <div class="topic-grid">
+      <div class="topic-main">
+        <div class="head reveal"><span class="step">THE BUILDING BLOCK</span></div>
+        <h2 class="reveal" data-editable>The Perceptron</h2>
+        <p class="lead reveal" data-editable>Underneath it all is the <b>neuron</b>: weighted inputs, summed and squashed into an output. Stack millions → a deep network.</p>
+        <ul class="points reveal">
+          <li><span class="tag">Idea</span><span data-editable>One neuron draws a <b>single line</b> between two classes.</span></li>
+          <li><span class="tag">Try it</span><span data-editable>Watch it tune its weights to separate two groups — then hit the XOR wall.</span></li>
+          <li><span class="tag">Why</span><span data-editable>That XOR limit is <b>why we stack neurons</b> into deep nets.</span></li>
+        </ul>
+        <a class="demo-cta reveal" href="https://learn.danhngo.ca/perceptron.html" target="_blank" rel="noopener">▶ Live demo <span class="url">/perceptron.html</span></a>
+      </div>
+      <div class="visual reveal" aria-hidden="true">
+        <div class="vlabel">inputs → weighted sum → output</div>
+        <svg viewBox="0 0 320 210" role="img">
+          <!-- edges -->
+          <line x1="60" y1="45" x2="170" y2="105" stroke="#2b3f63" stroke-width="2"/>
+          <line x1="60" y1="105" x2="170" y2="105" stroke="#2b3f63" stroke-width="2"/>
+          <line x1="60" y1="165" x2="170" y2="105" stroke="#2b3f63" stroke-width="2"/>
+          <line x1="200" y1="105" x2="285" y2="105" stroke="#f4b942" stroke-width="2.5"/>
+          <!-- input nodes -->
+          <circle cx="60" cy="45" r="16" fill="#1d2f4d" stroke="#3fce8f" stroke-width="2"/><text x="55" y="50" fill="#e8eef7" font-size="13" font-family="monospace">x₁</text>
+          <circle cx="60" cy="105" r="16" fill="#1d2f4d" stroke="#3fce8f" stroke-width="2"/><text x="55" y="110" fill="#e8eef7" font-size="13" font-family="monospace">x₂</text>
+          <circle cx="60" cy="165" r="16" fill="#1d2f4d" stroke="#3fce8f" stroke-width="2"/><text x="55" y="170" fill="#e8eef7" font-size="13" font-family="monospace">x₃</text>
+          <!-- neuron -->
+          <circle cx="185" cy="105" r="24" fill="rgba(244,185,66,.16)" stroke="#f4b942" stroke-width="2.5"/><text x="177" y="111" fill="#f4b942" font-size="18" font-family="monospace">Σ</text>
+          <!-- weight labels -->
+          <text x="105" y="66" fill="#93a4bf" font-size="11" font-family="monospace">w₁</text>
+          <text x="105" y="100" fill="#93a4bf" font-size="11" font-family="monospace">w₂</text>
+          <text x="105" y="150" fill="#93a4bf" font-size="11" font-family="monospace">w₃</text>
+          <!-- output -->
+          <rect x="285" y="93" width="24" height="24" rx="5" fill="#f4b942"/><text x="290" y="110" fill="#241a00" font-size="13" font-family="monospace">ŷ</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     SLIDE 8 — GRADIENT DESCENT
+     ============================================================ -->
+<section class="slide" id="s8">
+  <div class="topbar"><span></span><span>08 / 11</span></div>
+  <div class="slide-content">
+    <div class="topic-grid">
+      <div class="topic-main">
+        <div class="head reveal"><span class="step">HOW A MODEL LEARNS</span></div>
+        <h2 class="reveal" data-editable>Gradient Descent</h2>
+        <p class="lead reveal" data-editable>Learning = <b>rolling downhill</b>. Measure the error, then nudge every weight in the direction that lowers it — over and over.</p>
+        <ul class="points reveal">
+          <li><span class="tag">Idea</span><span data-editable>Find the bottom of a valley you can only <b>feel underfoot</b>.</span></li>
+          <li><span class="tag">Try it</span><span data-editable>Tune the <b>learning rate</b>: converge, overshoot, or get stuck.</span></li>
+          <li><span class="tag">Why</span><span data-editable>This one algorithm trains <b>virtually every</b> modern model.</span></li>
+        </ul>
+        <a class="demo-cta reveal" href="https://learn.danhngo.ca/gradient.html" target="_blank" rel="noopener">▶ Live demo <span class="url">/gradient.html</span></a>
+      </div>
+      <div class="visual reveal" aria-hidden="true">
+        <div class="vlabel">minimize the loss</div>
+        <svg viewBox="0 0 320 210" role="img">
+          <!-- loss curve (parabola) -->
+          <path d="M20 30 Q160 260 300 30" fill="none" stroke="#2b3f63" stroke-width="2.5"/>
+          <!-- steps of the ball down the curve -->
+          <circle cx="60" cy="96" r="5" fill="#93a4bf" opacity=".5"/>
+          <circle cx="95" cy="140" r="5" fill="#93a4bf" opacity=".65"/>
+          <circle cx="128" cy="163" r="5" fill="#93a4bf" opacity=".8"/>
+          <!-- ball near the minimum -->
+          <circle cx="160" cy="172" r="9" fill="#f4b942"/>
+          <!-- minimum marker -->
+          <line x1="160" y1="182" x2="160" y2="196" stroke="#3fce8f" stroke-width="2"/>
+          <text x="132" y="209" fill="#3fce8f" font-size="12" font-family="monospace">minimum</text>
+          <text x="24" y="24" fill="#93a4bf" font-size="12" font-family="monospace">loss</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     SLIDE 9 — DIFFUSION MODELS
+     ============================================================ -->
+<section class="slide" id="s9">
+  <div class="topbar"><span></span><span>09 / 11</span></div>
+  <div class="slide-content">
+    <div class="topic-grid">
+      <div class="topic-main">
+        <div class="head reveal"><span class="step">BEYOND TEXT · IMAGES</span></div>
+        <h2 class="reveal" data-editable>Diffusion Models</h2>
+        <p class="lead reveal" data-editable>Image generators don't paint — they <b>denoise</b>. Start from pure static and repeatedly remove noise until a picture emerges.</p>
+        <ul class="points reveal">
+          <li><span class="tag">Idea</span><span data-editable>Sculpting an image out of <b>random noise</b>.</span></li>
+          <li><span class="tag">Try it</span><span data-editable>Hit <b>Generate</b> and watch static resolve into a picture.</span></li>
+          <li><span class="tag">Why</span><span data-editable>Same learning ideas → <b>DALL·E, Stable Diffusion, Midjourney</b>.</span></li>
+        </ul>
+        <a class="demo-cta reveal" href="https://learn.danhngo.ca/diffusion.html" target="_blank" rel="noopener">▶ Live demo <span class="url">/diffusion.html</span></a>
+      </div>
+      <div class="visual reveal" aria-hidden="true">
+        <div class="vlabel">noise → repeated denoising → image</div>
+        <div class="difftiles">
+          <div class="difftile noise"></div><span class="diffarrow">→</span>
+          <div class="difftile mid"></div><span class="diffarrow">→</span>
+          <div class="difftile clean"></div>
+        </div>
+        <div class="chips-cap">every step removes a little noise · the prompt steers it</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     SLIDE 10 — BONUS: CAN IT CREATE SOMETHING NEW?
+     ============================================================ -->
+<section class="slide" id="s10">
+  <div class="topbar"><span></span><span>10 / 11</span></div>
+  <div class="slide-content">
+    <div class="topic-grid">
+      <div class="topic-main">
+        <div class="head reveal"><span class="step">BONUS · THE BIG QUESTION</span></div>
+        <h2 class="reveal" data-editable>Can it create something new?</h2>
+        <p class="lead reveal" data-editable>Yes — but there are <b>two kinds of "new."</b> Predicting the next token isn't the same as copying.</p>
+        <ul class="points reveal">
+          <li><span class="tag">Yes</span><span data-editable>Almost every output is <b>literally novel</b> — a fresh point in an astronomically large space, not a lookup.</span></li>
+          <li><span class="tag">But</span><span data-editable>Pure next-token models <b>interpolate</b> near what they've seen; they rarely leap outside it.</span></li>
+          <li><span class="tag">So</span><span data-editable>Real breakthroughs come from <b>generate + verify</b> — AlphaGo's move 37, faster algorithms, new proteins.</span></li>
+        </ul>
+        <p class="lead reveal" data-editable style="margin:0"><b>It's a creativity engine, not a copy machine.</b></p>
+      </div>
+      <div class="visual reveal" aria-hidden="true">
+        <div class="vlabel">novelty is a spectrum</div>
+        <svg viewBox="0 0 320 200" role="img">
+          <defs>
+            <linearGradient id="nov" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stop-color="#33507e"/>
+              <stop offset="1" stop-color="#f4b942"/>
+            </linearGradient>
+          </defs>
+          <!-- gradient track -->
+          <rect x="20" y="70" width="280" height="16" rx="8" fill="url(#nov)"/>
+          <!-- position markers -->
+          <circle cx="44" cy="78" r="7" fill="#33507e" stroke="#0e1726" stroke-width="2"/>
+          <circle cx="160" cy="78" r="10" fill="#f4b942" stroke="#0e1726" stroke-width="2"/>
+          <circle cx="284" cy="78" r="7" fill="#e8eef7" stroke="#0e1726" stroke-width="2"/>
+          <!-- labels -->
+          <text x="30" y="112" fill="#93a4bf" font-size="11" font-family="monospace">copy</text>
+          <text x="116" y="112" fill="#f4b942" font-size="11" font-family="monospace">remix · LLMs</text>
+          <text x="214" y="112" fill="#e8eef7" font-size="11" font-family="monospace">breakthrough</text>
+          <text x="40" y="156" fill="#93a4bf" font-size="11" font-family="monospace">imitation ——→ search + verify</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     SLIDE 11 — CLOSING / RECAP
+     ============================================================ -->
+<section class="slide" id="s11">
+  <div class="topbar"><span></span><span>11 / 11</span></div>
+  <div class="slide-content">
+    <div class="close-wrap">
+      <div class="eyebrow reveal" data-editable>That's the machinery</div>
+      <h2 class="reveal" data-editable>Now you can <span>see inside the box.</span></h2>
+      <div class="flow reveal" data-editable>
+        <b>tokenize</b> <span class="ac">→</span> <b>embed</b> <span class="ac">→</span> <b>attend</b> <span class="ac">→</span> <b>predict next token</b><br>
+        …all <b>learned</b> by <span class="ac">gradient descent</span> over stacked <b>neurons</b> — and the same ideas <span class="ac">denoise</span> images.
+      </div>
+      <div class="close-links reveal">
+        <a href="https://learn.danhngo.ca/tokenization.html" target="_blank" rel="noopener">✂️ Tokenization</a>
+        <a href="https://learn.danhngo.ca/embeddings.html" target="_blank" rel="noopener">🗺️ Embeddings</a>
+        <a href="https://learn.danhngo.ca/attention.html" target="_blank" rel="noopener">🔗 Attention</a>
+        <a href="https://learn.danhngo.ca/nexttoken.html" target="_blank" rel="noopener">🔮 Next-Token</a>
+        <a href="https://learn.danhngo.ca/perceptron.html" target="_blank" rel="noopener">🕸️ Perceptron</a>
+        <a href="https://learn.danhngo.ca/gradient.html" target="_blank" rel="noopener">⛰️ Gradient Descent</a>
+        <a href="https://learn.danhngo.ca/diffusion.html" target="_blank" rel="noopener">🎨 Diffusion</a>
+      </div>
+      <p class="close-big reveal" data-editable>Play with all 7 — and 30+ more topics — at <a href="https://learn.danhngo.ca" target="_blank" rel="noopener">learn.danhngo.ca</a></p>
+      <p class="close-q reveal" data-editable>Questions? Let's dig into any demo together.</p>
+    </div>
+  </div>
+</section>
+
+<script>
+/* ===========================================
+   SLIDE PRESENTATION CONTROLLER
+   =========================================== */
+class SlidePresentation {
+  constructor(){
+    this.slides = Array.from(document.querySelectorAll('.slide'));
+    this.current = 0;
+    this.progress = document.getElementById('progressBar');
+    this.dotsHost = document.getElementById('navDots');
+    this.buildDots();
+    this.observe();
+    this.keys();
+    this.updateChrome();
+    // reveal the first slide immediately (it's already in view)
+    this.slides[0].classList.add('visible');
+  }
+  buildDots(){
+    this.slides.forEach((s,i)=>{
+      const b=document.createElement('button');
+      b.setAttribute('aria-label','Go to slide '+(i+1));
+      b.addEventListener('click',()=>this.go(i));
+      this.dotsHost.appendChild(b);
+    });
+    this.dots=Array.from(this.dotsHost.children);
+  }
+  observe(){
+    // add .visible when a slide is centered; track current index
+    const io=new IntersectionObserver((entries)=>{
+      entries.forEach(e=>{
+        if(e.isIntersecting){
+          e.target.classList.add('visible');
+          this.current=this.slides.indexOf(e.target);
+          this.updateChrome();
+        }
+      });
+    },{threshold:0.55});
+    this.slides.forEach(s=>io.observe(s));
+  }
+  updateChrome(){
+    if(this.dots) this.dots.forEach((d,i)=>d.classList.toggle('active',i===this.current));
+    if(this.progress) this.progress.style.width=((this.current)/(this.slides.length-1))*100+'%';
+  }
+  go(i){
+    i=Math.max(0,Math.min(this.slides.length-1,i));
+    this.slides[i].scrollIntoView({behavior:'smooth'});
+  }
+  keys(){
+    document.addEventListener('keydown',(e)=>{
+      if(document.body.classList.contains('editing')) return; // don't navigate while editing
+      if(['ArrowDown','ArrowRight','PageDown',' '].includes(e.key)){ e.preventDefault(); this.go(this.current+1); }
+      else if(['ArrowUp','ArrowLeft','PageUp'].includes(e.key)){ e.preventDefault(); this.go(this.current-1); }
+      else if(e.key==='Home'){ e.preventDefault(); this.go(0); }
+      else if(e.key==='End'){ e.preventDefault(); this.go(this.slides.length-1); }
+    });
+  }
+}
+const deck = new SlidePresentation();
+
+/* ===========================================
+   INLINE EDITOR — click to edit, auto-save to
+   localStorage, Ctrl/⌘+S to export a copy.
+   =========================================== */
+class Editor{
+  constructor(){
+    this.isActive=false;
+    this.editables=Array.from(document.querySelectorAll('[data-editable]'));
+    this.editables.forEach((el,i)=>{ if(!el.dataset.eid) el.dataset.eid='e'+i; });
+    this.STORE='aiml-deck-edits';
+    this.restore();
+    this.wire();
+  }
+  restore(){
+    try{
+      const saved=JSON.parse(localStorage.getItem(this.STORE)||'{}');
+      this.editables.forEach(el=>{ if(saved[el.dataset.eid]!=null) el.innerHTML=saved[el.dataset.eid]; });
+    }catch(_){}
+  }
+  save(){
+    const data={};
+    this.editables.forEach(el=>{ data[el.dataset.eid]=el.innerHTML; });
+    try{ localStorage.setItem(this.STORE,JSON.stringify(data)); }catch(_){}
+  }
+  toggleEditMode(){
+    this.isActive=!this.isActive;
+    document.body.classList.toggle('editing',this.isActive);
+    document.getElementById('editToggle').classList.toggle('active',this.isActive);
+    this.editables.forEach(el=>{
+      if(this.isActive){ el.setAttribute('contenteditable','true'); }
+      else{ el.removeAttribute('contenteditable'); }
+    });
+    if(!this.isActive) this.save();
+  }
+  wire(){
+    const toggle=document.getElementById('editToggle');
+    const hotzone=document.getElementById('editHotzone');
+    let hideTimeout=null;
+    toggle.addEventListener('click',()=>this.toggleEditMode());
+    hotzone.addEventListener('click',()=>this.toggleEditMode());
+    hotzone.addEventListener('mouseenter',()=>{ clearTimeout(hideTimeout); toggle.classList.add('show'); });
+    hotzone.addEventListener('mouseleave',()=>{ hideTimeout=setTimeout(()=>{ if(!this.isActive) toggle.classList.remove('show'); },400); });
+    toggle.addEventListener('mouseenter',()=>clearTimeout(hideTimeout));
+    toggle.addEventListener('mouseleave',()=>{ hideTimeout=setTimeout(()=>{ if(!this.isActive) toggle.classList.remove('show'); },400); });
+    // save as the user types
+    this.editables.forEach(el=>el.addEventListener('input',()=>this.save()));
+    document.addEventListener('keydown',(e)=>{
+      // E toggles edit mode (unless currently typing in a field)
+      if((e.key==='e'||e.key==='E') && !(e.target.getAttribute && e.target.getAttribute('contenteditable'))){
+        this.toggleEditMode();
+      }
+      // Ctrl/Cmd+S exports the edited deck as a fresh HTML file
+      if((e.ctrlKey||e.metaKey) && (e.key==='s'||e.key==='S')){
+        e.preventDefault(); this.export();
+      }
+    });
+  }
+  export(){
+    if(this.isActive) this.save();
+    // strip contenteditable before exporting a clean copy
+    const clone=document.documentElement.cloneNode(true);
+    clone.querySelectorAll('[contenteditable]').forEach(el=>el.removeAttribute('contenteditable'));
+    clone.querySelector('body').classList.remove('editing');
+    const html='<!DOCTYPE html>\n'+clone.outerHTML;
+    const blob=new Blob([html],{type:'text/html'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='ai-ml-fundamentals-edited.html';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+}
+const editor = new Editor();
+</script>
+</body>
+</html>
