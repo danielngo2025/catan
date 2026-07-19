@@ -140,11 +140,11 @@
       <h2>📋 Optimal strategy (memorize this)</h2>
       <table>
         <tr><td>Pre-flop<br><span class="muted">bet 4×</span></td>
-            <td>Raise 4× with: any <b>pair 3-3+</b>, any <b>Ace</b>, <b>K</b> (any suited / K5o+), <b>Q</b> (Q6s+ / Q8o+), <b>J</b> (J8s+ / JTo+). Otherwise <b>check</b>. <span class="muted">3× is always worse than 4× — never use it.</span></td></tr>
+            <td>Raise 4× with: any pair 3-3+, any Ace, K (any suited / K5o+), Q (Q6s+ / Q8o+), J (J8s+ / JTo+). Otherwise check. <span class="muted">3× is always worse than 4× — never use it.</span></td></tr>
         <tr><td>Flop<br><span class="muted">bet 2×</span></td>
-            <td>Bet 2× with <b>two pair or better</b>, a <b>hidden pair</b> (you paired a hole card), or <b>4-to-a-flush with a hidden 10+</b>. Otherwise <b>check</b>.</td></tr>
+            <td>Bet 2× with two pair or better, a hidden pair (you paired a hole card), or 4-to-a-flush with a hidden 10+. Otherwise check.</td></tr>
         <tr><td>River<br><span class="muted">bet 1× / fold</span></td>
-            <td>Bet 1× unless the dealer beats you too often — trainer computes this <b>exactly</b> (all 990 dealer hands). Rule of thumb: raise with a <b>hidden pair or better</b>; fold when your hole cards don't beat the board.</td></tr>
+            <td>Bet 1× unless the dealer beats you too often — trainer computes this exactly (all 990 dealer hands). Rule of thumb: raise with a hidden pair or better; fold when your hole cards don't beat the board.</td></tr>
       </table>
     </div>
 
@@ -478,7 +478,7 @@ function showdown(folded){
 function updateSessionStats(){
   $("sHands").textContent=S.hands;
   $("sAcc").textContent=S.decisions? Math.round(100*S.correct/S.decisions)+"%" : "—";
-  $("sNet").textContent=(S.net>=0?"+":"")+S.net.toFixed(2);
+  $("sNet").textContent=(S.net>=0?"+":"")+(+S.net.toFixed(2));
   $("sEdge").textContent=S.hands? (-100*S.net/S.hands).toFixed(2)+"%" : "—";
   $("sEdge").style.color = S.net>=0? "var(--good)":"var(--bad)";
 }
