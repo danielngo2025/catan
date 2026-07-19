@@ -350,7 +350,7 @@ function renderTable(reveal){
                                   .concat([...Array(Math.max(0,5-(S.board.length)))].map(()=>'').join("")) : "";
   // placeholders for unrevealed community
   if(S.board){ let html=""; for(let i=0;i<5;i++) html+= (i<n)?cardHTML(S.board[i],true):'<div class="pcard back"></div>'; $("board").innerHTML=html; }
-  $("playerName").textContent = S.h && (S.phase!=="preflop"||reveal) ? handName(evalHand([...S.h,...S.board.slice(0, reveal?5:(S.phase==="flop"?3:0))])) : "";
+  $("playerName").textContent = (S.h && n>0) ? handName(evalHand([...S.h,...S.board.slice(0,n)])) : "";
   $("dealerName").textContent = reveal && S.dl ? handName(evalHand([...S.dl,...S.board])) : "";
 }
 
