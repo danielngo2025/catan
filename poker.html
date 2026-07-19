@@ -1,0 +1,567 @@
+<!-- Ultimate Texas Hold'em strategy trainer + Monte Carlo simulator. Single-file, no deps. -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ultimate Texas Hold'em · Visual Learn Lab</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14' fill='%233fce8f'>♠</text></svg>">
+<link rel="stylesheet" href="assets/site.css">
+<style>
+  :root{
+    --bg:#0e1726; --panel:#16233a; --panel2:#1d2f4d; --ink:#e8eef7; --muted:#93a4bf;
+    --line:#2b3f63; --accent:#f4b942; --good:#3fce8f; --bad:#ff6b6b; --felt:#0f5132;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;overflow:hidden}
+  .wrap{display:grid;grid-template-columns:minmax(520px,1fr) 400px;gap:14px;height:calc(100vh - var(--nav-h,52px));padding:14px}
+  @media(max-width:1000px){body{overflow:auto}.wrap{grid-template-columns:1fr;height:auto}}
+  .board-col{display:flex;flex-direction:column;gap:10px;min-width:0;min-height:0}
+  .side{display:flex;flex-direction:column;gap:12px;overflow:auto;padding-right:2px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}
+  h2{margin:0 0 8px;font-size:13px;letter-spacing:.5px;text-transform:uppercase;color:var(--muted)}
+  h1{margin:0;font-size:18px}
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+  .pill{background:var(--panel2);border:1px solid var(--line);border-radius:20px;padding:4px 12px;font-weight:600}
+  button{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-weight:600;cursor:pointer;font-size:13px}
+  button:hover:not(:disabled){border-color:var(--accent)}
+  button:disabled{opacity:.35;cursor:not-allowed}
+  button.primary{background:var(--accent);color:#241a00;border-color:var(--accent)}
+  button.good{background:var(--good);color:#062012;border-color:var(--good)}
+  button.bad{background:var(--bad);color:#2a0606;border-color:var(--bad)}
+  button.ghost{background:transparent}
+  .btnrow{display:flex;flex-wrap:wrap;gap:8px}
+  /* felt table */
+  .felt{background:radial-gradient(120% 140% at 50% -10%,#14663f,var(--felt));border:1px solid var(--line);border-radius:16px;padding:16px;flex:1 1 0;display:flex;flex-direction:column;justify-content:space-between;gap:10px;min-height:0}
+  .zone{display:flex;flex-direction:column;align-items:center;gap:6px}
+  .zone .zlabel{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#cfe9db;opacity:.85}
+  .hand{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;min-height:74px}
+  .pcard{width:52px;height:72px;border-radius:8px;background:#fbfbfd;color:#111;display:flex;flex-direction:column;justify-content:space-between;padding:5px 6px;font-weight:800;box-shadow:0 2px 6px #0005;font-size:17px}
+  .pcard.red{color:#c8102e}
+  .pcard .bot{align-self:flex-end;transform:rotate(180deg)}
+  .pcard.back{background:repeating-linear-gradient(45deg,#20406e,#20406e 6px,#1a3358 6px,#1a3358 12px);border:2px solid #2b3f63}
+  .pcard.dim{opacity:.28}
+  .handname{font-size:12px;color:#eafff4;font-weight:700;min-height:16px}
+  .banner{text-align:center;font-weight:800;font-size:16px;min-height:24px;letter-spacing:.3px}
+  .banner.win{color:#8dffc4} .banner.lose{color:#ff9d9d} .banner.push{color:#ffe08a}
+  .muted{color:var(--muted)}
+  .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .stat-box{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+  .stat-box b{display:block;font-size:19px} .stat-box span{font-size:11px;color:var(--muted)}
+  .hint{background:linear-gradient(180deg,#1a2c49,#16233a);border:1px solid var(--accent)}
+  .evrow{display:flex;align-items:center;gap:8px;margin:4px 0;font-size:13px}
+  .evrow .act{width:56px;font-weight:800}
+  .evbar{flex:1;height:14px;background:var(--panel2);border:1px solid var(--line);border-radius:7px;position:relative;overflow:hidden}
+  .evbar i{position:absolute;top:0;bottom:0;left:50%;background:var(--good)}
+  .evbar i.neg{background:var(--bad)}
+  .evrow .num{width:64px;text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+  .evrow.best .act{color:var(--accent)}
+  .chart{font-size:12.5px}
+  .chart table{width:100%;border-collapse:collapse}
+  .chart td{padding:3px 6px;border-top:1px solid var(--line);vertical-align:top}
+  .chart td:first-child{font-weight:800;white-space:nowrap;color:var(--accent);width:76px}
+  #log{height:120px;overflow:auto;font-size:12px;color:var(--muted);white-space:pre-wrap}
+  #log b{color:var(--ink)}
+  label.chk{display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px}
+  input[type=number]{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px;width:78px}
+  .tag{display:inline-block;font-size:11px;padding:1px 7px;border-radius:20px;background:var(--panel2);border:1px solid var(--line);color:var(--muted);margin-left:6px}
+  .tag.hi{color:var(--accent);border-color:var(--accent)}
+  .verdict{font-weight:800}
+  .verdict.ok{color:var(--good)} .verdict.no{color:var(--bad)}
+</style>
+
+<div id="site-nav"></div>
+
+<div class="wrap">
+  <div class="board-col">
+    <div class="card topbar">
+      <h1>♠ Ultimate Texas Hold'em <span class="muted" style="font-weight:400">Strategy Trainer</span></h1>
+      <div class="btnrow">
+        <span class="pill" id="phasePill">Ready</span>
+        <button class="primary" id="dealBtn">🂠 Deal hand</button>
+      </div>
+    </div>
+
+    <div class="felt">
+      <div class="zone">
+        <span class="zlabel">Dealer</span>
+        <div class="hand" id="dealerHand"></div>
+        <div class="handname" id="dealerName"></div>
+      </div>
+      <div class="zone">
+        <span class="zlabel">Community</span>
+        <div class="hand" id="board"></div>
+      </div>
+      <div class="banner" id="banner"></div>
+      <div class="zone">
+        <span class="zlabel">You</span>
+        <div class="hand" id="playerHand"></div>
+        <div class="handname" id="playerName"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="topbar" style="margin-bottom:8px">
+        <span class="muted" id="decisionPrompt">Press <b>Deal hand</b> to start. Ante + Blind are posted automatically (1 unit each).</span>
+      </div>
+      <div class="btnrow" id="actions"></div>
+    </div>
+  </div>
+
+  <div class="side">
+    <div class="card hint">
+      <h2>🎯 Coach · optimal move &amp; EV</h2>
+      <div id="coach">Deal a hand to get coaching. EVs are in units of your ante (1 unit = ante = blind).</div>
+    </div>
+
+    <div class="card">
+      <h2>📊 Your session</h2>
+      <div class="stat-grid">
+        <div class="stat-box"><b id="sHands">0</b><span>hands played</span></div>
+        <div class="stat-box"><b id="sAcc">—</b><span>optimal decisions</span></div>
+        <div class="stat-box"><b id="sNet">0.00</b><span>net units</span></div>
+        <div class="stat-box"><b id="sEdge">—</b><span>your house edge</span></div>
+      </div>
+      <label class="chk" style="margin-top:8px"><input type="checkbox" id="showHints" checked> Show coach hints before I act</label>
+      <label class="chk" style="margin-top:4px"><input type="checkbox" id="autoAdvance"> Auto-deal next hand after result</label>
+    </div>
+
+    <div class="card">
+      <h2>🧪 Simulate &amp; download data</h2>
+      <div class="btnrow" style="align-items:center">
+        <span class="muted">Hands</span>
+        <input id="simN" type="number" value="10000" min="100" max="200000">
+        <label class="chk"><input type="checkbox" id="simTrips"> +Trips bet</label>
+        <button id="simBtn" class="primary">⚡ Run &amp; download JSON</button>
+      </div>
+      <div id="simProgress" class="muted" style="margin-top:6px"></div>
+      <div id="simSummary" style="margin-top:6px"></div>
+    </div>
+
+    <div class="card chart">
+      <h2>📋 Optimal strategy (memorize this)</h2>
+      <table>
+        <tr><td>Pre-flop<br><span class="muted">bet 4×</span></td>
+            <td>Raise 4× with: any <b>pair 3-3+</b>, any <b>Ace</b>, <b>K</b> (any suited / K5o+), <b>Q</b> (Q6s+ / Q8o+), <b>J</b> (J8s+ / JTo+). Otherwise <b>check</b>. <span class="muted">3× is always worse than 4× — never use it.</span></td></tr>
+        <tr><td>Flop<br><span class="muted">bet 2×</span></td>
+            <td>Bet 2× with <b>two pair or better</b>, a <b>hidden pair</b> (you paired a hole card), or <b>4-to-a-flush with a hidden 10+</b>. Otherwise <b>check</b>.</td></tr>
+        <tr><td>River<br><span class="muted">bet 1× / fold</span></td>
+            <td>Bet 1× unless the dealer beats you too often — trainer computes this <b>exactly</b> (all 990 dealer hands). Rule of thumb: raise with a <b>hidden pair or better</b>; fold when your hole cards don't beat the board.</td></tr>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>Log</h2>
+      <div id="log"></div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/config.js"></script>
+<script src="assets/site.js"></script>
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+
+/* ============================================================
+   HAND EVALUATOR  (best 5 of up to 7 cards)
+   card int 0..51:  rank = 2 + (c % 13)  in 2..14 ,  suit = (c/13)|0
+   score packs category (0..8) then 5 kickers, base-15, higher = better.
+   ============================================================ */
+const P15=759375; // 15^5
+function straightHigh(mask){
+  let m=mask; if(m & (1<<14)) m|=1<<1;               // ace can be low
+  for(let hi=14;hi>=5;hi--){
+    let ok=true; for(let k=0;k<5;k++){ if(!(m & (1<<(hi-k)))){ok=false;break;} }
+    if(ok) return hi;
+  }
+  return 0;
+}
+function pack(cat,arr){ let s=cat; for(let i=0;i<5;i++) s=s*15+(arr[i]||0); return s; }
+function catOf(score){ return Math.floor(score/P15); }
+function topRanks(rc,excl,count){
+  const out=[]; for(let r=14;r>=2 && out.length<count;r--){ if(rc[r]>0 && excl.indexOf(r)<0) out.push(r); } return out;
+}
+function evalHand(cards){
+  const rc=new Array(15).fill(0); const suit=[[],[],[],[]]; let mask=0;
+  for(let i=0;i<cards.length;i++){ const c=cards[i], r=2+(c%13), s=(c/13)|0; rc[r]++; suit[s].push(r); mask|=1<<r; }
+  let fs=-1; for(let s=0;s<4;s++) if(suit[s].length>=5) fs=s;
+  if(fs>=0){ let fm=0; for(const r of suit[fs]) fm|=1<<r; const sh=straightHigh(fm); if(sh) return pack(8,[sh]); }
+  let quad=0; const trips=[],pairs=[];
+  for(let r=14;r>=2;r--){ if(rc[r]===4)quad=r; else if(rc[r]===3)trips.push(r); else if(rc[r]===2)pairs.push(r); }
+  if(quad) return pack(7,[quad, topRanks(rc,[quad],1)[0]]);
+  if(trips.length && (trips.length>1 || pairs.length)) return pack(6,[trips[0], trips.length>1?trips[1]:pairs[0]]);
+  if(fs>=0){ const t=suit[fs].slice().sort((a,b)=>b-a).slice(0,5); return pack(5,t); }
+  const sh=straightHigh(mask); if(sh) return pack(4,[sh]);
+  if(trips.length) return pack(3,[trips[0], ...topRanks(rc,[trips[0]],2)]);
+  if(pairs.length>=2) return pack(2,[pairs[0],pairs[1], topRanks(rc,[pairs[0],pairs[1]],1)[0]]);
+  if(pairs.length===1) return pack(1,[pairs[0], ...topRanks(rc,[pairs[0]],3)]);
+  return pack(0, topRanks(rc,[],5));
+}
+const CAT_NAME=["High card","Pair","Two pair","Three of a kind","Straight","Flush","Full house","Four of a kind","Straight flush"];
+function handName(score){
+  const c=catOf(score);
+  if(c===8 && Math.floor(score/(15*15*15*15))%15===14) return "Royal flush";
+  return CAT_NAME[c];
+}
+
+/* ---- payouts (units; ante = blind = 1) ---- */
+function blindPay(score){                 // paid only on a win, straight or better
+  const c=catOf(score);
+  if(c===8) return (Math.floor(score/(15*15*15*15))%15===14)?500:50;
+  if(c===7) return 10; if(c===6) return 3; if(c===5) return 1.5; if(c===4) return 1; return 0;
+}
+const TRIPS={8:50,7:30,6:8,5:7,4:4,3:3};  // approx common paytable; royal handled below
+function tripsPay(score){
+  const c=catOf(score);
+  if(c===8 && Math.floor(score/(15*15*15*15))%15===14) return 50;
+  if(c===8) return 40;                    // straight flush (non-royal)
+  return TRIPS[c]!==undefined && c>=3 ? TRIPS[c] : -1;
+}
+// net units for ante+blind+play given final scores and play multiplier (0 = folded already handled by caller)
+function resolve(ps,ds,play){
+  const dq=catOf(ds)>=1;                   // dealer needs a pair to qualify
+  if(ps>ds)      return play + (dq?1:0) + blindPay(ps);   // play 1:1, ante if dealer qualifies, blind bonus
+  if(ps<ds)      return -play - (dq?1:0) - 1;             // lose play, ante if dealer qualifies, blind
+  return 0;                                               // tie: everything pushes
+}
+
+/* ============================================================
+   STRATEGY  (near-optimal published rules; river is exact EV)
+   hole = [c1,c2] ints.  community = array of board ints.
+   ============================================================ */
+function rk(c){return 2+(c%13);} function su(c){return (c/13)|0;}
+function preflopRaise(h){
+  const a=rk(h[0]),b=rk(h[1]),hi=Math.max(a,b),lo=Math.min(a,b),suited=su(h[0])===su(h[1]);
+  if(a===b && a>=3) return true;           // pair 3s+
+  if(hi===14||lo===14) return true;        // any ace
+  if(hi===13) return suited? true : lo>=5; // K: any suited, K5o+
+  if(hi===12) return suited? lo>=6 : lo>=8;// Q6s+ / Q8o+
+  if(hi===11) return suited? lo>=8 : lo>=10;// J8s+ / JTo+
+  return false;
+}
+function hiddenPairOrBetter(h,comm){       // true if a pair uses >=1 hole card, or two-pair+
+  const score=evalHand([...h,...comm]); const c=catOf(score);
+  if(c>=2) return true;
+  if(c===1){
+    if(rk(h[0])===rk(h[1])) return true;   // pocket pair
+    for(const b of comm) if(rk(b)===rk(h[0])||rk(b)===rk(h[1])) return true; // paired the board
+  }
+  return false;
+}
+function flopRaise(h,flop3){
+  const five=[...h,...flop3], score=evalHand(five);
+  if(catOf(score)>=2) return true;
+  if(hiddenPairOrBetter(h,flop3)) return true;
+  // 4-to-a-flush including a hole card of rank 10+
+  const bySuit=[[],[],[],[]]; for(const c of five) bySuit[su(c)].push(c);
+  for(let s=0;s<4;s++) if(bySuit[s].length===4){
+    for(const c of h) if(su(c)===s && rk(c)>=10) return true;
+  }
+  return false;
+}
+// exact river decision: enumerate every 2-card dealer hand from the unseen deck
+function riverEV(h,board,deck){
+  const ps=evalHand([...h,...board]); let sum=0,n=0,beats=0;
+  for(let i=0;i<deck.length;i++) for(let j=i+1;j<deck.length;j++){
+    const ds=evalHand([deck[i],deck[j],...board]);
+    sum+=resolve(ps,ds,1); n++; if(ds>ps) beats++;
+  }
+  return {ev:sum/n, foldEv:-2, raise:(sum/n)>-2, dealerBeats:beats, combos:n};
+}
+
+/* ============================================================
+   DECK
+   ============================================================ */
+let RNG=Math.random;
+function freshDeck(){ const d=new Array(52); for(let i=0;i<52;i++)d[i]=i; return d; }
+function shuffle(d){ for(let i=d.length-1;i>0;i--){ const j=(RNG()*(i+1))|0; const t=d[i];d[i]=d[j];d[j]=t; } return d; }
+
+/* ============================================================
+   ONE HAND under optimal strategy (used by the batch simulator)
+   ============================================================ */
+function playOptimal(deck,withTrips){
+  const h=[deck[0],deck[1]], dl=[deck[2],deck[3]], board=deck.slice(4,9);
+  const unseen=deck.slice(4);              // board+dealer are "unseen" for river EV (45 cards excl. hole+board)
+  let play=0, street="check-fold", folded=false;
+  if(preflopRaise(h)){ play=4; street="preflop-4x"; }
+  else if(flopRaise(h,board.slice(0,3))){ play=2; street="flop-2x"; }
+  else {
+    // river: unseen deck excludes our 2 hole cards and the 5 board cards
+    const rem=deck.slice(9); // 43 dealer-unknown? -> need 45: exclude hole(2)+board(5)=7 -> 45 remain incl dealer's 2
+    const pool=deck.slice(2,4).concat(deck.slice(9)); // dealer's actual 2 + the 43 truly-unseen = 45 candidates
+    const ev=riverEV(h,board,pool);
+    if(ev.raise){ play=1; street="river-1x"; } else { folded=true; street="river-fold"; }
+  }
+  const ps=evalHand([...h,...board]), ds=evalHand([...dl,...board]);
+  let net = folded ? -2 : resolve(ps,ds,play);
+  const wager = folded ? 2 : 2+play;
+  let outcome = folded ? "fold" : (ps>ds?"win":(ps<ds?"loss":"push"));
+  let trips=0; if(withTrips){ trips=tripsPay(ps); net+=trips; }
+  return {street,play,net,wager,outcome,folded,playerCat:catOf(ps),dealerCat:catOf(ds),
+          playerHand:handName(ps), tripsNet:trips};
+}
+
+/* ============================================================
+   LIVE COACH — Monte Carlo EV for pre-flop / flop, exact for river
+   ============================================================ */
+// EV of an action by Monte Carlo. Raise actions terminate the hand (exact).
+// The 'check' branch plays downstream with the SAME policy the sim uses
+// (flopRaise heuristic + EXACT river decision) so its EV isn't biased.
+function mcActionEV(h, knownBoard, action, deckUnseen, samples){
+  // action: '4x','3x','check' (preflop, knownBoard=[]) or '2x','check' (flop, knownBoard=flop3)
+  let sum=0;
+  for(let s=0;s<samples;s++){
+    for(let i=deckUnseen.length-1;i>0;i--){ const j=(RNG()*(i+1))|0; const t=deckUnseen[i];deckUnseen[i]=deckUnseen[j];deckUnseen[j]=t; }
+    const need=5-knownBoard.length;
+    const board=knownBoard.concat(deckUnseen.slice(0,need));
+    const dl=[deckUnseen[need],deckUnseen[need+1]];
+    const ps=evalHand([...h,...board]), ds=evalHand([...dl,...board]);
+    if(action==='4x'){ sum+=resolve(ps,ds,4); continue; }
+    if(action==='3x'){ sum+=resolve(ps,ds,3); continue; }
+    if(action==='2x'){ sum+=resolve(ps,ds,2); continue; }
+    // check: cards unseen to the player for a river decision = everything except hole+full board
+    const rest=deckUnseen.slice(need);      // 45 candidate dealer cards (incl. the sampled dealer)
+    if(knownBoard.length===0 && flopRaise(h,board.slice(0,3))){ sum+=resolve(ps,ds,2); continue; }
+    sum += riverEV(h,board,rest).raise ? resolve(ps,ds,1) : -2;   // exact river fold/call
+  }
+  return sum/samples;
+}
+
+/* ============================================================
+   UI STATE
+   ============================================================ */
+const S={deck:null,h:null,dl:null,board:null,phase:"idle",play:0,
+         hands:0,net:0,correct:0,decisions:0,wager:0};
+function log(msg){ const el=$("log"); el.innerHTML=msg+"<br>"+el.innerHTML; }
+
+function suitSym(s){ return ["♠","♥","♦","♣"][s]; }
+function rankLbl(r){ return r<=9?String(r):(r===10?"10":{11:"J",12:"Q",13:"K",14:"A"}[r]); }
+function cardHTML(c,faceUp,dim){
+  if(!faceUp) return '<div class="pcard back"></div>';
+  const s=su(c), red=(s===1||s===2);
+  const lbl=rankLbl(rk(c))+suitSym(s);
+  return '<div class="pcard'+(red?' red':'')+(dim?' dim':'')+'"><span class="top">'+lbl+'</span><span class="bot">'+lbl+'</span></div>';
+}
+function renderTable(reveal){
+  $("playerHand").innerHTML = S.h? S.h.map(c=>cardHTML(c,true)).join("") : "";
+  $("dealerHand").innerHTML = S.dl? S.dl.map(c=>cardHTML(c,reveal)).join("") : "";
+  const shown = S.phase==="preflop"?0 : S.phase==="flop"?3 : 5;
+  const n = reveal?5:shown;
+  $("board").innerHTML = S.board? S.board.map((c,i)=>cardHTML(c,i<n,false)).join("")
+                                  .concat([...Array(Math.max(0,5-(S.board.length)))].map(()=>'').join("")) : "";
+  // placeholders for unrevealed community
+  if(S.board){ let html=""; for(let i=0;i<5;i++) html+= (i<n)?cardHTML(S.board[i],true):'<div class="pcard back"></div>'; $("board").innerHTML=html; }
+  $("playerName").textContent = S.h && (S.phase!=="preflop"||reveal) ? handName(evalHand([...S.h,...S.board.slice(0, reveal?5:(S.phase==="flop"?3:0))])) : "";
+  $("dealerName").textContent = reveal && S.dl ? handName(evalHand([...S.dl,...S.board])) : "";
+}
+
+/* ---- coach panel ---- */
+function unseenFor(){ // remaining deck excluding hole + already-shown board (dealer unknown to player)
+  const shown = S.phase==="preflop"?0 : S.phase==="flop"?3 : 5;
+  const used=new Set([...S.h, ...S.board.slice(0,shown)]);
+  const rem=[]; for(let c=0;c<52;c++) if(!used.has(c)) rem.push(c);
+  return rem;
+}
+function coach(){
+  if(!$("showHints").checked){ $("coach").innerHTML='<span class="muted">Hints hidden. You\'re flying blind — good practice!</span>'; return null; }
+  const box=$("coach");
+  if(S.phase==="preflop"){
+    const unseen=unseenFor();
+    const best = preflopRaise(S.h) ? '4x' : 'check';        // recommendation = taught strategy
+    const ev4=mcActionEV(S.h,[],'4x',unseen.slice(),9000);
+    const evc=mcActionEV(S.h,[],'check',unseen.slice(),900);
+    renderEV(box,[["4x",ev4],["3x",ev4*3/4/*never optimal; shown scaled for intuition*/,true],["check",evc]],best,
+      best==='4x'?"Raise the max (4×). 3× is strictly worse — you never bet 3×.":"Check and see the flop for free.");
+    return best;
+  }
+  if(S.phase==="flop"){
+    const unseen=unseenFor();
+    const best = flopRaise(S.h,S.board.slice(0,3)) ? '2x' : 'check';
+    const ev2=mcActionEV(S.h,S.board.slice(0,3),'2x',unseen.slice(),9000);
+    const evc=mcActionEV(S.h,S.board.slice(0,3),'check',unseen.slice(),1000);
+    renderEV(box,[["2x",ev2],["check",evc]],best, best==='2x'?"Bet 2× — you're ahead often enough.":"Check to the river and reassess for free.");
+    return best;
+  }
+  if(S.phase==="river"){
+    const unseen=unseenFor();
+    const r=riverEV(S.h,S.board,unseen);
+    const best=r.raise?'1x':'fold';
+    renderEV(box,[["1x",r.ev],["fold",-2]],best,
+      "Exact: dealer beats you in <b>"+r.dealerBeats+"</b> of "+r.combos+" hands ("+(100*r.dealerBeats/r.combos).toFixed(1)+"%). "+
+      (r.raise?"Betting 1× wins more than folding.":"Fold — betting loses more than the 2 units you save."));
+    return best;
+  }
+  return null;
+}
+function renderEV(box,rows,best,note){
+  const mx=Math.max(1.5,...rows.map(r=>Math.abs(r[1])));
+  let html="";
+  for(const [a,ev,faded] of rows){
+    const w=Math.min(50,50*Math.abs(ev)/mx), neg=ev<0;
+    html+='<div class="evrow'+(a===best?' best':'')+'" style="'+(faded?'opacity:.5':'')+'">'+
+      '<span class="act">'+a.toUpperCase()+(a===best?' ✓':'')+'</span>'+
+      '<span class="evbar"><i class="'+(neg?'neg':'')+'" style="'+(neg?'right:50%':'left:50%')+';width:'+w+'%"></i></span>'+
+      '<span class="num" style="color:'+(ev>=0?'var(--good)':'var(--bad)')+'">'+(ev>=0?'+':'')+ev.toFixed(3)+'</span></div>';
+  }
+  html+='<div style="margin-top:8px;font-size:12.5px"><b>Optimal: '+best.toUpperCase()+'</b> — '+note+'</div>';
+  box.innerHTML=html;
+}
+
+/* ---- actions ---- */
+function setActions(list){ $("actions").innerHTML=""; for(const [label,cls,fn] of list){ const b=document.createElement("button"); b.textContent=label; if(cls)b.className=cls; b.onclick=fn; $("actions").appendChild(b);} }
+function deal(){
+  S.deck=shuffle(freshDeck());
+  S.h=[S.deck[0],S.deck[1]]; S.dl=[S.deck[2],S.deck[3]]; S.board=S.deck.slice(4,9);
+  S.phase="preflop"; S.play=0;
+  $("banner").className="banner"; $("banner").textContent="";
+  $("phasePill").textContent="Pre-flop";
+  $("decisionPrompt").innerHTML="Your hole cards. Bet <b>4×</b>, or <b>check</b> to see the flop free. (3× exists but is never correct.)";
+  renderTable(false);
+  const rec=coach();
+  setActions([
+    ["Bet 4×","primary",()=>decide('4x',rec)],
+    ["Bet 3×","",()=>decide('3x',rec)],
+    ["Check","ghost",()=>decide('check',rec)],
+  ]);
+}
+function decide(choice,recommended){
+  // score decision correctness against coach recommendation (compute recommendation even if hints hidden)
+  let rec=recommended;
+  if(rec==null){ // hints were off — compute the optimal now for scoring
+    if(S.phase==="preflop") rec = preflopRaise(S.h)?'4x':'check';
+    else if(S.phase==="flop") rec = flopRaise(S.h,S.board.slice(0,3))?'2x':'check';
+    else rec = riverEV(S.h,S.board,unseenFor()).raise?'1x':'fold';
+  }
+  S.decisions++; const ok = (choice===rec) || (choice==='3x'&&false);
+  if(ok) S.correct++;
+  const verdict = ok? '<span class="verdict ok">✓ optimal</span>' : '<span class="verdict no">✗ optimal was '+rec.toUpperCase()+'</span>';
+
+  if(S.phase==="preflop"){
+    if(choice==='4x'||choice==='3x'){ S.play=(choice==='4x'?4:3); log("Pre-flop: bet "+choice+" "+verdict); return showdown(); }
+    log("Pre-flop: check "+verdict); S.phase="flop"; $("phasePill").textContent="Flop";
+    $("decisionPrompt").innerHTML="Flop is out. Bet <b>2×</b>, or <b>check</b> to the river.";
+    renderTable(false); const r=coach();
+    setActions([["Bet 2×","primary",()=>decide('2x',r)],["Check","ghost",()=>decide('check',r)]]);
+    return;
+  }
+  if(S.phase==="flop"){
+    if(choice==='2x'){ S.play=2; log("Flop: bet 2× "+verdict); return showdown(); }
+    log("Flop: check "+verdict); S.phase="river"; $("phasePill").textContent="River";
+    $("decisionPrompt").innerHTML="Last chance. Bet <b>1×</b>, or <b>fold</b> (lose ante + blind).";
+    renderTable(false); const r=coach();
+    setActions([["Bet 1×","good",()=>decide('1x',r)],["Fold","bad",()=>decide('fold',r)]]);
+    return;
+  }
+  // river
+  if(choice==='fold'){ S.play=0; log("River: fold "+verdict); return showdown(true); }
+  S.play=1; log("River: bet 1× "+verdict); return showdown();
+}
+function showdown(folded){
+  S.phase="showdown"; $("phasePill").textContent="Showdown";
+  renderTable(true);
+  const ps=evalHand([...S.h,...S.board]), ds=evalHand([...S.dl,...S.board]);
+  let net = folded? -2 : resolve(ps,ds,S.play);
+  const wager = folded?2:2+S.play;
+  S.hands++; S.net+=net; S.wager+=wager;
+  let cls,txt;
+  if(folded){ cls="lose"; txt="Folded — lost 2 units (ante + blind)."; }
+  else if(net>0){ cls="win"; txt="You win +"+net.toFixed(1)+" units!"; }
+  else if(net<0){ cls="lose"; txt="You lose "+net.toFixed(1)+" units."; }
+  else { cls="push"; txt="Push — bets returned."; }
+  const dq=catOf(ds)>=1;
+  $("banner").className="banner "+cls;
+  $("banner").textContent=txt+(dq?"":"  (dealer didn't qualify — ante pushes)");
+  $("coach").innerHTML='<b>'+handName(ps)+'</b> vs dealer <b>'+handName(ds)+'</b>. Net this hand: <b style="color:'+(net>=0?'var(--good)':'var(--bad)')+'">'+(net>=0?'+':'')+net.toFixed(2)+'</b> units.';
+  updateSessionStats();
+  setActions([["🂠 Deal next hand","primary",deal]]);
+  if($("autoAdvance").checked) setTimeout(deal,1400);
+}
+function updateSessionStats(){
+  $("sHands").textContent=S.hands;
+  $("sAcc").textContent=S.decisions? Math.round(100*S.correct/S.decisions)+"%" : "—";
+  $("sNet").textContent=(S.net>=0?"+":"")+S.net.toFixed(2);
+  $("sEdge").textContent=S.hands? (-100*S.net/S.hands).toFixed(2)+"%" : "—";
+  $("sEdge").style.color = S.net>=0? "var(--good)":"var(--bad)";
+}
+
+/* ============================================================
+   BATCH SIMULATION → JSON
+   ============================================================ */
+function isoStamp(){ return new Date().toISOString().replace(/[:.]/g,"-"); }
+function downloadJSON(name,obj){
+  const blob=new Blob([JSON.stringify(obj,null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a"); a.href=url; a.download=name; document.body.appendChild(a); a.click();
+  setTimeout(()=>{URL.revokeObjectURL(url);a.remove();},1000);
+}
+async function runSim(n,withTrips){
+  const btn=$("simBtn"); btn.disabled=true;
+  const agg={hands:0,net:0,wager:0,tripsNet:0,wins:0,losses:0,pushes:0,folds:0,
+             decisions:{"preflop-4x":0,"flop-2x":0,"river-1x":0,"river-fold":0},
+             playerCat:new Array(9).fill(0)};
+  const sample=[]; const CAP=2000;
+  const deck=freshDeck();
+  for(let i=0;i<n;i++){
+    shuffle(deck);
+    const r=playOptimal(deck,withTrips);
+    agg.hands++; agg.net+=r.net; agg.wager+=r.wager; agg.tripsNet+=r.tripsNet;
+    if(r.outcome==="win")agg.wins++; else if(r.outcome==="loss")agg.losses++; else if(r.outcome==="push")agg.pushes++; else agg.folds++;
+    agg.decisions[r.street]!==undefined && agg.decisions[r.street]++;
+    agg.playerCat[r.playerCat]++;
+    if(sample.length<CAP) sample.push({street:r.street,play:r.play,net:+r.net.toFixed(2),outcome:r.outcome,hand:r.playerHand});
+    if(i%1500===0){ $("simProgress").textContent="Simulating… "+(i+1)+"/"+n; await new Promise(r=>setTimeout(r,0)); }
+  }
+  const retPerHand=agg.net/agg.hands;
+  const summary={
+    hands:agg.hands,
+    netUnits:+agg.net.toFixed(2),
+    returnPerHand:+retPerHand.toFixed(5),
+    houseEdgePct:+(-100*retPerHand).toFixed(3),                 // net per ante
+    elementOfRiskPct:+(-100*agg.net/agg.wager).toFixed(3),      // net per unit wagered
+    avgUnitsWagered:+(agg.wager/agg.hands).toFixed(3),
+    winPct:+(100*agg.wins/agg.hands).toFixed(2),
+    pushPct:+(100*agg.pushes/agg.hands).toFixed(2),
+    lossPct:+(100*(agg.losses)/agg.hands).toFixed(2),
+    foldPct:+(100*agg.folds/agg.hands).toFixed(2),
+    decisionCounts:agg.decisions,
+    decisionPct:{
+      "preflop-4x":+(100*agg.decisions["preflop-4x"]/agg.hands).toFixed(2),
+      "flop-2x":+(100*agg.decisions["flop-2x"]/agg.hands).toFixed(2),
+      "river-1x":+(100*agg.decisions["river-1x"]/agg.hands).toFixed(2),
+      "river-fold":+(100*agg.decisions["river-fold"]/agg.hands).toFixed(2),
+    },
+    handCategoryDist:CAT_NAME.reduce((o,name,i)=>(o[name]=agg.playerCat[i],o),{}),
+    tripsNetUnits: withTrips? +agg.tripsNet.toFixed(2) : null,
+  };
+  const out={
+    game:"Ultimate Texas Hold'em",
+    generatedAt:new Date().toISOString(),
+    params:{hands:n, strategy:"near-optimal (4x/2x rules, exact-EV river fold)", tripsBet:withTrips,
+            blindPaytable:{royalFlush:500,straightFlush:50,fourOfAKind:10,fullHouse:3,flush:1.5,straight:1},
+            note:"units: ante = blind = 1. House edge is net per ante; element of risk is net per unit wagered."},
+    summary,
+    sampleHands:sample,
+  };
+  const fname="uth-sim-"+n+"hands-"+isoStamp()+".json";
+  downloadJSON(fname,out);
+  $("simProgress").textContent="Done — "+n+" hands. JSON downloaded ("+fname+").";
+  $("simSummary").innerHTML=
+    '<div class="stat-grid">'+
+    '<div class="stat-box"><b style="color:'+(summary.houseEdgePct<=3?"var(--good)":"var(--bad)")+'">'+summary.houseEdgePct+'%</b><span>house edge (per ante)</span></div>'+
+    '<div class="stat-box"><b>'+summary.elementOfRiskPct+'%</b><span>element of risk</span></div>'+
+    '<div class="stat-box"><b>'+summary.winPct+'%</b><span>hands won</span></div>'+
+    '<div class="stat-box"><b>'+summary.foldPct+'%</b><span>hands folded</span></div>'+
+    '</div>'+
+    '<div class="muted" style="margin-top:6px">Raise 4× pre-flop on '+summary.decisionPct["preflop-4x"]+'% of hands · bet 2× flop on '+summary.decisionPct["flop-2x"]+'% · reach river &amp; bet 1× on '+summary.decisionPct["river-1x"]+'%. Optimal UTH edge ≈ 2.19% — your sim should land near it.</div>';
+  log("Simulated <b>"+n+"</b> hands → house edge <b>"+summary.houseEdgePct+"%</b>, element of risk "+summary.elementOfRiskPct+"%.");
+  btn.disabled=false;
+}
+
+/* ============================================================
+   WIRE UP
+   ============================================================ */
+$("dealBtn").onclick=deal;
+$("showHints").onchange=()=>{ if(S.phase!=="idle"&&S.phase!=="showdown") coach(); };
+$("simBtn").onclick=()=>{ const n=Math.max(100,Math.min(200000,+$("simN").value||10000)); runSim(n,$("simTrips").checked); };
+updateSessionStats();
+log("Ready. <b>Deal a hand</b> to train, or run a simulation to generate your JSON dataset.");
+</script>

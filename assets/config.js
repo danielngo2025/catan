@@ -16,6 +16,8 @@ window.SITE = {
   topics: [
     { path: "catan.html",   title: "Catan Strategy",   emoji: "⬢", group: "Games",
       blurb: "Play Settlers of Catan against AI with a live win-strategy coach and run bulk simulations." },
+    { path: "poker.html",   title: "Ultimate Texas Hold'em", emoji: "♠", group: "Games",
+      blurb: "Learn when to bet 4×, 2× or fold vs the dealer with a live optimal-move coach, then simulate thousands of hands to a JSON dataset." },
     { path: "goal.html",    title: "The Goal",          emoji: "🏭", group: "Productivity",
       blurb: "Goldratt's Theory of Constraints — tune a production line and watch the bottleneck rule throughput." },
     { path: "feynman.html", title: "Feynman Technique", emoji: "🧠", group: "Productivity",
