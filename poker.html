@@ -137,13 +137,13 @@
     <div class="card">
       <h2>🚪 Session &amp; exit coach</h2>
       <div class="exit-inputs">
-        <label>Win goal <input id="winGoal" type="number" value="10" min="1" step="1"><span class="muted">u</span></label>
-        <label>Loss limit <input id="lossLimit" type="number" value="40" min="1" step="1"><span class="muted">u</span></label>
+        <label>Win goal <input id="winGoal" type="number" value="30" min="1" step="1"><span class="muted">u</span></label>
+        <label>Loss limit <input id="lossLimit" type="number" value="30" min="1" step="1"><span class="muted">u</span></label>
         <label>Ante $ <input id="anteUsd" type="number" value="0" min="0" step="1" placeholder="opt"></label>
       </div>
       <div id="exitStatus" class="exit-status">Set your limits, then deal. 1 unit = 1 ante.</div>
       <div class="exit-track"><span id="exitMarker" style="left:50%"></span></div>
-      <div class="exit-scale"><span id="exitLo">−40u</span><span>0</span><span id="exitHi">+10u</span></div>
+      <div class="exit-scale"><span id="exitLo">−30u</span><span>0</span><span id="exitHi">+30u</span></div>
       <div id="exitProb" class="muted exit-prob" style="margin-top:6px"></div>
     </div>
 
@@ -518,7 +518,7 @@ function pReachGoal(x,W,L){
   return Math.max(0,Math.min(1,(phi(x)-phi(-L))/(phi(W)-phi(-L))));
 }
 function renderExit(){
-  const W=Math.max(1,+$("winGoal").value||10), L=Math.max(1,+$("lossLimit").value||40);
+  const W=Math.max(1,+$("winGoal").value||30), L=Math.max(1,+$("lossLimit").value||30);
   const x=S.net, usd=+$("anteUsd").value||0;
   const money=v=> usd>0 ? " ($"+Math.round(v*usd)+")" : "";
   $("exitLo").textContent="−"+L+"u"; $("exitHi").textContent="+"+W+"u";
