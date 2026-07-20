@@ -75,6 +75,20 @@
   td.H,td.S,td.D,td.P{color:#fff;font-weight:800}
   .legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--muted);margin-top:6px}
   .legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+  /* counting drill modal */
+  .modal{position:fixed;inset:0;background:#0009;display:flex;align-items:center;justify-content:center;z-index:50}
+  .modal-card{background:var(--panel);border:1px solid var(--accent);border-radius:14px;padding:18px;width:min(520px,92vw);max-height:92vh;overflow:auto}
+  .modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .modal-head h2{margin:0;color:var(--ink);text-transform:none;letter-spacing:0;font-size:16px}
+  .drill-opts{display:flex;flex-direction:column;gap:8px;margin:12px 0}
+  .drill-opts label{display:flex;align-items:center;gap:8px;font-size:13px}
+  .drill-opts select{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px}
+  .drill-card-area{display:flex;gap:16px;justify-content:center;align-items:center;min-height:150px;margin:8px 0}
+  .drill-card{width:96px;height:134px;border-radius:12px;background:#fbfbfd;color:#111;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:46px;box-shadow:0 4px 12px #0006}
+  .drill-card.red{color:#c8102e}
+  .drill-answer-row{display:flex;gap:8px;align-items:center;margin:10px 0}
+  .drill-answer-row input{width:110px;font-size:16px;text-align:center}
+  .drill-big{font-weight:800;font-size:18px}
   #log{height:110px;overflow:auto;font-size:12px;color:var(--muted);white-space:pre-wrap}
   #log b{color:var(--ink)}
   label.chk{display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px}
@@ -130,6 +144,7 @@
       </div>
       <div class="edgebar"><span id="edgeMarker" style="left:16.7%"></span></div>
       <div id="edgeText" class="muted" style="margin-top:6px"></div>
+      <button id="drillBtn" style="margin-top:10px;width:100%">🎯 Practice counting (drill)</button>
     </div>
 
     <div class="card">
@@ -187,6 +202,48 @@
     <div class="card">
       <h2>Log</h2>
       <div id="log"></div>
+    </div>
+  </div>
+</div>
+
+<div id="drillModal" class="modal" style="display:none">
+  <div class="modal-card">
+    <div class="modal-head"><h2>🎯 Counting drill</h2><button id="drillClose" class="ghost">✕ Close</button></div>
+
+    <div id="drillSetup">
+      <p class="muted">Cards flash one at a time — the count is <b>hidden</b>. Keep the Hi-Lo running count in your head (2–6 = +1, 7–9 = 0, 10–A = −1). When they stop, type the count.</p>
+      <div class="drill-opts">
+        <label>Speed
+          <select id="drillSpeed">
+            <option value="2000">Slow — 2.0s / card</option>
+            <option value="1500">1.5s / card</option>
+            <option value="1000" selected>Casino — 1.0s / card</option>
+            <option value="700">Fast — 0.7s / card</option>
+            <option value="450">Pro — 0.45s / card</option>
+          </select>
+        </label>
+        <label>Cards
+          <select id="drillCount"><option>20</option><option selected>30</option><option>52</option></select>
+        </label>
+        <label class="chk"><input type="checkbox" id="drillPairs"> Deal in pairs (practice cancelling +1/−1)</label>
+      </div>
+      <button id="drillStart" class="primary">Start drill</button>
+      <div id="drillStats" class="muted" style="margin-top:10px"></div>
+    </div>
+
+    <div id="drillRun" style="display:none">
+      <div id="drillCardArea" class="drill-card-area"></div>
+      <div id="drillProgress" class="muted" style="text-align:center"></div>
+    </div>
+
+    <div id="drillAnswer" style="display:none">
+      <p>All <b id="drillTotal"></b> cards shown. What's the running count?</p>
+      <div class="drill-answer-row">
+        <input id="drillGuess" type="number" placeholder="± count">
+        <button id="drillSubmit" class="primary">Check</button>
+      </div>
+      <div id="drillResult"></div>
+      <button id="drillAgain" class="ghost" style="display:none;margin-top:10px">↻ Drill again</button>
     </div>
   </div>
 </div>
@@ -555,10 +612,54 @@ function renderChart(tab){
 }
 
 /* ============================================================
+   COUNTING DRILL — flash cards, keep the count hidden, then verify
+   ============================================================ */
+const DRILL={cards:[],idx:0,count:0,timer:null,attempts:0,correct:0};
+function fmt(n){ return (n>0?"+":"")+n; }
+function drillCardHTML(r){ return '<div class="drill-card'+(r%3===0?' red':'')+'">'+rankLbl(r)+'</div>'; }
+function showDrillPane(which){ for(const p of ["drillSetup","drillRun","drillAnswer"]) $(p).style.display = p===which?"":"none"; }
+function openDrill(){ $("drillModal").style.display="flex"; showDrillPane("drillSetup");
+  $("drillStats").innerHTML = DRILL.attempts? "Your drills: <b>"+DRILL.attempts+"</b> · accuracy <b>"+Math.round(100*DRILL.correct/DRILL.attempts)+"%</b>" : "First drill — start slow, then speed up."; }
+function closeDrill(){ if(DRILL.timer){clearTimeout(DRILL.timer);DRILL.timer=null;} $("drillModal").style.display="none"; }
+function startDrill(){
+  const n=+$("drillCount").value||30, deck=[];
+  for(let r=2;r<=14;r++)for(let s=0;s<4;s++)deck.push(r); shuffle(deck);
+  DRILL.cards=deck.slice(0,n); DRILL.idx=0; DRILL.count=0;
+  DRILL.speed=+$("drillSpeed").value||1000; DRILL.pairs=$("drillPairs").checked;
+  showDrillPane("drillRun"); tickDrill();
+}
+function tickDrill(){
+  if(DRILL.idx>=DRILL.cards.length){ DRILL.timer=null; return drillAsk(); }
+  const step=DRILL.pairs?2:1; let html="";
+  for(let k=0;k<step && DRILL.idx<DRILL.cards.length;k++){ const r=DRILL.cards[DRILL.idx++]; DRILL.count+=tag(r); html+=drillCardHTML(r); }
+  $("drillCardArea").innerHTML=html;
+  $("drillProgress").textContent=DRILL.idx+" / "+DRILL.cards.length+" cards";
+  DRILL.timer=setTimeout(tickDrill,DRILL.speed);
+}
+function drillAsk(){ showDrillPane("drillAnswer"); $("drillTotal").textContent=DRILL.cards.length;
+  $("drillResult").innerHTML=""; $("drillAgain").style.display="none"; $("drillGuess").value=""; $("drillGuess").focus(); }
+function drillCheck(){
+  const guess=parseInt($("drillGuess").value,10);
+  if(isNaN(guess)){ $("drillResult").innerHTML='<div class="muted">Type a number first.</div>'; return; }
+  DRILL.attempts++; const right=guess===DRILL.count; if(right)DRILL.correct++;
+  $("drillResult").innerHTML = right
+    ? '<div class="drill-big" style="color:var(--good)">✓ Correct! Running count = '+fmt(DRILL.count)+'</div>'
+    : '<div class="drill-big" style="color:var(--bad)">✗ You said '+fmt(guess)+', actual = '+fmt(DRILL.count)+' (off by '+Math.abs(guess-DRILL.count)+')</div>'
+      +'<div class="muted" style="margin-top:4px">Slow the speed down until you\'re accurate, then ramp up.</div>';
+  $("drillAgain").style.display="";
+}
+
+/* ============================================================
    WIRE UP
    ============================================================ */
 $("dealBtn").onclick=deal;
 $("shuffleBtn").onclick=newShoe;
+$("drillBtn").onclick=openDrill;
+$("drillClose").onclick=closeDrill;
+$("drillStart").onclick=startDrill;
+$("drillSubmit").onclick=drillCheck;
+$("drillAgain").onclick=()=>showDrillPane("drillSetup")||openDrill();
+$("drillGuess").addEventListener("keydown",e=>{ if(e.key==="Enter")drillCheck(); });
 $("showHints").onchange=()=>{ if(S.phase==="player") coach(); };
 $("simBtn").onclick=()=>{ const n=Math.max(500,Math.min(500000,+$("simN").value||20000)); runSim(n,$("simSpread").checked); };
 ["winGoal","lossLimit","anteUsd"].forEach(id=>$(id).addEventListener("input",renderExit));
