@@ -1,0 +1,570 @@
+<!-- Blackjack basic-strategy trainer + Hi-Lo card counting + Monte Carlo simulator. Single-file, no deps. -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Blackjack Strategy &amp; Card Counting · Visual Learn Lab</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14' fill='%233fce8f'>🃏</text></svg>">
+<link rel="stylesheet" href="assets/site.css">
+<style>
+  :root{
+    --bg:#0e1726; --panel:#16233a; --panel2:#1d2f4d; --ink:#e8eef7; --muted:#93a4bf;
+    --line:#2b3f63; --accent:#f4b942; --good:#3fce8f; --bad:#ff6b6b; --felt:#0f5132;
+    --hit:#c74b4b; --stand:#3f8c5a; --dbl:#3f7fce; --split:#9b6fce;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;overflow:hidden}
+  .wrap{display:grid;grid-template-columns:minmax(520px,1fr) 400px;gap:14px;height:calc(100vh - var(--nav-h,52px));padding:14px}
+  @media(max-width:1000px){body{overflow:auto}.wrap{grid-template-columns:1fr;height:auto}}
+  .board-col{display:flex;flex-direction:column;gap:10px;min-width:0;min-height:0}
+  .side{display:flex;flex-direction:column;gap:12px;overflow:auto;padding-right:2px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}
+  h2{margin:0 0 8px;font-size:13px;letter-spacing:.5px;text-transform:uppercase;color:var(--muted)}
+  h1{margin:0;font-size:18px}
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+  .pill{background:var(--panel2);border:1px solid var(--line);border-radius:20px;padding:4px 12px;font-weight:600}
+  button{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-weight:600;cursor:pointer;font-size:13px}
+  button:hover:not(:disabled){border-color:var(--accent)}
+  button:disabled{opacity:.35;cursor:not-allowed}
+  button.primary{background:var(--accent);color:#241a00;border-color:var(--accent)}
+  button.ghost{background:transparent}
+  .btnrow{display:flex;flex-wrap:wrap;gap:8px}
+  .felt{background:radial-gradient(120% 140% at 50% -10%,#14663f,var(--felt));border:1px solid var(--line);border-radius:16px;padding:16px;flex:1 1 0;display:flex;flex-direction:column;justify-content:space-between;gap:10px;min-height:0}
+  .zone{display:flex;flex-direction:column;align-items:center;gap:6px}
+  .zone .zlabel{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#cfe9db;opacity:.85}
+  .hands{display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
+  .seat{display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px;border-radius:10px;border:2px solid transparent}
+  .seat.active{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+  .hand{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;min-height:74px}
+  .pcard{width:50px;height:70px;border-radius:8px;background:#fbfbfd;color:#111;display:flex;flex-direction:column;justify-content:space-between;padding:5px 6px;font-weight:800;box-shadow:0 2px 6px #0005;font-size:16px}
+  .pcard.red{color:#c8102e}
+  .pcard .bot{align-self:flex-end;transform:rotate(180deg)}
+  .pcard.back{background:repeating-linear-gradient(45deg,#20406e,#20406e 6px,#1a3358 6px,#1a3358 12px);border:2px solid #2b3f63}
+  .handmeta{font-size:12px;color:#eafff4;font-weight:700;min-height:16px}
+  .handmeta .bet{color:var(--accent)}
+  .banner{text-align:center;font-weight:800;font-size:16px;min-height:24px}
+  .banner.win{color:#8dffc4} .banner.lose{color:#ff9d9d} .banner.push{color:#ffe08a}
+  .muted{color:var(--muted)}
+  .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .stat-box{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+  .stat-box b{display:block;font-size:19px} .stat-box span{font-size:11px;color:var(--muted)}
+  .hint{background:linear-gradient(180deg,#1a2c49,#16233a);border:1px solid var(--accent)}
+  .bigmove{font-size:22px;font-weight:800;letter-spacing:.5px}
+  .count-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center}
+  .count-grid .cell b{display:block;font-size:20px} .count-grid .cell span{font-size:11px;color:var(--muted)}
+  .edgebar{height:14px;border-radius:7px;border:1px solid var(--line);margin-top:8px;position:relative;background:linear-gradient(90deg,var(--bad),#caa23a 50%,var(--good))}
+  .edgebar span{position:absolute;top:-4px;width:3px;height:22px;background:#fff;border-radius:2px;transform:translateX(-50%);box-shadow:0 0 4px #000;transition:left .3s}
+  /* exit coach */
+  .exit-inputs{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+  .exit-inputs label{display:flex;align-items:center;gap:5px;font-size:12.5px}
+  .exit-inputs input{width:56px}
+  input[type=number]{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px;width:78px}
+  .exit-status{font-weight:700;min-height:20px;font-size:13px}
+  .exit-status.win{color:var(--good)} .exit-status.lose{color:var(--bad)}
+  .exit-track{position:relative;height:16px;border-radius:8px;margin:8px 0 4px;border:1px solid var(--line);background:linear-gradient(90deg,var(--bad),#caa23a 50%,var(--good))}
+  .exit-track span{position:absolute;top:-4px;width:3px;height:24px;background:#fff;border-radius:2px;box-shadow:0 0 5px #000;transform:translateX(-50%);transition:left .3s}
+  .exit-scale{display:flex;justify-content:space-between;font-size:11px;color:var(--muted)}
+  .exit-prob b{color:var(--ink)}
+  /* strategy chart */
+  .chart-tabs{display:flex;gap:6px;margin-bottom:8px}
+  .chart-tabs button{padding:4px 10px;font-size:12px}
+  .chart-tabs button.on{background:var(--accent);color:#241a00;border-color:var(--accent)}
+  table.bs{border-collapse:collapse;font-size:11px;width:100%}
+  table.bs th,table.bs td{border:1px solid var(--line);text-align:center;padding:2px 0;width:9%}
+  table.bs th{color:var(--muted);font-weight:600}
+  td.H{background:var(--hit)} td.S{background:var(--stand)} td.D{background:var(--dbl)} td.P{background:var(--split)}
+  td.H,td.S,td.D,td.P{color:#fff;font-weight:800}
+  .legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--muted);margin-top:6px}
+  .legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+  #log{height:110px;overflow:auto;font-size:12px;color:var(--muted);white-space:pre-wrap}
+  #log b{color:var(--ink)}
+  label.chk{display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px}
+</style>
+
+<div id="site-nav"></div>
+
+<div class="wrap">
+  <div class="board-col">
+    <div class="card topbar">
+      <h1>🃏 Blackjack <span class="muted" style="font-weight:400">Strategy &amp; Counting Trainer</span></h1>
+      <div class="btnrow">
+        <span class="pill" id="shoePill">Shoe: —</span>
+        <span class="muted">Bet</span><input id="betInput" type="number" value="1" min="1" style="width:60px">
+        <button class="primary" id="dealBtn">🂠 Deal</button>
+        <button class="ghost" id="shuffleBtn">↻ New shoe</button>
+      </div>
+    </div>
+
+    <div class="felt">
+      <div class="zone">
+        <span class="zlabel">Dealer</span>
+        <div class="hand" id="dealerHand"></div>
+        <div class="handmeta" id="dealerName"></div>
+      </div>
+      <div class="banner" id="banner"></div>
+      <div class="zone">
+        <span class="zlabel">You</span>
+        <div class="hands" id="playerHands"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="topbar" style="margin-bottom:8px">
+        <span class="muted" id="prompt">Set your bet and press <b>Deal</b>. Basic strategy is the optimal move; counting tells you when to bet big.</span>
+      </div>
+      <div class="btnrow" id="actions"></div>
+    </div>
+  </div>
+
+  <div class="side">
+    <div class="card hint">
+      <h2>🎯 Coach · optimal move</h2>
+      <div id="coach">Deal a hand to get coaching.</div>
+    </div>
+
+    <div class="card">
+      <h2>🃏 Card count &amp; edge (Hi-Lo)</h2>
+      <div class="count-grid">
+        <div class="cell"><b id="cRun">0</b><span>running count</span></div>
+        <div class="cell"><b id="cTrue">0.0</b><span>true count</span></div>
+        <div class="cell"><b id="cDecks">6.0</b><span>decks left</span></div>
+      </div>
+      <div class="edgebar"><span id="edgeMarker" style="left:16.7%"></span></div>
+      <div id="edgeText" class="muted" style="margin-top:6px"></div>
+    </div>
+
+    <div class="card">
+      <h2>📊 Your session</h2>
+      <div class="stat-grid">
+        <div class="stat-box"><b id="sHands">0</b><span>hands played</span></div>
+        <div class="stat-box"><b id="sAcc">—</b><span>optimal decisions</span></div>
+        <div class="stat-box"><b id="sNet">0</b><span>net units</span></div>
+        <div class="stat-box"><b id="sEdge">—</b><span>your house edge</span></div>
+      </div>
+      <label class="chk" style="margin-top:8px"><input type="checkbox" id="showHints" checked> Show coach hints before I act</label>
+    </div>
+
+    <div class="card">
+      <h2>🚪 Session &amp; exit coach</h2>
+      <div class="exit-inputs">
+        <label>Win goal <input id="winGoal" type="number" value="30" min="1" step="1"><span class="muted">u</span></label>
+        <label>Loss limit <input id="lossLimit" type="number" value="30" min="1" step="1"><span class="muted">u</span></label>
+        <label>Bet $ <input id="anteUsd" type="number" value="0" min="0" step="1" placeholder="opt"></label>
+      </div>
+      <div id="exitStatus" class="exit-status">Set your limits, then deal. 1 unit = 1 base bet.</div>
+      <div class="exit-track"><span id="exitMarker" style="left:50%"></span></div>
+      <div class="exit-scale"><span id="exitLo">−30u</span><span>0</span><span id="exitHi">+30u</span></div>
+      <div id="exitProb" class="muted exit-prob" style="margin-top:6px"></div>
+    </div>
+
+    <div class="card">
+      <h2>🧪 Simulate &amp; download data</h2>
+      <div class="btnrow" style="align-items:center">
+        <span class="muted">Hands</span>
+        <input id="simN" type="number" value="20000" min="500" max="500000">
+        <label class="chk"><input type="checkbox" id="simSpread"> Hi-Lo bet spread</label>
+        <button id="simBtn" class="primary">⚡ Run &amp; download JSON</button>
+      </div>
+      <div id="simProgress" class="muted" style="margin-top:6px"></div>
+      <div id="simSummary" style="margin-top:6px"></div>
+    </div>
+
+    <div class="card">
+      <h2>📋 Basic strategy (6-deck, S17, DAS)</h2>
+      <div class="chart-tabs">
+        <button data-tab="hard" class="on">Hard</button>
+        <button data-tab="soft">Soft</button>
+        <button data-tab="pair">Pairs</button>
+      </div>
+      <div id="chartBox"></div>
+      <div class="legend">
+        <span><i style="background:var(--hit)"></i>Hit</span>
+        <span><i style="background:var(--stand)"></i>Stand</span>
+        <span><i style="background:var(--dbl)"></i>Double</span>
+        <span><i style="background:var(--split)"></i>Split</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Log</h2>
+      <div id="log"></div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/config.js"></script>
+<script src="assets/site.js"></script>
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+
+/* ============================================================
+   RULES & CARDS
+   rank 2..14 (11=J,12=Q,13=K,14=A). suit ignored for value.
+   ============================================================ */
+const DECKS=6, PEN=0.75, BJ_PAY=1.5;   // S17, DAS, no surrender
+function bjVal(r){ return r===14?11 : (r>=10?10:r); }
+function pairVal(r){ return r===14?11 : (r>=10?10:r); }
+function tag(r){ return r<=6?1 : (r<=9?0:-1); }        // Hi-Lo: 2-6 +1, 7-9 0, 10-A -1
+function handVal(cards){
+  let total=0,aces=0;
+  for(const r of cards){ total+=bjVal(r); if(r===14)aces++; }
+  while(total>21 && aces>0){ total-=10; aces--; }
+  return {total, soft:aces>0};
+}
+function isNatural(cards){ return cards.length===2 && handVal(cards).total===21; }
+
+/* ---- shoe ---- */
+function mkShoe(){ const c=[]; for(let d=0;d<DECKS;d++) for(let r=2;r<=14;r++) for(let s=0;s<4;s++) c.push(r); shuffle(c); return {cards:c,pos:0,running:0}; }
+function shuffle(d){ for(let i=d.length-1;i>0;i--){ const j=(Math.random()*(i+1))|0; const t=d[i];d[i]=d[j];d[j]=t; } return d; }
+function draw(sh,visible){ const r=sh.cards[sh.pos++]; if(visible!==false) sh.running+=tag(r); return r; }
+function decksLeft(sh){ return Math.max(0.25,(sh.cards.length-sh.pos)/52); }
+function trueCount(sh){ return sh.running/decksLeft(sh); }
+function needShuffle(sh){ return sh.pos >= sh.cards.length*PEN; }
+
+/* ============================================================
+   BASIC STRATEGY  (6-deck, dealer stands soft 17, double after split)
+   move chars: H hit, S stand, D double-else-hit, d double-else-stand, P split
+   columns = dealer upcard value 2..11 (A=11) -> index up-2
+   ============================================================ */
+const HARD={9:"HDDDDHHHHH",10:"DDDDDDDDHH",11:"DDDDDDDDDH",12:"HHSSSHHHHH",
+            13:"SSSSSHHHHH",14:"SSSSSHHHHH",15:"SSSSSHHHHH",16:"SSSSSHHHHH"};
+const SOFT={13:"HHHDDHHHHH",14:"HHHDDHHHHH",15:"HHDDDHHHHH",16:"HHDDDHHHHH",
+            17:"HDDDDHHHHH",18:"SddddSSHHH",19:"SSSSSSSSSS",20:"SSSSSSSSSS"};
+const PAIRS={2:"PPPPPPHHHH",3:"PPPPPPHHHH",4:"HHHPPHHHHH",6:"PPPPPHHHHH",
+             7:"PPPPPPHHHH",8:"PPPPPPPPPP",9:"PPPPPSPPSS",11:"PPPPPPPPPP"};
+function resolveMove(m,canDouble){ if(m==='D')return canDouble?'D':'H'; if(m==='d')return canDouble?'D':'S'; return m; }
+function totalMove(cards,up,canDouble){
+  const v=handVal(cards), i=up-2;
+  if(v.soft){ if(v.total>=20) return 'S'; if(v.total<=12) return 'H'; return resolveMove(SOFT[v.total][i],canDouble); }
+  if(v.total>=17) return 'S'; if(v.total<=8) return 'H'; return resolveMove(HARD[v.total][i],canDouble);
+}
+// returns 'H'|'S'|'D'|'P'
+function basicMove(cards,up,canDouble,canSplit){
+  if(cards.length===2){
+    const p=pairVal(cards[0]);
+    if(p===pairVal(cards[1]) && p!==5 && p!==10){
+      const m=PAIRS[p][up-2];
+      if(m==='P') return canSplit? 'P' : totalMove(cards,up,canDouble);
+      return resolveMove(m,canDouble);
+    }
+  }
+  return totalMove(cards,up,canDouble);
+}
+
+/* ============================================================
+   ONE ROUND under basic strategy (used by simulator)
+   ============================================================ */
+function playHandBS(cards,bet,up,sh,ctx){
+  while(true){
+    const canDouble=cards.length===2, canSplit=cards.length===2 && ctx.splits>0 && pairVal(cards[0])===pairVal(cards[1]);
+    const mv=basicMove(cards,up,canDouble,canSplit);
+    if(mv==='P'){
+      ctx.splits--; const ace=pairVal(cards[0])===11;
+      const h1=[cards[0],draw(sh)], h2=[cards[1],draw(sh)];
+      if(ace) return [{cards:h1,bet},{cards:h2,bet}];        // split aces: one card each, done
+      return playHandBS(h1,bet,up,sh,ctx).concat(playHandBS(h2,bet,up,sh,ctx));
+    }
+    if(mv==='D'){ cards=cards.concat(draw(sh)); return [{cards,bet:bet*2}]; }
+    if(mv==='H'){ cards=cards.concat(draw(sh)); if(handVal(cards).total>=21) return [{cards,bet}]; continue; }
+    return [{cards,bet}];                                     // stand
+  }
+}
+function playRound(sh,bet){
+  const p=[draw(sh)], d=[draw(sh)]; p.push(draw(sh)); d.push(draw(sh,false)); // dealer hole hidden
+  const up=bjVal(d[0]);
+  const pBJ=isNatural(p), dUp=d[0], dBJ=(bjVal(dUp)>=10||bjVal(dUp)===11) && isNatural(d);
+  if(pBJ||dBJ){                                               // naturals resolve immediately (dealer peeks)
+    sh.running+=tag(d[1]);                                    // hole revealed
+    if(pBJ&&dBJ) return {net:0,wager:bet};
+    if(pBJ) return {net:BJ_PAY*bet,wager:bet};
+    return {net:-bet,wager:bet};
+  }
+  const finished=playHandBS(p,bet,up,sh,{splits:3});
+  sh.running+=tag(d[1]);                                      // reveal dealer hole
+  const anyLive=finished.some(h=>handVal(h.cards).total<=21);
+  if(anyLive){ while(handVal(d).total<17) d.push(draw(sh)); }
+  const dv=handVal(d).total;
+  let net=0,wager=0;
+  for(const h of finished){
+    const pv=handVal(h.cards).total; wager+=h.bet;
+    if(pv>21) net-=h.bet; else if(dv>21||pv>dv) net+=h.bet; else if(pv<dv) net-=h.bet;
+  }
+  return {net,wager};
+}
+
+/* ---- bet spread by true count ---- */
+function spreadUnits(tc){ if(tc<2)return 1; if(tc<3)return 2; if(tc<4)return 4; if(tc<5)return 8; return 12; }
+/* rough edge estimate: base -0.5%, +~0.5% per true count */
+function edgePct(tc){ return 0.5*tc - 0.5; }
+
+/* ============================================================
+   INTERACTIVE STATE
+   ============================================================ */
+let SHOE=mkShoe();
+const S={h:[],d:[],active:0,bet:1,phase:"idle",hands:0,net:0,correct:0,decisions:0,wager:0,dealerHidden:true};
+// S.h = array of {cards,bet,done,busted,doubled,fromSplitAce}
+function log(m){ const el=$("log"); el.innerHTML=m+"<br>"+el.innerHTML; }
+function suitless(){}
+function rankLbl(r){ return r<=9?String(r):(r===10?"10":{11:"J",12:"Q",13:"K",14:"A"}[r]); }
+function cardHTML(r,faceUp){
+  if(faceUp===false) return '<div class="pcard back"></div>';
+  const red=(r%3===0); // cosmetic red/black split; suit not modeled
+  const lbl=rankLbl(r);
+  return '<div class="pcard'+(red?' red':'')+'"><span class="top">'+lbl+'</span><span class="bot">'+lbl+'</span></div>';
+}
+function updateCountUI(){
+  $("cRun").textContent=(SHOE.running>0?"+":"")+SHOE.running;
+  const tc=trueCount(SHOE), dl=decksLeft(SHOE);
+  $("cTrue").textContent=(tc>0?"+":"")+tc.toFixed(1);
+  $("cDecks").textContent=dl.toFixed(1);
+  const e=edgePct(tc);
+  $("edgeText").innerHTML='Est. player edge <b style="color:'+(e>=0?"var(--good)":"var(--bad)")+'">'+(e>=0?"+":"")+e.toFixed(2)+'%</b> · suggested bet <b>'+spreadUnits(tc)+'u</b>. '+(e>=0?'Count is hot — bet up.':'House ahead — bet the minimum.');
+  const frac=Math.max(0,Math.min(1,(e+3)/6)); // map -3%..+3% to 0..1
+  $("edgeMarker").style.left=(100*frac)+"%";
+  $("shoePill").textContent="Shoe: "+((100*SHOE.pos/SHOE.cards.length)|0)+"% dealt";
+}
+
+/* ---- render table ---- */
+function renderTable(){
+  $("dealerHand").innerHTML=S.d.map((r,i)=>cardHTML(r, !(i===1&&S.dealerHidden))).join("");
+  $("dealerName").textContent = S.d.length? (S.dealerHidden? "shows "+handVal([S.d[0]]).total : handName(S.d)) : "";
+  $("playerHands").innerHTML=S.h.map((hd,i)=>{
+    const v=handVal(hd.cards); const tags=[];
+    if(hd.doubled)tags.push("2×"); if(hd.busted)tags.push("BUST"); if(isNatural(hd.cards)&&S.h.length===1)tags.push("BLACKJACK");
+    return '<div class="seat'+(i===S.active&&S.phase==="player"?' active':'')+'">'+
+      '<div class="hand">'+hd.cards.map(c=>cardHTML(c,true)).join("")+'</div>'+
+      '<div class="handmeta">'+v.total+(v.soft?' (soft)':'')+' <span class="bet">· '+hd.bet+'u</span> '+tags.join(" ")+'</div></div>';
+  }).join("");
+}
+function handName(cards){ const v=handVal(cards); if(isNatural(cards))return "Blackjack"; return (v.soft?"soft ":"")+v.total+(v.total>21?" — bust":""); }
+
+/* ---- coach ---- */
+function coach(){
+  if(!$("showHints").checked){ $("coach").innerHTML='<span class="muted">Hints hidden — good practice.</span>'; return recommend(); }
+  const rec=recommend(); if(!rec) return rec;
+  const names={H:"HIT",S:"STAND",D:"DOUBLE",P:"SPLIT"};
+  $("coach").innerHTML='<div class="bigmove" style="color:var(--accent)">'+names[rec]+'</div><div class="muted" style="margin-top:4px">'+reason(rec)+'</div>';
+  return rec;
+}
+function recommend(){
+  if(S.phase!=="player") return null;
+  const hd=S.h[S.active], up=bjVal(S.d[0]);
+  const canDouble=hd.cards.length===2, canSplit=hd.cards.length===2 && S.splitsLeft>0 && pairVal(hd.cards[0])===pairVal(hd.cards[1]);
+  return basicMove(hd.cards,up,canDouble,canSplit);
+}
+function reason(mv){
+  const hd=S.h[S.active], v=handVal(hd.cards), up=rankLbl(S.d[0]);
+  const dealer="dealer shows "+up;
+  if(mv==='S') return v.total>=17? "Strong enough — never risk busting a "+v.total+"." : "Let the dealer risk the bust ("+dealer+").";
+  if(mv==='H') return "Too weak to stand vs "+dealer+" — take a card.";
+  if(mv==='D') return "Best spot to double: strong hand, "+dealer+". Put out more money, take one card.";
+  if(mv==='P') return "Split this pair vs "+dealer+" — two hands beat one here.";
+  return "";
+}
+
+/* ---- deal / actions ---- */
+function newShoe(){ SHOE=mkShoe(); log("🔀 New 6-deck shoe shuffled. Count reset."); updateCountUI(); }
+function deal(){
+  if(needShuffle(SHOE)) newShoe();
+  S.bet=Math.max(1,+$("betInput").value||1);
+  S.d=[draw(SHOE)]; S.h=[{cards:[draw(SHOE)],bet:S.bet}]; S.d.push(draw(SHOE,false)); S.h[0].cards.push(draw(SHOE));
+  S.dealerHidden=true; S.active=0; S.splitsLeft=3; S.phase="player";
+  $("banner").className="banner"; $("banner").textContent="";
+  updateCountUI(); renderTable();
+  const dBJ=(bjVal(S.d[0])>=10) && isNatural(S.d);
+  if(isNatural(S.h[0].cards) || dBJ){ return revealAndSettle(); }   // naturals
+  $("prompt").innerHTML="Your move on hand "+(S.active+1)+".";
+  step();
+}
+function step(){
+  if(S.active>=S.h.length){ return dealerPlay(); }
+  const hd=S.h[S.active];
+  const v=handVal(hd.cards);
+  if(v.total>=21 || hd.fromSplitAce){ if(v.total>21)hd.busted=true; return nextHand(); }
+  renderTable();
+  const rec=coach();
+  const canDouble=hd.cards.length===2, canSplit=hd.cards.length===2 && S.splitsLeft>0 && pairVal(hd.cards[0])===pairVal(hd.cards[1]);
+  const A=[["Hit","",()=>act('H',rec)],["Stand","ghost",()=>act('S',rec)]];
+  if(canDouble)A.push(["Double","primary",()=>act('D',rec)]);
+  if(canSplit)A.push(["Split","",()=>act('P',rec)]);
+  setActions(A);
+}
+function setActions(list){ $("actions").innerHTML=""; for(const [l,c,fn] of list){ const b=document.createElement("button"); b.textContent=l; if(c)b.className=c; b.onclick=fn; $("actions").appendChild(b);} }
+function act(choice,rec){
+  S.decisions++; if(choice===rec)S.correct++;
+  const ok=choice===rec? '<span style="color:var(--good)">✓</span>' : '<span style="color:var(--bad)">✗ ('+({H:"hit",S:"stand",D:"double",P:"split"}[rec])+')</span>';
+  const hd=S.h[S.active];
+  if(choice==='S'){ log("Stand "+ok); return nextHand(); }
+  if(choice==='H'){ hd.cards.push(draw(SHOE)); updateCountUI(); const v=handVal(hd.cards); log("Hit "+ok); if(v.total>21){hd.busted=true; renderTable(); return nextHand();} return step(); }
+  if(choice==='D'){ hd.bet*=2; hd.doubled=true; hd.cards.push(draw(SHOE)); updateCountUI(); if(handVal(hd.cards).total>21)hd.busted=true; log("Double "+ok); renderTable(); return nextHand(); }
+  if(choice==='P'){
+    S.splitsLeft--; const ace=pairVal(hd.cards[0])===11;
+    const c0=hd.cards[0], c1=hd.cards[1];
+    const nh={cards:[c1,draw(SHOE)],bet:S.bet,fromSplitAce:ace};
+    hd.cards=[c0,draw(SHOE)]; hd.fromSplitAce=ace;
+    S.h.splice(S.active+1,0,nh); updateCountUI(); log("Split "+ok);
+    return step();
+  }
+}
+function nextHand(){ S.active++; return step(); }
+function dealerPlay(){
+  S.phase="dealer"; S.dealerHidden=false; SHOE.running+=tag(S.d[1]); updateCountUI();
+  const anyLive=S.h.some(h=>handVal(h.cards).total<=21);
+  if(anyLive){ while(handVal(S.d).total<17) S.d.push(draw(SHOE)); }
+  updateCountUI(); settle();
+}
+function revealAndSettle(){ S.dealerHidden=false; SHOE.running+=tag(S.d[1]); updateCountUI(); renderTable(); settle(); }
+function settle(){
+  S.phase="settle"; renderTable();
+  const dv=handVal(S.d).total, dBJ=isNatural(S.d);
+  let net=0, wager=0, parts=[];
+  for(const hd of S.h){
+    const pv=handVal(hd.cards).total, pBJ=isNatural(hd.cards)&&S.h.length===1; wager+=hd.bet;
+    let r;
+    if(pBJ&&!dBJ){ r=BJ_PAY*hd.bet; parts.push("Blackjack +"+r); }
+    else if(pBJ&&dBJ){ r=0; parts.push("push (both BJ)"); }
+    else if(pv>21){ r=-hd.bet; parts.push("bust "+r); }
+    else if(dBJ){ r=-hd.bet; parts.push("dealer BJ "+r); }
+    else if(dv>21){ r=hd.bet; parts.push("dealer bust +"+r); }
+    else if(pv>dv){ r=hd.bet; parts.push("win +"+r); }
+    else if(pv<dv){ r=-hd.bet; parts.push("lose "+r); }
+    else { r=0; parts.push("push"); }
+    net+=r;
+  }
+  S.hands++; S.net+=net; S.wager+=wager;
+  let cls = net>0?"win":(net<0?"lose":"push");
+  $("banner").className="banner "+cls;
+  $("banner").textContent = (net>0?"You win +"+(+net.toFixed(1)):(net<0?"You lose "+(+net.toFixed(1)):"Push"))+" units"+(net!==0?"!":"");
+  $("coach").innerHTML='Dealer '+handName(S.d)+'. '+parts.join(" · ")+'. Net <b style="color:'+(net>=0?"var(--good)":"var(--bad)")+'">'+(net>=0?"+":"")+(+net.toFixed(2))+'u</b>.';
+  $("prompt").innerHTML="Adjust your bet with the count, then <b>Deal</b> again.";
+  updateSessionStats();
+  setActions([["🂠 Deal next","primary",deal]]);
+  // suggest next bet from count
+  $("betInput").value=spreadUnits(trueCount(SHOE));
+}
+function updateSessionStats(){
+  $("sHands").textContent=S.hands;
+  $("sAcc").textContent=S.decisions? Math.round(100*S.correct/S.decisions)+"%":"—";
+  $("sNet").textContent=(S.net>=0?"+":"")+(+S.net.toFixed(2));
+  $("sEdge").textContent=S.wager? (-100*S.net/S.wager).toFixed(2)+"%":"—";
+  $("sEdge").style.color=S.net>=0?"var(--good)":"var(--bad)";
+  renderExit();
+}
+
+/* ============================================================
+   EXIT COACH (drift/diffusion; flat basic-strategy μ,σ from sim)
+   ============================================================ */
+const MU=-0.006, SIGMA=1.15;
+function pReachGoal(x,W,L){
+  x=Math.max(-L,Math.min(W,x)); const nt=-2*MU/(SIGMA*SIGMA);
+  if(Math.abs(nt)<1e-9) return (x+L)/(W+L);
+  const phi=z=>Math.exp(nt*z);
+  return Math.max(0,Math.min(1,(phi(x)-phi(-L))/(phi(W)-phi(-L))));
+}
+function renderExit(){
+  const W=Math.max(1,+$("winGoal").value||30), L=Math.max(1,+$("lossLimit").value||30);
+  const x=S.net, usd=+$("anteUsd").value||0, money=v=>usd>0?" ($"+Math.round(v*usd)+")":"";
+  $("exitLo").textContent="−"+L+"u"; $("exitHi").textContent="+"+W+"u";
+  $("exitMarker").style.left=(100*Math.max(0,Math.min(1,(x+L)/(W+L))))+"%";
+  const st=$("exitStatus"), pb=$("exitProb");
+  if(S.hands===0){ st.className="exit-status"; st.textContent="Set your win goal and loss limit, then deal."; pb.innerHTML=""; return; }
+  if(x>=W){ st.className="exit-status win"; st.innerHTML="🚪 WALK AWAY — hit your win goal: +"+(+x.toFixed(1))+"u"+money(x)+"."; pb.innerHTML="Lock it in. Basic strategy still leaves a small house edge unless you're counting."; return; }
+  if(x<=-L){ st.className="exit-status lose"; st.innerHTML="🛑 STOP — loss limit reached: "+(+x.toFixed(1))+"u"+money(x)+"."; pb.innerHTML="Walk away; don't chase."; return; }
+  st.className="exit-status";
+  st.innerHTML="Net "+(x>=0?"+":"")+(+x.toFixed(1))+"u"+money(x)+" — quit any time.";
+  pb.innerHTML="Chance you reach <b>+"+W+"u</b> before <b>−"+L+"u</b>: <b>"+(100*pReachGoal(x,W,L)).toFixed(0)+"%</b>.";
+}
+
+/* ============================================================
+   SIMULATION → JSON
+   ============================================================ */
+function isoStamp(){ return new Date().toISOString().replace(/[:.]/g,"-"); }
+function downloadJSON(name,obj){
+  const blob=new Blob([JSON.stringify(obj,null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob); const a=document.createElement("a");
+  a.href=url; a.download=name; document.body.appendChild(a); a.click();
+  setTimeout(()=>{URL.revokeObjectURL(url);a.remove();},1000);
+}
+async function runSim(n,spread){
+  const btn=$("simBtn"); btn.disabled=true;
+  let sh=mkShoe(), net=0,wager=0, rounds=0, shoes=1, sumSq=0;
+  const byTC={};                                   // net & count by true-count bucket
+  for(let i=0;i<n;i++){
+    if(needShuffle(sh)){ sh=mkShoe(); shoes++; }
+    const tc=trueCount(sh), bucket=Math.max(-3,Math.min(6,Math.round(tc)));
+    const bet=spread? spreadUnits(tc):1;
+    const r=playRound(sh,bet);
+    net+=r.net; wager+=r.wager; rounds++; sumSq+=r.net*r.net;
+    const b=byTC[bucket]||(byTC[bucket]={rounds:0,net:0,wager:0}); b.rounds++; b.net+=r.net; b.wager+=r.wager;
+    if(i%2000===0){ $("simProgress").textContent="Simulating… "+(i+1)+"/"+n; await new Promise(r=>setTimeout(r,0)); }
+  }
+  const perInitial=-100*net/rounds;                 // vs 1-unit base bet (flat) — the "house edge"
+  const eor=-100*net/wager;
+  const mean=net/rounds, sd=Math.sqrt(sumSq/rounds-mean*mean);
+  const tcTable=Object.keys(byTC).map(Number).sort((a,b)=>a-b).map(k=>({trueCount:k,rounds:byTC[k].rounds,
+     edgePct:+(-100*byTC[k].net/byTC[k].wager).toFixed(3), sharePct:+(100*byTC[k].rounds/rounds).toFixed(2)}));
+  const summary={
+    hands:rounds, shoes,
+    netUnits:+net.toFixed(2),
+    returnPer100:+(-perInitial).toFixed(3),
+    houseEdgePct:+perInitial.toFixed(3),
+    elementOfRiskPct:+eor.toFixed(3),
+    stdDevPerHand:+sd.toFixed(3),
+    betSpread:spread,
+    edgeByTrueCount:tcTable,
+  };
+  const out={ game:"Blackjack", rules:{decks:DECKS,dealer:"stands soft 17",doubleAfterSplit:true,blackjackPays:"3:2",surrender:false,penetration:PEN},
+    generatedAt:new Date().toISOString(), strategy:"basic strategy"+(spread?" + Hi-Lo bet spread (1-12u)":" (flat 1u)"),
+    note:"Positive houseEdgePct = house advantage. Bet spread with counting can push edgeByTrueCount positive at TC>=+2.",
+    summary };
+  const fname="blackjack-sim-"+n+"hands"+(spread?"-counting":"")+"-"+isoStamp()+".json";
+  downloadJSON(fname,out);
+  $("simProgress").textContent="Done — "+n+" hands, "+shoes+" shoes. JSON downloaded.";
+  $("simSummary").innerHTML=
+    '<div class="stat-grid">'+
+    '<div class="stat-box"><b style="color:'+(perInitial<=0?"var(--good)":"var(--bad)")+'">'+summary.houseEdgePct+'%</b><span>'+(spread?"edge (spread)":"house edge")+'</span></div>'+
+    '<div class="stat-box"><b>'+summary.elementOfRiskPct+'%</b><span>per unit wagered</span></div>'+
+    '<div class="stat-box"><b>'+summary.stdDevPerHand+'</b><span>std dev / hand</span></div>'+
+    '<div class="stat-box"><b>'+shoes+'</b><span>shoes</span></div></div>'+
+    '<div class="muted" style="margin-top:6px">'+(spread
+      ? "With a 1–12u spread the edge by count is in the JSON — it goes <b>positive</b> at high true counts. That's how counters win."
+      : "Flat betting: basic strategy holds the house edge near <b>0.5%</b> — the best you can do without counting.")+'</div>';
+  log("Simulated <b>"+n+"</b> hands"+(spread?" with Hi-Lo spread":"")+" → edge <b>"+summary.houseEdgePct+"%</b>.");
+  btn.disabled=false;
+}
+
+/* ============================================================
+   STRATEGY CHART RENDERING
+   ============================================================ */
+const MOVE_TXT={H:"H",S:"S",D:"D",d:"Ds",P:"P"};
+function chartCell(m){ const base=m==='d'?'D':m; return '<td class="'+base+'">'+MOVE_TXT[m]+'</td>'; }
+function headRow(){ let h='<tr><th></th>'; for(let u=2;u<=11;u++)h+='<th>'+(u===11?"A":u)+'</th>'; return h+'</tr>'; }
+function renderChart(tab){
+  let rows='';
+  if(tab==='hard'){
+    for(let t=8;t<=17;t++){ const row = t<=8?"HHHHHHHHHH":(t>=17?"SSSSSSSSSS":HARD[t]);
+      rows+='<tr><th>'+(t===8?"≤8":t===17?"17+":t)+'</th>'+[...row].map(chartCell).join("")+'</tr>'; }
+  } else if(tab==='soft'){
+    for(let t=13;t<=20;t++){ rows+='<tr><th>A,'+(t-11)+'</th>'+[...SOFT[t]].map(chartCell).join("")+'</tr>'; }
+  } else {
+    const order=[2,3,4,5,6,7,8,9,10,11];
+    for(const p of order){ const row = p===5?HARD[10] : p===10?"SSSSSSSSSS" : PAIRS[p];
+      const lbl=(p===11?"A":p)+","+(p===11?"A":p); rows+='<tr><th>'+lbl+'</th>'+[...row].map(chartCell).join("")+'</tr>'; }
+  }
+  $("chartBox").innerHTML='<table class="bs">'+headRow()+rows+'</table>';
+}
+
+/* ============================================================
+   WIRE UP
+   ============================================================ */
+$("dealBtn").onclick=deal;
+$("shuffleBtn").onclick=newShoe;
+$("showHints").onchange=()=>{ if(S.phase==="player") coach(); };
+$("simBtn").onclick=()=>{ const n=Math.max(500,Math.min(500000,+$("simN").value||20000)); runSim(n,$("simSpread").checked); };
+["winGoal","lossLimit","anteUsd"].forEach(id=>$(id).addEventListener("input",renderExit));
+document.querySelectorAll(".chart-tabs button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll(".chart-tabs button").forEach(x=>x.classList.remove("on")); b.classList.add("on"); renderChart(b.dataset.tab);
+});
+renderChart("hard"); updateCountUI(); updateSessionStats();
+log("Ready. <b>Deal</b> to train basic strategy while the Hi-Lo count runs live. Run a simulation to prove the edge.");
+</script>
