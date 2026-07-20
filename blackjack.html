@@ -440,10 +440,12 @@ function step(){
   if(v.total>=21 || hd.fromSplitAce){ if(v.total>21)hd.busted=true; return nextHand(); }
   renderTable();
   const rec=coach();
+  const hl=$("showHints").checked? rec : null;           // highlight the recommended move (only when hints shown)
   const canDouble=hd.cards.length===2, canSplit=hd.cards.length===2 && S.splitsLeft>0 && pairVal(hd.cards[0])===pairVal(hd.cards[1]);
-  const A=[["Hit","",()=>act('H',rec)],["Stand","ghost",()=>act('S',rec)]];
-  if(canDouble)A.push(["Double","primary",()=>act('D',rec)]);
-  if(canSplit)A.push(["Split","",()=>act('P',rec)]);
+  const cls=code=> code===hl? "primary" : (code==='S'?"ghost":"");
+  const A=[["Hit",cls('H'),()=>act('H',rec)],["Stand",cls('S'),()=>act('S',rec)]];
+  if(canDouble)A.push(["Double",cls('D'),()=>act('D',rec)]);
+  if(canSplit)A.push(["Split",cls('P'),()=>act('P',rec)]);
   setActions(A);
 }
 function setActions(list){ $("actions").innerHTML=""; for(const [l,c,fn] of list){ const b=document.createElement("button"); b.textContent=l; if(c)b.className=c; b.onclick=fn; $("actions").appendChild(b);} }
