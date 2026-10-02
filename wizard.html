@@ -1,0 +1,717 @@
+<!-- Wizard trick-taking card game vs AI with a Monte Carlo bid/play coach + bulk simulator. Single-file, no deps. -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Wizard Strategy · Visual Learn Lab</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🧙</text></svg>">
+<link rel="stylesheet" href="assets/site.css">
+<style>
+  :root{
+    --bg:#0e1726; --panel:#16233a; --panel2:#1d2f4d; --ink:#e8eef7; --muted:#93a4bf;
+    --line:#2b3f63; --accent:#f4b942; --good:#3fce8f; --bad:#ff6b6b; --felt:#2a1f4f; --wiz:#7b5cd6;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;overflow:hidden}
+  .wrap{display:grid;grid-template-columns:minmax(560px,1fr) 410px;gap:14px;height:calc(100vh - var(--nav-h,52px));padding:14px}
+  @media(max-width:1000px){body{overflow:auto}.wrap{grid-template-columns:1fr;height:auto}}
+  .board-col{display:flex;flex-direction:column;gap:10px;min-width:0;min-height:0}
+  .side{display:flex;flex-direction:column;gap:12px;overflow:auto;padding-right:2px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}
+  h2{margin:0 0 8px;font-size:13px;letter-spacing:.5px;text-transform:uppercase;color:var(--muted)}
+  h1{margin:0;font-size:18px}
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+  .pill{background:var(--panel2);border:1px solid var(--line);border-radius:20px;padding:4px 12px;font-weight:600;white-space:nowrap}
+  button{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-weight:600;cursor:pointer;font-size:13px}
+  button:hover:not(:disabled){border-color:var(--accent)}
+  button:disabled{opacity:.35;cursor:not-allowed}
+  button.primary{background:var(--accent);color:#241a00;border-color:var(--accent)}
+  button.rec{border-color:var(--good);box-shadow:0 0 0 2px var(--good) inset}
+  button.ghost{background:transparent}
+  select,input[type=number]{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px}
+  input[type=number]{width:78px}
+  .btnrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .muted{color:var(--muted)}
+  label.chk{display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px}
+  /* table */
+  .felt{background:radial-gradient(120% 140% at 50% -10%,#3d2c78,var(--felt));border:1px solid var(--line);border-radius:16px;padding:14px;flex:1 1 0;display:flex;flex-direction:column;justify-content:space-between;gap:10px;min-height:0;overflow:auto}
+  .opps{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+  .seat{background:#0003;border:2px solid transparent;border-radius:10px;padding:6px 10px;min-width:120px;text-align:center}
+  .seat.active{border-color:var(--accent)}
+  .seat .nm{font-weight:800} .seat .pf{font-size:11px;color:#cbbcf5}
+  .seat .bw{font-size:12px;margin-top:2px} .seat .sc{font-size:12px;color:var(--accent);font-weight:700}
+  .dchip{display:inline-block;background:var(--accent);color:#241a00;border-radius:50%;width:17px;height:17px;font-size:11px;line-height:17px;font-weight:800;margin-left:4px}
+  .backs{display:flex;justify-content:center;margin-top:4px;padding-left:8px;min-height:22px}
+  .mini{width:14px;height:20px;border-radius:3px;margin-left:-7px;border:1px solid #c9b8ff55;background:repeating-linear-gradient(45deg,#4a36a0,#4a36a0 3px,#3a2a85 3px,#3a2a85 6px)}
+  .mid-row{display:flex;gap:16px;align-items:center;justify-content:center}
+  .trumpzone{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:84px}
+  .zlabel{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#d9cff7;opacity:.85}
+  .trick{display:flex;gap:10px;min-height:96px;align-items:flex-end;justify-content:center;flex-wrap:wrap;flex:1}
+  .tslot{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#e3dbff}
+  .banner{text-align:center;font-weight:800;font-size:15px;min-height:22px}
+  .banner.win{color:#8dffc4} .banner.lose{color:#ff9d9d}
+  .youzone{display:flex;flex-direction:column;align-items:center;gap:6px}
+  .youinfo{font-size:13px;font-weight:700}
+  .hand{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;min-height:72px}
+  /* cards */
+  .wc{width:48px;height:68px;border-radius:7px;background:#fbfbfd;color:#111;display:flex;flex-direction:column;justify-content:space-between;padding:3px 5px;font-weight:800;font-size:14px;box-shadow:0 2px 6px #0005;user-select:none;flex:none}
+  .wc .mid{font-size:22px;text-align:center;line-height:1}
+  .wc .bot{align-self:flex-end;transform:rotate(180deg)}
+  .wc.red{color:#c8102e}
+  .wc.wiz{background:linear-gradient(160deg,#6d4fd0,#2e1d66);color:#ffe9a8}
+  .wc.jes{background:linear-gradient(160deg,#a3aec0,#5d6878);color:#fff}
+  .wc.trumpc{box-shadow:0 0 0 2px var(--accent),0 2px 6px #0005}
+  .wc.play{cursor:pointer;transition:transform .12s} .wc.play:hover{transform:translateY(-6px)}
+  .wc.dim{opacity:.38}
+  .wc.rec{outline:3px solid var(--good);outline-offset:2px}
+  .wc.win{box-shadow:0 0 0 3px #8dffc4,0 0 14px #8dffc4}
+  .wc.lead{box-shadow:0 0 0 2px #ffffff99,0 2px 6px #0005}
+  .cn{font-weight:800} .cn.red{color:#ff8a9b} .cn.wiz{color:#c9b3ff} .cn.jes{color:#c6cfdb}
+  /* coach */
+  .hint{background:linear-gradient(180deg,#22194a,#16233a);border:1px solid var(--accent)}
+  .bigmove{font-size:20px;font-weight:800}
+  .chips{display:flex;flex-wrap:wrap;gap:5px;margin:6px 0}
+  .chip{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:1px 8px;font-size:12px}
+  table.ev{border-collapse:collapse;width:100%;font-size:12px;margin-top:6px}
+  table.ev td,table.ev th{padding:3px 4px;text-align:left;border-bottom:1px solid #2b3f6388}
+  table.ev th{color:var(--muted);font-weight:600}
+  table.ev tr.best td{background:#3fce8f1f}
+  .bar{height:8px;border-radius:4px;background:var(--good);min-width:1px}
+  .verdict{margin-top:8px;padding:6px 8px;border-radius:8px;background:var(--panel2);font-size:13px}
+  .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .stat-box{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+  .stat-box b{display:block;font-size:19px} .stat-box span{font-size:11px;color:var(--muted)}
+  /* scoreboard */
+  .sbwrap{max-height:230px;overflow:auto}
+  table.sb{border-collapse:collapse;width:100%;font-size:12px;text-align:center}
+  table.sb th,table.sb td{border:1px solid var(--line);padding:2px 3px}
+  table.sb th{color:var(--muted);font-weight:600;position:sticky;top:0;background:var(--panel)}
+  table.sb td.pos{color:var(--good)} table.sb td.neg{color:var(--bad)}
+  table.sb tr.tot td{font-weight:800;color:var(--accent)}
+  ul.rules{margin:0;padding-left:18px;font-size:12.5px;color:#cfd8e6} ul.rules li{margin:2px 0}
+  #log{height:110px;overflow:auto;font-size:12px;color:var(--muted);white-space:pre-wrap}
+  #log b{color:var(--ink)}
+</style>
+
+<div id="site-nav"></div>
+
+<div class="wrap">
+  <div class="board-col">
+    <div class="card topbar">
+      <h1>🧙 Wizard <span class="muted" style="font-weight:400">Bid &amp; Trick Trainer</span></h1>
+      <div class="btnrow">
+        <span class="pill" id="roundPill">Round —</span>
+        <span class="pill" id="bidPill">Bids —</span>
+        <select id="nPlayers" title="Players"><option value="3">3 players</option><option value="4" selected>4 players</option><option value="5">5 players</option><option value="6">6 players</option></select>
+        <select id="oppLevel" title="Opponents"><option value="mix">Mixed AI styles</option><option value="mc">Strong (Monte Carlo)</option></select>
+        <select id="speed" title="AI speed"><option value="900">Slow</option><option value="500" selected>Normal</option><option value="180">Fast</option></select>
+        <button class="primary" id="newBtn">↻ New game</button>
+      </div>
+    </div>
+
+    <div class="felt">
+      <div class="opps" id="opps"></div>
+      <div class="mid-row">
+        <div class="trumpzone"><span class="zlabel" id="trumpLabel">Trump</span><div id="trumpCard"></div></div>
+        <div class="trick" id="trick"></div>
+      </div>
+      <div class="banner" id="banner"></div>
+      <div class="youzone">
+        <div class="youinfo" id="youInfo"></div>
+        <div class="hand" id="hand"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="margin-bottom:8px" class="muted" id="prompt"></div>
+      <div class="btnrow" id="actions"></div>
+    </div>
+  </div>
+
+  <div class="side">
+    <div class="card hint">
+      <h2>🎯 Coach · Monte Carlo</h2>
+      <div id="coach">Start a game to get coaching.</div>
+    </div>
+
+    <div class="card">
+      <h2>📊 Your session</h2>
+      <div class="stat-grid">
+        <div class="stat-box"><b id="sRounds">0</b><span>rounds played</span></div>
+        <div class="stat-box"><b id="sHit">—</b><span>bids made exactly</span></div>
+        <div class="stat-box"><b id="sAgree">—</b><span>decisions matching coach</span></div>
+        <div class="stat-box"><b id="sLost">0</b><span>EV points given up</span></div>
+      </div>
+      <label class="chk" style="margin-top:8px"><input type="checkbox" id="showHints" checked> Show coach hints before I act</label>
+      <label class="chk" style="margin-top:4px"><input type="checkbox" id="hookRule"> Hook rule: bids can't add up to the trick count (next game)</label>
+    </div>
+
+    <div class="card">
+      <h2>🏆 Scoreboard</h2>
+      <div class="sbwrap" id="scoreboard"></div>
+    </div>
+
+    <div class="card">
+      <h2>🧪 Simulate &amp; download data</h2>
+      <div class="btnrow">
+        <span class="muted">Games</span>
+        <input id="simN" type="number" value="100" min="1" max="5000">
+        <label class="chk"><input type="checkbox" id="simCoach" checked> Include Monte Carlo bot</label>
+        <button id="simBtn" class="primary">⚡ Run &amp; download JSON</button>
+      </div>
+      <div class="muted" style="margin-top:6px;font-size:12px">Uses the player count above. AI styles rotate seats every game to cancel out dealer position.</div>
+      <div id="simProgress" class="muted" style="margin-top:6px"></div>
+      <div id="simSummary" style="margin-top:6px"></div>
+    </div>
+
+    <div class="card">
+      <h2>📜 How Wizard works</h2>
+      <ul class="rules">
+        <li>60 cards: a normal 52-card deck + 4 <b>Wizards</b> + 4 <b>Jesters</b>. Round <i>k</i> deals <i>k</i> cards each (60 ÷ players rounds).</li>
+        <li>The next card is flipped for <b>trump</b>. Jester → no trump; Wizard → the dealer picks. In the last round no card is left, so there's no trump.</li>
+        <li>Everyone <b>bids</b> exactly how many tricks they'll take, starting left of the dealer.</li>
+        <li>You must follow the led suit if you can — but a Wizard or Jester may always be played.</li>
+        <li>First Wizard wins the trick; otherwise highest trump; otherwise highest card of the led suit. Jesters always lose (unless all Jesters).</li>
+        <li>Exact bid: <b>20 + 10 per trick</b>. Miss: <b>−10 per trick off</b>, over or under.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>Log</h2>
+      <div id="log"></div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/config.js"></script>
+<script src="assets/site.js"></script>
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+
+/* ============================================================
+   CARDS & RULES
+   k: "N" normal (s 0..3, r 2..14) · "W" Wizard · "J" Jester
+   trump: suit index, or -1 for no trump
+   ============================================================ */
+const SUITS=["♠","♥","♦","♣"], RED=[false,true,true,false];
+const rankLabel=r=>({11:"J",12:"Q",13:"K",14:"A"})[r]||String(r);
+function makeDeck(){
+  const d=[];let id=0;
+  for(let s=0;s<4;s++)for(let r=2;r<=14;r++)d.push({id:id++,k:"N",s,r});
+  for(let i=0;i<4;i++)d.push({id:id++,k:"W",s:-1,r:0});
+  for(let i=0;i<4;i++)d.push({id:id++,k:"J",s:-1,r:0});
+  return d;
+}
+const FULL=makeDeck();
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]];}return a;}
+const cardName=c=>c.k==="W"?"Wizard":c.k==="J"?"Jester":rankLabel(c.r)+SUITS[c.s];
+
+// -1 = no card sets the suit yet (only Jesters), -2 = Wizard led so anything goes
+function ledSuit(trick){
+  for(const t of trick){ if(t.c.k==="J")continue; if(t.c.k==="W")return -2; return t.c.s; }
+  return -1;
+}
+function legalCards(hand,trick){
+  const ls=ledSuit(trick);
+  if(ls>=0&&hand.some(c=>c.k==="N"&&c.s===ls))return hand.filter(c=>c.k!=="N"||c.s===ls);
+  return hand.slice();
+}
+function trickWinner(trick,trump){
+  let best=-1;
+  for(let i=0;i<trick.length;i++){
+    const c=trick[i].c;
+    if(c.k==="W")return i;
+    if(c.k!=="N")continue;
+    if(best<0){best=i;continue;}
+    const b=trick[best].c;
+    if(c.s===b.s?c.r>b.r:c.s===trump)best=i;
+  }
+  return best<0?0:best;
+}
+function dealRound(n,r,dealer,hook){
+  const deck=shuffle(FULL.slice()),hands=[];
+  for(let p=0;p<n;p++)hands.push(deck.slice(p*r,(p+1)*r));
+  const tc=deck[n*r]||null;
+  const trump=!tc?-1:tc.k==="N"?tc.s:tc.k==="J"?-1:null;
+  return {n,r,dealer,hook,hands,trumpCard:tc,trump,phase:trump===null?"trump":"bid",
+    bids:Array(n).fill(null),won:Array(n).fill(0),trick:[],seen:[],
+    voids:hands.map(()=>[false,false,false,false]),turn:(dealer+1)%n,leader:(dealer+1)%n};
+}
+function playCard(R,p,c){
+  const h=R.hands[p];h.splice(h.findIndex(x=>x.id===c.id),1);
+  const ls=ledSuit(R.trick);
+  if(c.k==="N"&&ls>=0&&c.s!==ls)R.voids[p][ls]=true;
+  R.trick.push({p,c});R.seen.push(c);
+  if(R.trick.length<R.n){R.turn=(p+1)%R.n;return {done:false};}
+  const trick=R.trick,w=trick[trickWinner(trick,R.trump)].p;
+  R.won[w]++;R.leader=R.turn=w;R.trick=[];
+  return {done:true,winner:w,trick};
+}
+const roundScore=(bid,won)=>bid===won?20+10*won:-10*Math.abs(bid-won);
+function forbiddenBid(R,p){
+  if(!R.hook||p!==R.dealer)return -1;
+  let s=0;for(let q=0;q<R.n;q++)if(q!==p)s+=R.bids[q]||0;
+  return R.r-s;
+}
+function bidOptions(R,p){const f=forbiddenBid(R,p),o=[];for(let b=0;b<=R.r;b++)if(b!==f)o.push(b);return o;}
+
+/* ============================================================
+   HEURISTIC AI — also the opponent model inside the coach's rollouts
+   ============================================================ */
+const PROFILES={
+  balanced:{key:"balanced",label:"Balanced",bias:0},
+  bold:{key:"bold",label:"Bold",bias:.55},
+  cautious:{key:"cautious",label:"Cautious",bias:-.45},
+  coach:{key:"coach",label:"Monte Carlo",mc:true},
+};
+// Rough chance a single card takes a trick; long rounds erode off-suit honours (voids get trumped).
+function cardValue(c,trump,n,r){
+  if(c.k==="W")return n>=5?.85:.9;
+  if(c.k==="J")return 0;
+  const load=r*(n-1)/3;
+  if(c.s===trump){let v=.1+.8*Math.pow((c.r-2)/12,1.5);if(r<=3)v=Math.min(.95,v+.15);return v;}
+  if(trump<0)return ({14:.8,13:.5,12:.25,11:.1})[c.r]||0;
+  if(c.r===14)return Math.max(.25,.75-.02*load);
+  if(c.r===13)return Math.max(.1,.4-.02*load);
+  if(c.r===12&&r<=5)return .1;
+  return 0;
+}
+function heurBid(R,p,bias){
+  let raw=bias;for(const c of R.hands[p])raw+=cardValue(c,R.trump,R.n,R.r);
+  let best=0,bd=1e9;
+  for(const b of bidOptions(R,p)){const d=Math.abs(b-raw);if(d<bd){bd=d;best=b;}}
+  return best;
+}
+const strength=(c,trump)=>c.k==="W"?100:c.k==="J"?0:(c.s===trump?20:0)+c.r;
+function heurPlay(R,p){
+  const T=R.trump,L=legalCards(R.hands[p],R.trick);
+  if(L.length===1)return L[0];
+  const need=R.bids[p]-R.won[p],left=R.hands[p].length;
+  const sorted=a=>a.slice().sort((x,y)=>strength(x,T)-strength(y,T));
+  const lo=a=>sorted(a)[0],hi=a=>sorted(a).pop();
+  const normals=L.filter(c=>c.k==="N"),offs=normals.filter(c=>c.s!==T),jester=L.find(c=>c.k==="J");
+  if(!R.trick.length){
+    if(need>0){
+      const tops=normals.filter(c=>c.s===T?c.r>=12:c.r>=13);
+      if(tops.length)return hi(tops);
+      const wz=L.find(c=>c.k==="W");if(wz&&need>=left)return wz;
+      if(offs.length)return lo(offs);
+      return normals.length?lo(normals):(jester||L[0]);
+    }
+    const lowOff=offs.length?lo(offs):null;
+    if(lowOff&&lowOff.r<=8)return lowOff;
+    if(jester)return jester;
+    return normals.length?lo(normals):L[0];
+  }
+  const wins=c=>trickWinner([...R.trick,{p,c}],T)===R.trick.length;
+  const last=R.trick.length===R.n-1,winners=L.filter(wins),losers=L.filter(c=>!wins(c));
+  if(need>0){
+    if(winners.length){
+      const nonW=winners.filter(c=>c.k!=="W");
+      if(!nonW.length)return winners[0];
+      return last?lo(nonW):hi(nonW);
+    }
+    return jester||lo(L);
+  }
+  // already at (or past) the bid: shed the biggest card that still loses
+  if(losers.length){const nj=losers.filter(c=>c.k!=="J");return nj.length?hi(nj):losers[0];}
+  return last?hi(L):lo(L);
+}
+function bestSuit(hand){
+  const sc=[0,0,0,0];
+  hand.forEach(c=>{if(c.k==="N")sc[c.s]+=1+(c.r-2)/12;});
+  return sc.indexOf(Math.max(...sc));
+}
+
+/* ============================================================
+   MONTE CARLO — resample hidden hands (respecting revealed voids),
+   play every option out with the heuristic model, average the score.
+   ============================================================ */
+function cloneR(R){
+  return {...R,hands:R.hands.map(h=>h.slice()),bids:R.bids.slice(),won:R.won.slice(),
+    trick:R.trick.slice(),seen:R.seen.slice(),voids:R.voids.map(v=>v.slice())};
+}
+function sampleWorld(R,p){
+  const known=new Set();
+  R.hands[p].forEach(c=>known.add(c.id));R.seen.forEach(c=>known.add(c.id));
+  if(R.trumpCard)known.add(R.trumpCard.id);
+  const unknown=FULL.filter(c=>!known.has(c.id)),W=cloneR(R);
+  for(let attempt=0;attempt<25;attempt++){
+    const useVoids=attempt<24,cap=R.hands.map((h,q)=>q===p?0:h.length);
+    let deckCap=unknown.length-cap.reduce((a,b)=>a+b,0),ok=true;
+    const out=R.hands.map(()=>[]);
+    shuffle(unknown);
+    for(const c of unknown){
+      let tot=deckCap;const el=[];
+      for(let q=0;q<R.n;q++)if(cap[q]>0&&(!useVoids||c.k!=="N"||!R.voids[q][c.s])){el.push(q);tot+=cap[q];}
+      if(!tot){ok=false;break;}
+      let x=Math.random()*tot;
+      if(x<deckCap){deckCap--;continue;}
+      x-=deckCap;
+      let pick=el[el.length-1];
+      for(const q of el){if(x<cap[q]){pick=q;break;}x-=cap[q];}
+      out[pick].push(c);cap[pick]--;
+    }
+    if(!ok)continue;
+    for(let q=0;q<R.n;q++)if(q!==p)W.hands[q]=out[q];
+    break;
+  }
+  return W;
+}
+function fillBids(W){
+  for(let i=1;i<=W.n;i++){const q=(W.dealer+i)%W.n;if(W.bids[q]===null)W.bids[q]=heurBid(W,q,0);}
+  W.phase="play";W.turn=W.leader=(W.dealer+1)%W.n;
+}
+function dedupe(cards){
+  const seen=new Set();
+  return cards.filter(c=>{const k=c.k==="N"?c.id:c.k;if(seen.has(k))return false;seen.add(k);return true;});
+}
+function mcAdvice(R,p,budget){
+  const bidding=R.phase==="bid";
+  const cands=bidding?bidOptions(R,p):dedupe(legalCards(R.hands[p],R.trick));
+  const steps=R.hands.reduce((a,h)=>a+h.length,0)+1;
+  const N=Math.max(24,Math.min(400,Math.floor(budget/(cands.length*steps))));
+  const res=cands.map(x=>({x,hit:0,ev:0,tw:0}));
+  for(let i=0;i<N;i++){
+    const base=sampleWorld(R,p);
+    for(const o of res){
+      const W=cloneR(base);let tw=false;
+      if(bidding){W.bids[p]=o.x;fillBids(W);}
+      else{
+        let rr=playCard(W,p,o.x);
+        while(!rr.done){const q=W.turn;rr=playCard(W,q,heurPlay(W,q));}
+        tw=rr.winner===p;
+      }
+      while(W.hands[W.turn].length){const q=W.turn;playCard(W,q,heurPlay(W,q));}
+      const s=roundScore(W.bids[p],W.won[p]);
+      o.ev+=s;if(s>0)o.hit++;if(tw)o.tw++;
+    }
+  }
+  res.forEach(o=>{o.ev/=N;o.hit/=N;o.tw/=N;});
+  res.sort((a,b)=>b.ev-a.ev);
+  return {N,list:res,bidding};
+}
+function decide(R,p,prof,budget){
+  if(R.phase==="trump")return bestSuit(R.hands[p]);
+  if(prof.mc)return mcAdvice(R,p,budget).list[0].x;
+  return R.phase==="bid"?heurBid(R,p,prof.bias):heurPlay(R,p);
+}
+
+/* ============================================================
+   INTERACTIVE GAME
+   ============================================================ */
+const NAMES=["You","Merlin","Morgana","Alaric","Zara","Elric"];
+const S={rounds:0,hits:0,dec:0,agree:0,lost:0};
+let G=null,GEN=0;
+const delay=()=>+$("speed").value;
+const hintsOn=()=>$("showHints").checked;
+function log(html){const el=$("log");el.innerHTML+=html+"\n";el.scrollTop=el.scrollHeight;}
+const trumpText=R=>R.trump===null?"A Wizard was flipped — the dealer picks trump."
+  :R.trump<0?(R.trumpCard?"A Jester was flipped — no trump.":"Last round — no trump.")
+  :`Trump is <b>${SUITS[R.trump]}</b>.`;
+function cnHTML(c){
+  const cls=c.k==="W"?"wiz":c.k==="J"?"jes":RED[c.s]?"red":"";
+  return `<span class="cn ${cls}">${c.k==="W"?"🧙 Wizard":c.k==="J"?"🃏 Jester":cardName(c)}</span>`;
+}
+function cardHTML(c,extra=""){
+  if(c.k==="W")return `<div class="wc wiz ${extra}" data-id="${c.id}"><span>W</span><span class="mid">🧙</span><span class="bot">W</span></div>`;
+  if(c.k==="J")return `<div class="wc jes ${extra}" data-id="${c.id}"><span>Je</span><span class="mid">🃏</span><span class="bot">Je</span></div>`;
+  const lab=rankLabel(c.r)+SUITS[c.s];
+  return `<div class="wc ${RED[c.s]?"red":""} ${extra}" data-id="${c.id}"><span>${lab}</span><span class="mid">${SUITS[c.s]}</span><span class="bot">${lab}</span></div>`;
+}
+function sortHand(h,T){
+  const key=c=>c.k==="W"?-1:c.k==="J"?99:(c.s===T?0:c.s+1)*20-c.r;
+  return h.slice().sort((a,b)=>key(a)-key(b));
+}
+
+function newGame(){
+  GEN++;
+  const n=+$("nPlayers").value,strong=$("oppLevel").value==="mc",mix=["bold","balanced","cautious"];
+  G={n,rounds:60/n,round:0,d0:Math.random()*n|0,hook:$("hookRule").checked,
+    players:NAMES.slice(0,n).map((name,i)=>({name,human:i===0,prof:i===0?null:PROFILES[strong?"coach":mix[(i-1)%3]]})),
+    scores:Array(n).fill(0),hist:[],R:null,pause:null,advice:null,verdict:null,roundDone:false,over:false};
+  $("log").innerHTML="";
+  log(`<b>New game</b> — ${n} players, ${G.rounds} rounds${G.hook?", hook rule on":""}.`);
+  startRound();
+}
+function startRound(){
+  G.round++;G.roundDone=false;G.advice=null;G.verdict=null;
+  const dealer=(G.d0+G.round-1)%G.n,R=G.R=dealRound(G.n,G.round,dealer,G.hook);
+  log(`<b>Round ${G.round}</b> — ${G.players[dealer].name} deal${dealer===0?"":"s"} ${G.round} card${G.round>1?"s":""}. ${trumpText(R)}`);
+  if(R.phase==="trump"&&dealer!==0){
+    R.trump=bestSuit(R.hands[dealer]);R.phase="bid";
+    log(`${G.players[dealer].name} picks <b>${SUITS[R.trump]}</b> as trump.`);
+  }
+  render();schedule();
+}
+function schedule(){
+  const R=G.R,gen=GEN;
+  if(G.pause||G.roundDone||(R.phase!=="bid"&&R.phase!=="play"))return;
+  if(R.turn===0){computeCoach();return;}
+  setTimeout(()=>{if(gen!==GEN)return;const p=R.turn,x=decide(R,p,G.players[p].prof,30000);R.phase==="bid"?doBid(p,x):doPlay(p,x);},delay());
+}
+function doBid(p,b){
+  const R=G.R;R.bids[p]=b;
+  log(`${G.players[p].name} bid${p?"s":""} <b>${b}</b>.`);
+  if(R.bids.every(x=>x!==null)){
+    R.phase="play";R.turn=R.leader=(R.dealer+1)%R.n;
+    const tot=R.bids.reduce((a,x)=>a+x,0);
+    log(`Bids total <b>${tot}</b> for ${R.r} trick${R.r>1?"s":""} — ${tot>R.r?"overbid: at least one player must miss.":tot<R.r?"underbid: someone takes tricks they don't want.":"perfectly even."}`);
+  }else R.turn=(p+1)%R.n;
+  render();schedule();
+}
+function doPlay(p,c){
+  const R=G.R,res=playCard(R,p,c);
+  if(!res.done){render();schedule();return;}
+  G.pause=res;
+  log(`${G.players[res.winner].name} take${res.winner?"s":""} the trick with ${cnHTML(res.trick[trickWinner(res.trick,R.trump)].c)}.`);
+  render();
+  const gen=GEN;
+  setTimeout(()=>{if(gen!==GEN)return;G.pause=null;if(!R.hands[R.turn].length)endRound();else{render();schedule();}},delay()*2+500);
+}
+function endRound(){
+  const R=G.R,delta=R.bids.map((b,q)=>roundScore(b,R.won[q]));
+  delta.forEach((d,q)=>G.scores[q]+=d);
+  G.hist.push({bids:R.bids.slice(),won:R.won.slice(),delta});
+  G.roundDone=true;S.rounds++;if(delta[0]>0)S.hits++;
+  log(`Round ${G.round}: you bid ${R.bids[0]}, took ${R.won[0]} → <b>${delta[0]>0?"+":""}${delta[0]}</b>.`);
+  if(G.round>=G.rounds){
+    G.over=true;const top=Math.max(...G.scores),w=G.scores.indexOf(top);
+    log(`<b>Game over</b> — ${G.players[w].name} win${w?"s":""} with ${top}.`);
+  }
+  render();
+}
+
+// ---- human input ----
+const sameChoice=(a,b)=>typeof a==="number"?a===b:a.k==="N"?a.id===b.id:a.k===b.k;
+function recordDecision(x){
+  const a=G.advice;
+  if(!a||a.pending){G.verdict=null;return;}
+  const best=a.list[0],mine=a.list.find(o=>sameChoice(o.x,x))||best;
+  S.dec++;if(best.ev-mine.ev<0.5)S.agree++;
+  S.lost+=Math.max(0,best.ev-mine.ev);
+  G.verdict={best,mine,bidding:a.bidding};
+}
+function humanBid(b){
+  const R=G.R;if(G.pause||R.phase!=="bid"||R.turn!==0)return;
+  recordDecision(b);G.advice=null;doBid(0,b);
+}
+function humanPlay(id){
+  const R=G.R;if(G.pause||R.phase!=="play"||R.turn!==0)return;
+  const c=legalCards(R.hands[0],R.trick).find(x=>x.id===id);if(!c)return;
+  recordDecision(c);G.advice=null;doPlay(0,c);
+}
+function humanTrump(s){
+  const R=G.R;if(R.phase!=="trump")return;
+  R.trump=s;R.phase="bid";log(`You pick <b>${SUITS[s]}</b> as trump.`);
+  render();schedule();
+}
+
+// ---- coach ----
+const adviceKey=()=>`${G.round}|${G.R.phase}|${G.R.seen.length}|${G.R.bids.join(",")}`;
+function computeCoach(){
+  const key=adviceKey();
+  if(G.advice&&G.advice.key===key)return;
+  G.advice={key,pending:true};renderCoach();
+  const gen=GEN;
+  setTimeout(()=>{
+    if(gen!==GEN||adviceKey()!==key)return;
+    const a=mcAdvice(G.R,0,120000);a.key=key;G.advice=a;
+    renderCoach();renderHand();renderActions();
+  },30);
+}
+const recChoice=()=>G.advice&&!G.advice.pending&&hintsOn()?G.advice.list[0].x:null;
+const pct=x=>Math.round(x*100)+"%";
+const sgn=x=>(x>=0?"+":"")+x.toFixed(1);
+function choiceHTML(x){return typeof x==="number"?`<b>bid ${x}</b>`:cnHTML(x);}
+function verdictHTML(){
+  const v=G.verdict;if(!v)return "";
+  const gap=v.best.ev-v.mine.ev;
+  if(gap<0.5)return `<div class="verdict">✅ ${choiceHTML(v.mine.x)} matches the coach (EV ${sgn(v.mine.ev)}).</div>`;
+  return `<div class="verdict">⚠️ You chose ${choiceHTML(v.mine.x)} (EV ${sgn(v.mine.ev)}). Coach preferred ${choiceHTML(v.best.x)} (EV ${sgn(v.best.ev)}) — <b style="color:var(--bad)">−${gap.toFixed(1)}</b> pts.</div>`;
+}
+function renderCoach(){
+  const el=$("coach");
+  if(!G){el.textContent="Start a game to get coaching.";return;}
+  const R=G.R,mine=R.turn===0&&(R.phase==="bid"||R.phase==="play")&&!G.pause&&!G.roundDone;
+  if(R.phase==="trump"&&R.dealer===0){
+    el.innerHTML=`You flipped a Wizard, so you choose trump. Pick your <b>longest, strongest suit</b> — here that's <b>${SUITS[bestSuit(R.hands[0])]}</b>. Every card of it becomes a potential trick.`;return;
+  }
+  if(!mine){
+    const who=G.roundDone?(G.over?"Game over.":"Round over."):G.pause?"Trick complete.":`Waiting for ${G.players[R.turn].name}…`;
+    el.innerHTML=`<div class="muted">${who}</div>`+verdictHTML();return;
+  }
+  const a=G.advice;
+  if(!a||a.pending){el.innerHTML=`<div class="muted">Simulating hidden hands…</div>`+verdictHTML();return;}
+  if(!hintsOn()){el.innerHTML=`<div class="muted">Hints hidden — make your move and I'll grade it.</div>`+verdictHTML();return;}
+  const best=a.list[0];let head,table;
+  if(a.bidding){
+    const parts=R.hands[0].map(c=>({c,v:cardValue(c,R.trump,R.n,R.r)})).filter(o=>o.v>=.05);
+    const est=parts.reduce((s,o)=>s+o.v,0);
+    const byBid=a.list.slice().sort((x,y)=>x.x-y.x);
+    head=`<div class="bigmove">Bid ${best.x}</div>
+      <div>Makes it <b>${pct(best.hit)}</b> of the time · EV <b>${sgn(best.ev)}</b></div>
+      <div class="chips">${parts.length?parts.map(o=>`<span class="chip">${cnHTML(o.c)} ≈${o.v.toFixed(2)}</span>`).join(""):'<span class="chip">no likely winners</span>'}</div>
+      <div class="muted" style="font-size:12px">Rule-of-thumb count ≈ <b>${est.toFixed(1)}</b> tricks${forbiddenBid(R,0)>=0?` · hook rule bans bid ${forbiddenBid(R,0)}`:""}.</div>`;
+    table=`<table class="ev"><tr><th>Bid</th><th style="width:45%">Chance to make it</th><th>EV</th></tr>`+
+      byBid.map(o=>`<tr class="${o===best?"best":""}"><td><b>${o.x}</b></td><td><div class="bar" style="width:${Math.max(1,o.hit*100)}%"></div> ${pct(o.hit)}</td><td>${sgn(o.ev)}</td></tr>`).join("")+`</table>`;
+  }else{
+    const need=R.bids[0]-R.won[0],left=R.hands[0].length;
+    const why=need<=0?`You've ${need<0?"already overshot":"made"} your bid — every extra trick costs 10. ${cnHTML(best.x)} loses this trick ${pct(1-best.tw)} of the time.`
+      :best.tw>=.5?`You need ${need} more in ${left}. Take it: ${cnHTML(best.x)} wins this trick ${pct(best.tw)} of the time.`
+      :`You need ${need} more in ${left}. Hold your winners: ${cnHTML(best.x)} wins only ${pct(best.tw)} now, saving stronger cards for later.`;
+    head=`<div class="bigmove">Play ${cnHTML(best.x)}</div><div style="margin-top:4px">${why}</div>`;
+    table=`<table class="ev"><tr><th>Card</th><th>Wins trick</th><th>Makes bid</th><th>EV</th></tr>`+
+      a.list.map(o=>`<tr class="${o===best?"best":""}"><td>${cnHTML(o.x)}</td><td>${pct(o.tw)}</td><td>${pct(o.hit)}</td><td>${sgn(o.ev)}</td></tr>`).join("")+`</table>`;
+  }
+  el.innerHTML=head+table+`<div class="muted" style="font-size:11px;margin-top:6px">${a.N} simulated deals per option. Hidden cards are resampled to match the suits players have shown they're out of; opponents play the Balanced style.</div>`+verdictHTML();
+}
+
+// ---- rendering ----
+function render(){
+  if(!G)return;
+  const R=G.R,tot=R.bids.reduce((a,x)=>a+(x||0),0);
+  $("roundPill").textContent=`Round ${G.round} / ${G.rounds}`;
+  $("bidPill").textContent=R.bids.some(x=>x!==null)?`Bids ${tot} / ${R.r} tricks`:`${R.r} trick${R.r>1?"s":""}`;
+  renderSeats();renderTable();renderHand();renderActions();renderCoach();renderScoreboard();renderStats();
+}
+function seatInfo(q){
+  const R=G.R,b=R.bids[q];
+  return b===null?(R.phase==="bid"&&R.turn===q?"bidding…":"—"):`bid ${b} · won ${R.won[q]}`;
+}
+function renderSeats(){
+  const R=G.R,active=q=>!G.pause&&!G.roundDone&&R.turn===q&&(R.phase==="bid"||R.phase==="play");
+  let h="";
+  for(let q=1;q<G.n;q++){
+    const pl=G.players[q];
+    h+=`<div class="seat ${active(q)?"active":""}"><div class="nm">${pl.name}${R.dealer===q?'<span class="dchip">D</span>':""}</div>
+      <div class="pf">${pl.prof.label}</div><div class="bw">${seatInfo(q)}</div><div class="sc">${G.scores[q]} pts</div>
+      <div class="backs">${'<div class="mini"></div>'.repeat(R.hands[q].length)}</div></div>`;
+  }
+  $("opps").innerHTML=h;
+}
+function renderTable(){
+  const R=G.R;
+  $("trumpLabel").textContent=R.trump===null?"Trump: ?":R.trump<0?"No trump":`Trump ${SUITS[R.trump]}`;
+  $("trumpCard").innerHTML=R.trumpCard?cardHTML(R.trumpCard):'<div class="muted" style="font-size:12px;height:68px;display:flex;align-items:center">none</div>';
+  const trick=G.pause?G.pause.trick:R.trick,wi=trick.length?trickWinner(trick,R.trump):-1;
+  $("trick").innerHTML=trick.map((t,i)=>`<div class="tslot">${cardHTML(t.c,i===wi?(G.pause?"win":"lead"):"")}<span>${G.players[t.p].name}</span></div>`).join("")||'<span class="muted">No cards played yet.</span>';
+  const b=$("banner");b.className="banner";
+  if(G.over){
+    const top=Math.max(...G.scores),w=G.scores.indexOf(top);
+    b.textContent=`🏆 ${G.players[w].name} win${w?"s":""} the game with ${top} points`;b.classList.add(w===0?"win":"lose");
+  }else if(G.roundDone){
+    const d=G.hist[G.hist.length-1].delta[0];
+    b.textContent=`Round over — you bid ${R.bids[0]}, took ${R.won[0]}: ${d>0?"+":""}${d}`;b.classList.add(d>0?"win":"lose");
+  }else if(G.pause){
+    b.textContent=`${G.players[G.pause.winner].name} take${G.pause.winner?"s":""} the trick`;
+  }else b.textContent="";
+  $("youInfo").innerHTML=`You${R.dealer===0?'<span class="dchip">D</span>':""} · ${seatInfo(0)} · <span style="color:var(--accent)">${G.scores[0]} pts</span>`;
+}
+function renderHand(){
+  const R=G.R,myPlay=R.phase==="play"&&R.turn===0&&!G.pause&&!G.roundDone;
+  const legal=new Set(legalCards(R.hands[0],R.trick).map(c=>c.id)),rec=myPlay?recChoice():null;
+  let recId=rec?R.hands[0].find(c=>sameChoice(rec,c)).id:-1;
+  $("hand").innerHTML=sortHand(R.hands[0],R.trump).map(c=>{
+    const cls=[c.k==="N"&&c.s===R.trump?"trumpc":""];
+    if(myPlay)cls.push(legal.has(c.id)?"play":"dim");
+    if(c.id===recId)cls.push("rec");
+    return cardHTML(c,cls.join(" "));
+  }).join("")||'<span class="muted">No cards left.</span>';
+}
+function renderActions(){
+  const R=G.R,act=$("actions"),pr=$("prompt");
+  if(G.over){pr.innerHTML="Game over. Start another, or tweak players/opponents first.";act.innerHTML=`<button class="primary" onclick="newGame()">↻ New game</button>`;return;}
+  if(G.roundDone){pr.innerHTML="Check the scoreboard, then deal the next round.";act.innerHTML=`<button class="primary" onclick="startRound()">▶ Round ${G.round+1}</button>`;return;}
+  if(R.phase==="trump"&&R.dealer===0){
+    pr.innerHTML="You flipped a <b>Wizard</b> as dealer — choose the trump suit.";
+    act.innerHTML=SUITS.map((s,i)=>`<button onclick="humanTrump(${i})" style="font-size:16px;color:${RED[i]?"#ff8a9b":"inherit"}">${s}</button>`).join("");return;
+  }
+  if(R.phase==="bid"&&R.turn===0&&!G.pause){
+    const rec=recChoice(),f=forbiddenBid(R,0);
+    pr.innerHTML=`How many tricks will you take out of <b>${R.r}</b>?${f>=0&&f<=R.r?` (Hook rule: you can't bid ${f}.)`:""}`;
+    act.innerHTML=bidOptions(R,0).map(b=>`<button class="${b===rec?"rec":""}" onclick="humanBid(${b})">${b}</button>`).join("");return;
+  }
+  if(R.phase==="play"&&R.turn===0&&!G.pause){
+    const ls=ledSuit(R.trick);
+    pr.innerHTML=`Your lead${R.trick.length?"":" — play any card"}.`;
+    if(R.trick.length)pr.innerHTML=ls>=0?`Follow <b>${SUITS[ls]}</b> if you can (Wizard/Jester always allowed).`:ls===-2?"A Wizard led — the trick is taken; play anything.":"Only Jesters so far — play anything; your card may set the suit.";
+    act.innerHTML="";return;
+  }
+  pr.innerHTML=G.pause?"…":`${G.players[R.turn].name} is ${R.phase==="bid"?"bidding":"playing"}…`;act.innerHTML="";
+}
+function renderScoreboard(){
+  let h=`<table class="sb"><tr><th>#</th>${G.players.map(p=>`<th>${p.name}</th>`).join("")}</tr>`;
+  G.hist.forEach((r,i)=>{
+    h+=`<tr><td>${i+1}</td>${r.delta.map((d,q)=>`<td class="${d>0?"pos":"neg"}">${r.bids[q]}/${r.won[q]} ${d>0?"+":""}${d}</td>`).join("")}</tr>`;
+  });
+  h+=`<tr class="tot"><td>Σ</td>${G.scores.map(s=>`<td>${s}</td>`).join("")}</tr></table>`;
+  $("scoreboard").innerHTML=h+'<div class="muted" style="font-size:11px;margin-top:4px">cells: bid/won and round points</div>';
+}
+function renderStats(){
+  $("sRounds").textContent=S.rounds;
+  $("sHit").textContent=S.rounds?pct(S.hits/S.rounds):"—";
+  $("sAgree").textContent=S.dec?pct(S.agree/S.dec):"—";
+  $("sLost").textContent=S.lost.toFixed(0);
+}
+
+$("hand").addEventListener("click",e=>{const el=e.target.closest(".wc.play");if(el)humanPlay(+el.dataset.id);});
+$("newBtn").onclick=newGame;
+$("showHints").onchange=()=>{if(G){renderCoach();renderHand();renderActions();}};
+
+/* ============================================================
+   SIMULATION
+   ============================================================ */
+function playGame(profs,n,budget){
+  const rounds=60/n,d0=Math.random()*n|0,scores=Array(n).fill(0),log=[];
+  for(let rd=1;rd<=rounds;rd++){
+    const R=dealRound(n,rd,(d0+rd-1)%n,false);
+    if(R.phase==="trump"){R.trump=bestSuit(R.hands[R.dealer]);R.phase="bid";}
+    for(let i=1;i<=n;i++){const q=(R.dealer+i)%n;R.bids[q]=decide(R,q,profs[q],budget);}
+    R.phase="play";R.turn=R.leader=(R.dealer+1)%n;
+    while(R.hands[R.turn].length){const q=R.turn;playCard(R,q,decide(R,q,profs[q],budget));}
+    const delta=R.bids.map((b,q)=>roundScore(b,R.won[q]));
+    delta.forEach((d,q)=>scores[q]+=d);
+    log.push({round:rd,dealer:R.dealer,trump:R.trump<0?null:SUITS[R.trump],bids:R.bids.slice(),won:R.won.slice(),delta});
+  }
+  return {scores,rounds:log};
+}
+const tick=()=>new Promise(r=>setTimeout(r,0));
+function isoStamp(){return new Date().toISOString().replace(/[:.]/g,"-");}
+function downloadJSON(name,obj){
+  const blob=new Blob([JSON.stringify(obj,null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob),a=document.createElement("a");
+  a.href=url;a.download=name;document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(url);a.remove();},1000);
+}
+async function runSim(nGames,withCoach){
+  const btn=$("simBtn");btn.disabled=true;
+  const n=+$("nPlayers").value,t0=performance.now();
+  const order=(withCoach?["coach","balanced","bold","cautious","balanced","bold"]:["balanced","bold","cautious","balanced","bold","cautious"]).slice(0,n);
+  const agg={},games=[];
+  order.forEach(k=>agg[k]||(agg[k]={profile:PROFILES[k].label,seats:0,wins:0,score:0,rounds:0,hits:0,miss:0}));
+  for(let g=0;g<nGames;g++){
+    const keys=order.map((_,q)=>order[(q+g)%n]),res=playGame(keys.map(k=>PROFILES[k]),n,15000);
+    const top=Math.max(...res.scores),winners=res.scores.filter(s=>s===top).length;
+    keys.forEach((k,q)=>{
+      const a=agg[k];a.seats++;a.score+=res.scores[q];if(res.scores[q]===top)a.wins+=1/winners;
+      res.rounds.forEach(r=>{a.rounds++;if(r.delta[q]>0)a.hits++;a.miss+=Math.abs(r.bids[q]-r.won[q]);});
+    });
+    games.push({seats:keys,final:res.scores,rounds:res.rounds});
+    {$("simProgress").textContent=`Simulating… ${g+1}/${nGames}`;await tick();}
+  }
+  const summary=Object.values(agg).map(a=>({profile:a.profile,seats:a.seats,winRate:+(a.wins/a.seats).toFixed(4),
+    avgScore:+(a.score/a.seats).toFixed(1),bidHitRate:+(a.hits/a.rounds).toFixed(4),avgTricksOff:+(a.miss/a.rounds).toFixed(3)}))
+    .sort((x,y)=>y.winRate-x.winRate);
+  const secs=((performance.now()-t0)/1000).toFixed(1);
+  $("simProgress").textContent=`Done: ${nGames} games × ${60/n} rounds in ${secs}s.`;
+  $("simSummary").innerHTML=`<table class="ev"><tr><th>AI style</th><th>Win rate</th><th>Avg score</th><th>Bid made</th></tr>`+
+    summary.map(s=>`<tr><td><b>${s.profile}</b></td><td><div class="bar" style="width:${Math.max(1,s.winRate*100)}%"></div> ${pct(s.winRate)}</td><td>${s.avgScore}</td><td>${pct(s.bidHitRate)}</td></tr>`).join("")+
+    `</table><div class="muted" style="font-size:11px;margin-top:4px">Random chance would be ${pct(1/n)} each. Ties split the win.</div>`;
+  downloadJSON(`wizard-sim-${nGames}games-${isoStamp()}.json`,{summary,params:{players:n,games:nGames,seatOrder:order},games});
+  btn.disabled=false;
+}
+$("simBtn").onclick=()=>runSim(Math.max(1,Math.min(5000,+$("simN").value||100)),$("simCoach").checked);
+
+newGame();
+</script>

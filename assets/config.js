@@ -20,6 +20,8 @@ window.SITE = {
       blurb: "Learn when to bet 4×, 2× or fold vs the dealer with a live optimal-move coach, then simulate thousands of hands to a JSON dataset." },
     { path: "blackjack.html", title: "Blackjack &amp; Card Counting", emoji: "🃏", group: "Games",
       blurb: "Master basic strategy with a live coach, watch the Hi-Lo count flip the edge in your favour, and simulate thousands of hands to a JSON dataset." },
+    { path: "wizard.html",  title: "Wizard", emoji: "🧙", group: "Games",
+      blurb: "Bid exactly how many tricks you'll take in the 60-card trick-taker — a Monte Carlo coach grades every bid and card, then simulate AI styles head-to-head." },
     { path: "goal.html",    title: "The Goal",          emoji: "🏭", group: "Productivity",
       blurb: "Goldratt's Theory of Constraints — tune a production line and watch the bottleneck rule throughput." },
     { path: "feynman.html", title: "Feynman Technique", emoji: "🧠", group: "Productivity",
